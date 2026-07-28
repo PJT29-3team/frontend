@@ -1,5 +1,8 @@
 <template>
-  <header class="login-header">
+  <header
+    class="login-header"
+    :class="{ 'login-header--brand-only': !showNavigation }"
+  >
     <RouterLink class="login-header__brand" to="/" aria-label="작은둥지 홈">
       <img
         class="login-header__logo"
@@ -10,12 +13,21 @@
         <span>작은</span><span class="login-header__wordmark-accent">둥지</span>
       </span>
     </RouterLink>
-    <nav class="login-header__nav" aria-label="로그인 보조 메뉴">
+    <nav v-if="showNavigation" class="login-header__nav" aria-label="로그인 보조 메뉴">
       <span>고객센터</span>
       <RouterLink to="/signup">회원가입</RouterLink>
     </nav>
   </header>
 </template>
+
+<script setup>
+defineProps({
+  showNavigation: {
+    type: Boolean,
+    default: true,
+  },
+})
+</script>
 
 <style scoped>
 .login-header {
@@ -30,6 +42,13 @@
   padding: 12px clamp(20px, 5vw, 72px);
   border-bottom: 1px solid #e8e5de;
   background: rgba(255, 255, 255, 0.98);
+}
+
+.login-header--brand-only {
+  position: relative;
+  min-height: 96px;
+  padding: 24px clamp(20px, 3.6vw, 42px);
+  border-bottom: 0;
 }
 
 .login-header__brand {
@@ -91,6 +110,11 @@
   .login-header {
     min-height: 68px;
     padding-inline: 16px;
+  }
+
+  .login-header--brand-only {
+    min-height: 80px;
+    padding-block: 16px;
   }
 
   .login-header__logo {
