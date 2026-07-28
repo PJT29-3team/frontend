@@ -10,13 +10,6 @@
         >
           카카오 로그인
         </a>
-        <a
-          class="social-button naver"
-          data-social-provider="naver"
-          :href="`${apiBaseUrl}/api/auth/social/naver`"
-        >
-          네이버 로그인
-        </a>
         <div class="divider"><span>기본 로그인</span></div>
         <a class="secondary-button route-button" href="/login/email">이메일로 로그인</a>
         <a class="text-link reset-link" href="/password/reset/request">비밀번호 찾기</a>
@@ -58,11 +51,6 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 .kakao {
   background: #ffde00;
   color: #2c2417;
-}
-
-.naver {
-  background: #03c75a;
-  color: #fff;
 }
 
 .divider {
