@@ -95,6 +95,9 @@ describe('PasswordResetCompleteView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('최근 사용한 비밀번호는 다시 사용할 수 없습니다.')
+
+    await wrapper.get('input[name="password"]').setValue('AnotherSenior!23')
+    expect(wrapper.text()).not.toContain('최근 사용한 비밀번호는 다시 사용할 수 없습니다.')
   })
 
   it('completes the reset once and shows the completion screen', async () => {

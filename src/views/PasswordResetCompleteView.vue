@@ -116,7 +116,7 @@
 
 <script setup>
 import { ArrowLeft, Check, CircleAlert, Eye, EyeOff, LoaderCircle } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { completePasswordReset, verifyPasswordReset } from '../api/authApi'
 import LoginFooter from '../components/LoginFooter.vue'
@@ -137,6 +137,12 @@ const isPasswordMatched = computed(() =>
   Boolean(password.value) && password.value === passwordConfirm.value
 )
 const isFormValid = computed(() => isPasswordValid.value && isPasswordMatched.value)
+
+watch([password, passwordConfirm], () => {
+  if (!submitting.value) {
+    message.value = ''
+  }
+})
 
 onMounted(verifyToken)
 
