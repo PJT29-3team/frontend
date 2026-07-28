@@ -6,7 +6,7 @@
       <section class="reset-panel" aria-labelledby="reset-request-title">
         <RouterLink class="back-link" to="/login/email">
           <ArrowLeft :size="15" aria-hidden="true" />
-          이메일 로그인으로
+          이메일 로그인
         </RouterLink>
 
         <div class="step-progress" aria-label="비밀번호 재설정 1단계">
@@ -73,7 +73,7 @@ async function submit() {
   try {
     const response = await requestPasswordReset(email.value)
     sent.value = true
-    message.value = response.message || '가입 여부와 관계없이 입력한 주소로 재설정 안내를 보냈습니다.'
+    message.value = response.message || '비밀번호 재설정 메일을 보냈습니다.'
   } catch (error) {
     message.value = error.response?.data?.message || '링크를 보내지 못했습니다. 잠시 후 다시 시도해주세요.'
   } finally {
@@ -105,7 +105,7 @@ async function submit() {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 34px;
+  margin: 0 0 34px -24px;
   color: #5f5a52;
   text-decoration: none;
   font-size: 14px;
@@ -230,7 +230,7 @@ async function submit() {
   }
 
   .back-link {
-    margin-bottom: 28px;
+    margin: 0 0 28px -12px;
   }
 }
 </style>

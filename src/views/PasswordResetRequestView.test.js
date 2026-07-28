@@ -31,7 +31,10 @@ describe('PasswordResetRequestView', () => {
     expect(wrapper.text()).toContain('STEP 1 · 이메일 인증')
     expect(wrapper.text()).toContain('비밀번호 재설정')
     expect(wrapper.text()).toContain('가입한 이메일 주소를 입력해주세요.')
-    expect(wrapper.findAllComponents(RouterLinkStub).some((link) => link.props('to') === '/login/email')).toBe(true)
+    const emailLoginLink = wrapper.findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/login/email')
+    expect(emailLoginLink.exists()).toBe(true)
+    expect(emailLoginLink.text()).toBe('이메일 로그인')
     expect(wrapper.get('input[name="email"]').attributes('type')).toBe('email')
     expect(wrapper.get('input[name="email"]').attributes('placeholder')).toBe('example@gmail.com')
   })
@@ -46,8 +49,8 @@ describe('PasswordResetRequestView', () => {
     expect(wrapper.text()).toContain('올바른 이메일 주소를 입력해주세요.')
   })
 
-  it('shows the same completion message after every accepted request', async () => {
-    requestPasswordReset.mockResolvedValue({ message: '가입 여부와 관계없이 입력한 주소로 재설정 안내를 보냈습니다.' })
+  it('shows a concise completion message after a reset mail is requested', async () => {
+    requestPasswordReset.mockResolvedValue({})
     const wrapper = mountView()
 
     await wrapper.get('input[name="email"]').setValue('senior@example.com')
@@ -55,6 +58,23 @@ describe('PasswordResetRequestView', () => {
     await flushPromises()
 
     expect(requestPasswordReset).toHaveBeenCalledWith('senior@example.com')
-    expect(wrapper.text()).toContain('가입 여부와 관계없이 입력한 주소로 재설정 안내를 보냈습니다.')
+    expect(wrapper.get('.feedback .success').text()).toBe('비밀번호 재설정 메일을 보냈습니다.')
+  })
+
+  it('shows a missing email response as an error', async () => {
+    requestPasswordReset.mockRejectedValue({
+      response: {
+        data: {
+          message: '가입되지 않은 이메일입니다.',
+        },
+      },
+    })
+    const wrapper = mountView()
+
+    await wrapper.get('input[name="email"]').setValue('missing@example.com')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get('.feedback .danger').text()).toBe('가입되지 않은 이메일입니다.')
   })
 })
