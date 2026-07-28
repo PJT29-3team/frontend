@@ -1,18 +1,6 @@
 <template>
   <div class="login-page">
-    <header class="login-header">
-      <RouterLink class="login-header__brand" to="/" aria-label="집현전 홈">
-        <img
-          class="login-header__logo"
-          src="../assets/jiphyeonjeon-logo.svg"
-          alt="집현전"
-        />
-      </RouterLink>
-      <nav class="login-header__nav" aria-label="로그인 보조 메뉴">
-        <span>고객센터</span>
-        <RouterLink to="/signup">회원가입</RouterLink>
-      </nav>
-    </header>
+    <LoginHeader />
 
     <main class="login-main">
       <section class="login-panel" aria-labelledby="login-title">
@@ -48,14 +36,14 @@
       </section>
     </main>
 
-    <footer class="login-footer">
-      <span>이용약관</span>
-      <span>개인정보처리방침</span>
-    </footer>
+    <LoginFooter />
   </div>
 </template>
 
 <script setup>
+import LoginFooter from '../components/LoginFooter.vue'
+import LoginHeader from '../components/LoginHeader.vue'
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 </script>
 
@@ -66,54 +54,6 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
   grid-template-rows: auto 1fr auto;
   background: #fff;
   color: #545045;
-}
-
-.login-header {
-  position: sticky;
-  z-index: 10;
-  top: 0;
-  min-height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 12px clamp(20px, 5vw, 72px);
-  border-bottom: 1px solid #e8e5de;
-  background: rgba(255, 255, 255, 0.98);
-}
-
-.login-header__brand {
-  display: inline-flex;
-  align-items: center;
-}
-
-.login-header__logo {
-  display: block;
-  width: 150px;
-  height: 50px;
-  object-fit: contain;
-  object-position: left center;
-}
-
-.login-header__nav {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  color: #60584c;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.login-header__nav a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.login-header__nav a:focus-visible,
-.login-header__nav a:hover {
-  color: #816843;
-  text-decoration: underline;
-  text-underline-offset: 5px;
 }
 
 .login-main {
@@ -234,34 +174,7 @@ h1 {
   text-underline-offset: 5px;
 }
 
-.login-footer {
-  min-height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  margin: 0 clamp(20px, 5vw, 72px);
-  border-top: 1px solid #eeeae3;
-  color: #777167;
-  font-size: 14px;
-}
-
 @media (max-width: 560px) {
-  .login-header {
-    min-height: 68px;
-    padding-inline: 16px;
-  }
-
-  .login-header__logo {
-    width: 118px;
-    height: 42px;
-  }
-
-  .login-header__nav {
-    gap: 14px;
-    font-size: 14px;
-  }
-
   .login-main {
     padding: 52px 20px 56px;
   }
