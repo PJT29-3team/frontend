@@ -35,7 +35,7 @@ describe('ProfileView password change', () => {
     await wrapper.get('input[name="newPassword"]').setValue('weak')
     await wrapper.get('input[name="newPasswordConfirm"]').setValue('weak')
 
-    expect(wrapper.text()).toContain('영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.')
+    expect(wrapper.text()).toContain('영문, 숫자, 특수문자를 포함해 8~72자로 입력해주세요.')
     expect(wrapper.get('[data-change-password]').attributes('disabled')).toBeDefined()
   })
 

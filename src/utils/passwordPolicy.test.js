@@ -7,9 +7,12 @@ describe('passwordPolicy', () => {
     expect(isStrongPassword('passwordonly')).toBe(false)
     expect(isStrongPassword('SeniorHome23')).toBe(false)
     expect(isStrongPassword('Senior Home!23')).toBe(false)
+    expect(isStrongPassword('Password1가')).toBe(false)
+    expect(isStrongPassword('Password1😀')).toBe(false)
+    expect(isStrongPassword(`Aa1!${'a'.repeat(69)}`)).toBe(false)
   })
 
   it('uses the signup password guidance text', () => {
-    expect(PASSWORD_RULE_MESSAGE).toBe('영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.')
+    expect(PASSWORD_RULE_MESSAGE).toBe('영문, 숫자, 특수문자를 포함해 8~72자로 입력해주세요.')
   })
 })

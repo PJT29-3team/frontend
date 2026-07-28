@@ -52,7 +52,7 @@
                 name="password"
                 :type="showPassword ? 'text' : 'password'"
                 autocomplete="new-password"
-                placeholder="영문, 숫자, 특수문자 포함 8자 이상"
+                placeholder="영문, 숫자, 특수문자 포함 8~72자"
               />
               <button
                 type="button"
