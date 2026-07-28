@@ -23,11 +23,6 @@ export async function completeSocialProfile(name, birthYear) {
   return response.data
 }
 
-export async function linkKakaoAccount(password, deviceName = navigator.userAgent) {
-  const response = await http.post('/api/auth/social/kakao/link', { password, deviceName })
-  return response.data
-}
-
 export async function signup(payload) {
   const response = await http.post('/api/auth/signup', payload)
   return response.data

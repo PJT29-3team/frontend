@@ -32,10 +32,6 @@ const errorMessages = {
     title: '카카오 이메일 확인이 필요합니다',
     message: '카카오 계정의 이메일 제공에 동의한 뒤 다시 로그인해 주세요.',
   },
-  account_conflict: {
-    title: '이미 이메일로 가입된 계정입니다',
-    message: '기존 이메일과 비밀번호로 로그인해 주세요.',
-  },
   configuration_error: {
     title: '카카오 로그인을 준비하고 있습니다',
     message: '잠시 후 다시 시도하거나 이메일로 로그인해 주세요.',
@@ -47,13 +43,14 @@ const errorMessages = {
 }
 
 onMounted(async () => {
-  if (route.query.error) {
-    error.value = errorMessages[route.query.error] || errorMessages.provider_error
+  if (route.query.error === 'account_conflict') {
+    window.alert('이미 이메일로 가입한 회원입니다.')
+    await router.replace('/login/email')
     return
   }
 
-  if (route.query.linkRequired === 'true') {
-    await router.replace('/social/link')
+  if (route.query.error) {
+    error.value = errorMessages[route.query.error] || errorMessages.provider_error
     return
   }
 

@@ -57,12 +57,6 @@ export const authStore = {
     return response
   },
 
-  async linkKakaoAccount(password) {
-    const response = await authApi.linkKakaoAccount(password)
-    this.setSession(response.accessToken, response.user)
-    return response
-  },
-
   async logout() {
     await authApi.logout()
     this.clearSession()
