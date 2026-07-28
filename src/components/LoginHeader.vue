@@ -1,14 +1,13 @@
 <template>
   <header class="login-header">
-    <RouterLink class="login-header__brand" to="/" aria-label="집현전 홈">
+    <RouterLink class="login-header__brand" to="/" aria-label="작은둥지 홈">
       <img
         class="login-header__logo"
         src="../assets/jiphyeonjeon-header-logo.png"
         alt=""
       />
       <span class="login-header__wordmark">
-        <span>집현전</span>
-        <span class="login-header__underline" aria-hidden="true"></span>
+        <span>작은</span><span class="login-header__wordmark-accent">둥지</span>
       </span>
     </RouterLink>
     <nav class="login-header__nav" aria-label="로그인 보조 메뉴">
@@ -51,19 +50,15 @@
 
 .login-header__wordmark {
   display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
-  font-size: 14px;
-  font-weight: 800;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 900;
   line-height: 1;
   white-space: nowrap;
 }
 
-.login-header__underline {
-  width: 30px;
-  height: 2px;
-  background: #f3bd00;
+.login-header__wordmark-accent {
+  color: #f3b900;
 }
 
 .login-header__nav {
@@ -104,7 +99,7 @@
   }
 
   .login-header__wordmark {
-    font-size: 13px;
+    font-size: 16px;
   }
 
   .login-header__nav {
