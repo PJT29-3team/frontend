@@ -11,6 +11,7 @@ const routes = [
   { path: '/password/reset/request', component: () => import('./views/PasswordResetRequestView.vue') },
   { path: '/auth/password/reset', component: () => import('./views/PasswordResetCompleteView.vue') },
   { path: '/auth/social/callback', component: () => import('./views/SocialLoginCallbackView.vue') },
+  { path: '/social/link', component: () => import('./views/SocialAccountLinkView.vue') },
   { path: '/me', component: () => import('./views/ProfileView.vue') },
   { path: '/social/profile', component: () => import('./views/SocialProfileCompletionView.vue') },
 ]
