@@ -1,85 +1,92 @@
 <template>
-  <main class="email-login-page">
-    <section class="email-login-card" aria-labelledby="email-login-title">
-      <div class="login-heading">
-        <img src="../assets/senior-downsizing-hero.png" alt="" />
+  <div class="email-login-page">
+    <LoginHeader />
+
+    <main class="email-login-main">
+      <section class="email-login-panel" aria-labelledby="email-login-title">
         <h1 id="email-login-title">로그인</h1>
-      </div>
 
-      <form class="login-form" @submit.prevent="submit">
-        <label class="sr-only" for="login-email">이메일</label>
-        <input
-          id="login-email"
-          v-model.trim="email"
-          name="email"
-          type="email"
-          autocomplete="username"
-          placeholder="이메일을 입력하세요"
-          required
-        />
-
-        <div class="password-input">
-          <label class="sr-only" for="login-password">비밀번호</label>
+        <form class="login-form" @submit.prevent="submit">
+          <label class="sr-only" for="login-email">이메일</label>
           <input
-            id="login-password"
-            v-model="password"
-            name="password"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="current-password"
-            placeholder="비밀번호를 입력하세요"
+            id="login-email"
+            v-model.trim="email"
+            name="email"
+            type="email"
+            autocomplete="username"
+            placeholder="이메일을 입력하세요"
             required
           />
-          <button
-            class="password-toggle"
-            type="button"
-            :aria-label="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
-            :title="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
-            @click="showPassword = !showPassword"
+
+          <div class="password-input">
+            <label class="sr-only" for="login-password">비밀번호</label>
+            <input
+              id="login-password"
+              v-model="password"
+              name="password"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="비밀번호를 입력하세요"
+              required
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              :aria-label="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
+              :title="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
+              @click="showPassword = !showPassword"
+            >
+              <EyeOff v-if="showPassword" :size="19" aria-hidden="true" />
+              <Eye v-else :size="19" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div class="login-options">
+            <label>
+              <input v-model="saveEmail" name="saveEmail" type="checkbox" />
+              <span>이메일 저장</span>
+            </label>
+            <label>
+              <input v-model="autoLogin" name="autoLogin" type="checkbox" />
+              <span>자동 로그인</span>
+            </label>
+          </div>
+
+          <div
+            v-if="error || verificationRequired || verificationMessage"
+            class="login-error"
+            aria-live="polite"
           >
-            <EyeOff v-if="showPassword" :size="19" aria-hidden="true" />
-            <Eye v-else :size="19" aria-hidden="true" />
+            <p v-if="error" class="form-message danger">{{ error }}</p>
+            <button
+              v-if="verificationRequired"
+              class="verification-resend"
+              type="button"
+              data-resend-verification
+              :disabled="resendingVerification"
+              @click="resendEmailVerification"
+            >
+              {{ resendingVerification ? '전송 중' : '인증 메일 다시 보내기' }}
+            </button>
+            <p v-if="verificationMessage" class="form-message success">{{ verificationMessage }}</p>
+          </div>
+
+          <RouterLink class="password-reset-link" to="/password/reset/request">비밀번호 찾기</RouterLink>
+
+          <p class="signup-prompt">
+            <span>계정이 없으신가요?</span>
+            <RouterLink to="/signup">회원가입</RouterLink>
+          </p>
+
+          <button class="login-submit" type="submit" :disabled="submitting">
+            {{ submitting ? '로그인 중' : '로그인' }}
           </button>
-        </div>
+        </form>
+      </section>
+    </main>
 
-        <div class="login-options">
-          <label>
-            <input v-model="saveEmail" name="saveEmail" type="checkbox" />
-            <span>이메일 저장</span>
-          </label>
-          <label>
-            <input v-model="autoLogin" name="autoLogin" type="checkbox" />
-            <span>자동 로그인</span>
-          </label>
-        </div>
-
-        <div class="login-error" aria-live="polite">
-          <p v-if="error" class="form-message danger">{{ error }}</p>
-          <button
-            v-if="verificationRequired"
-            class="verification-resend"
-            type="button"
-            data-resend-verification
-            :disabled="resendingVerification"
-            @click="resendEmailVerification"
-          >
-            {{ resendingVerification ? '전송 중' : '인증 메일 다시 보내기' }}
-          </button>
-          <p v-if="verificationMessage" class="form-message success">{{ verificationMessage }}</p>
-        </div>
-
-        <RouterLink class="password-reset-link" to="/password/reset/request">비밀번호 찾기</RouterLink>
-
-        <p class="signup-prompt">
-          <span>계정이 없으신가요?</span>
-          <RouterLink to="/signup">회원가입</RouterLink>
-        </p>
-
-        <button class="login-submit" type="submit" :disabled="submitting">
-          {{ submitting ? '로그인 중' : '로그인' }}
-        </button>
-      </form>
-    </section>
-  </main>
+    <LoginFooter />
+  </div>
 </template>
 
 <script setup>
@@ -87,6 +94,8 @@ import { Eye, EyeOff } from '@lucide/vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { resendVerification } from '../api/authApi'
+import LoginFooter from '../components/LoginFooter.vue'
+import LoginHeader from '../components/LoginHeader.vue'
 import { authStore } from '../stores/authStore'
 
 const SAVED_EMAIL_KEY = 'jh_saved_email'
@@ -150,41 +159,29 @@ async function resendEmailVerification() {
 .email-login-page {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 38px 16px;
+  grid-template-rows: auto 1fr auto;
   background: #fff;
+  color: #545045;
 }
 
-.email-login-card {
-  width: min(100%, 376px);
-  min-height: 604px;
-  padding: 32px 40px;
-  border: 1px solid #bbb7af;
-  border-radius: 12px;
-  background: #fff;
+.email-login-main {
+  display: grid;
+  place-items: start center;
+  padding: clamp(64px, 11vh, 118px) 20px 72px;
 }
 
-.login-heading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 22px;
+.email-login-panel {
+  width: min(100%, 420px);
 }
 
-.login-heading img {
-  width: 66px;
-  height: 66px;
-  margin-right: 2px;
-  border-radius: 10px;
-}
-
-.login-heading h1 {
-  margin: 0;
-  color: #111;
-  font-size: 23px;
-  line-height: 1;
-  font-weight: 900;
+.email-login-panel h1 {
+  margin: 0 0 48px;
+  color: #2f2b25;
+  font-size: 32px;
+  line-height: 1.3;
+  font-weight: 800;
   letter-spacing: 0;
+  text-align: center;
 }
 
 .login-form {
@@ -195,14 +192,14 @@ async function resendEmailVerification() {
 .login-form > input,
 .password-input input {
   width: 100%;
-  height: 44px;
-  padding: 0 14px;
+  height: 56px;
+  padding: 0 16px;
   border: 1px solid #d5d2cc;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   color: #282622;
   outline: none;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .login-form > input::placeholder,
@@ -221,15 +218,15 @@ async function resendEmailVerification() {
 }
 
 .password-input input {
-  padding-right: 46px;
+  padding-right: 52px;
 }
 
 .password-toggle {
   position: absolute;
   top: 0;
-  right: 4px;
-  width: 40px;
-  height: 44px;
+  right: 2px;
+  width: 48px;
+  height: 56px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -254,7 +251,7 @@ async function resendEmailVerification() {
   align-items: center;
   gap: 7px;
   color: #77736c;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -296,7 +293,7 @@ async function resendEmailVerification() {
   justify-self: center;
   color: #77736c;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .signup-prompt {
@@ -305,7 +302,7 @@ async function resendEmailVerification() {
   gap: 5px;
   margin: 0;
   color: #77736c;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .signup-prompt a {
@@ -321,9 +318,9 @@ async function resendEmailVerification() {
 
 .login-submit {
   width: 100%;
-  height: 49px;
+  height: 56px;
   margin-top: 2px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--jh-yellow-strong);
   color: #302a20;
   font-size: 15px;
@@ -354,14 +351,13 @@ async function resendEmailVerification() {
 }
 
 @media (max-width: 430px) {
-  .email-login-page {
-    place-items: start center;
-    padding: 20px 14px;
+  .email-login-main {
+    padding: 48px 20px 56px;
   }
 
-  .email-login-card {
-    min-height: calc(100vh - 40px);
-    padding: 28px 24px;
+  .email-login-panel h1 {
+    margin-bottom: 40px;
+    font-size: 30px;
   }
 }
 

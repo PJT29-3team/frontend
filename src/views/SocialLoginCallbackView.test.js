@@ -42,4 +42,35 @@ describe('SocialLoginCallbackView', () => {
     expect(refresh).not.toHaveBeenCalled()
     expect(routerReplace).toHaveBeenCalledWith('/social/profile')
   })
+
+  it('shows a clear message and does not refresh when the OAuth state is invalid', async () => {
+    routeQuery.value = { error: 'invalid_state' }
+    const refresh = vi.spyOn(authStore, 'refresh')
+
+    const wrapper = mount(SocialLoginCallbackView, {
+      global: {
+        stubs: ['RouterLink'],
+      },
+    })
+    await flushPromises()
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(routerReplace).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('로그인 시간이 지났습니다')
+    expect(wrapper.text()).toContain('다시 로그인해 주세요')
+  })
+
+  it('guides an existing email member to use email login', async () => {
+    routeQuery.value = { error: 'account_conflict' }
+    const refresh = vi.spyOn(authStore, 'refresh')
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {})
+
+    mount(SocialLoginCallbackView)
+    await flushPromises()
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(alert).toHaveBeenCalledOnce()
+    expect(alert).toHaveBeenCalledWith('이미 이메일로 가입한 회원입니다.')
+    expect(routerReplace).toHaveBeenCalledWith('/login/email')
+  })
 })

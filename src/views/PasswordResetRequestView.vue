@@ -1,27 +1,32 @@
 <template>
-  <main class="reset-page">
-    <RouterLink class="back-link" to="/login/email">
-      <ArrowLeft :size="16" aria-hidden="true" />
-      이메일 로그인
-    </RouterLink>
+  <div class="password-reset-page">
+    <LoginHeader />
 
-    <div class="reset-flow">
-      <div class="step-progress" aria-label="비밀번호 재설정 1단계">
-        <div><span></span><i></i></div>
-        <p>STEP 1 · 본인 인증</p>
-      </div>
+    <main class="password-reset-main">
+      <section class="reset-panel" aria-labelledby="reset-request-title">
+        <RouterLink class="back-link" to="/login/email">
+          <ArrowLeft :size="15" aria-hidden="true" />
+          이메일 로그인
+        </RouterLink>
 
-      <section class="reset-card" aria-labelledby="reset-request-title">
+        <div class="step-progress" aria-label="비밀번호 재설정 1단계">
+          <span class="step-progress__active"></span>
+          <span></span>
+          <p>STEP 1 · 이메일 인증</p>
+        </div>
+
         <h1 id="reset-request-title">비밀번호 재설정</h1>
-        <form @submit.prevent="submit">
-          <label class="sr-only" for="reset-email">이메일</label>
+        <p class="reset-description">가입한 이메일 주소를 입력해주세요.</p>
+
+        <form class="reset-form" novalidate @submit.prevent="submit">
+          <label for="reset-email">이메일</label>
           <input
             id="reset-email"
             v-model.trim="email"
             name="email"
             type="email"
             autocomplete="username"
-            placeholder="1. 이메일 입력"
+            placeholder="example@gmail.com"
             :disabled="submitting"
           />
 
@@ -34,14 +39,18 @@
           </button>
         </form>
       </section>
-    </div>
-  </main>
+    </main>
+
+    <LoginFooter />
+  </div>
 </template>
 
 <script setup>
 import { ArrowLeft } from '@lucide/vue'
 import { ref } from 'vue'
 import { requestPasswordReset } from '../api/authApi'
+import LoginFooter from '../components/LoginFooter.vue'
+import LoginHeader from '../components/LoginHeader.vue'
 
 const email = ref('')
 const message = ref('')
@@ -64,7 +73,7 @@ async function submit() {
   try {
     const response = await requestPasswordReset(email.value)
     sent.value = true
-    message.value = response.message || '가입 여부와 관계없이 입력한 주소로 재설정 안내를 보냈습니다.'
+    message.value = response.message || '비밀번호 재설정 메일을 보냈습니다.'
   } catch (error) {
     message.value = error.response?.data?.message || '링크를 보내지 못했습니다. 잠시 후 다시 시도해주세요.'
   } finally {
@@ -74,165 +83,154 @@ async function submit() {
 </script>
 
 <style scoped>
-.reset-page {
-  position: relative;
+.password-reset-page {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 80px 24px;
-  background: #fbfaf8;
-  color: #333;
+  grid-template-rows: auto 1fr auto;
+  background: #fff;
+  color: #4d4942;
+}
+
+.password-reset-main {
+  display: grid;
+  place-items: start center;
+  padding: clamp(54px, 10vh, 104px) 20px 72px;
+}
+
+.reset-panel {
+  width: min(100%, 420px);
 }
 
 .back-link {
-  position: absolute;
-  top: 36px;
-  left: 48px;
-  height: 34px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 12px;
-  border: 1px solid #8b877f;
-  border-radius: 5px;
-  background: #fff;
-  color: #4a4741;
+  gap: 4px;
+  margin: 0 0 34px -24px;
+  color: #5f5a52;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
-.reset-flow {
-  width: min(100%, 360px);
+.back-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .step-progress {
-  margin: 0 auto 8px;
-  text-align: center;
-}
-
-.step-progress > div {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 0 42px;
-}
-
-.step-progress span,
-.step-progress i {
-  height: 5px;
-  border-radius: 999px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .step-progress span {
-  background: #ffc400;
+  height: 2px;
+  background: #dedbd4;
 }
 
-.step-progress i {
-  background: #e2ded5;
+.step-progress__active {
+  background: #ffbc00 !important;
 }
 
 .step-progress p {
-  margin: 8px 0 0;
-  color: #5e5a53;
-  font-size: 12px;
+  grid-column: 2;
+  margin: -2px 0 0;
+  color: #99958d;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.reset-panel h1 {
+  margin: 0;
+  color: #2f2b25;
+  font-size: 25px;
+  line-height: 1.35;
   font-weight: 800;
-}
-
-.reset-card {
-  min-height: 370px;
-  padding: 28px 24px 22px;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 9px 24px rgba(70, 66, 58, 0.14);
-}
-
-.reset-card h1 {
-  margin: 0 0 24px;
-  color: #403d38;
-  text-align: center;
-  font-size: 23px;
   letter-spacing: 0;
 }
 
-.reset-card form {
-  min-height: 288px;
-  display: flex;
-  flex-direction: column;
+.reset-description {
+  margin: 9px 0 30px;
+  color: #817c73;
+  font-size: 14px;
 }
 
-.reset-card input {
+.reset-form {
+  display: grid;
+}
+
+.reset-form label {
+  margin-bottom: 9px;
+  color: #45413a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.reset-form input {
   width: 100%;
-  height: 46px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 7px;
-  background: #f1f0f4;
-  color: #333;
+  height: 52px;
+  padding: 0 15px;
+  border: 1px solid #d8d5cf;
+  border-radius: 5px;
+  background: #fff;
+  color: #2f2b25;
   outline: none;
+  font-size: 15px;
 }
 
-.reset-card input:focus {
-  box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.28);
+.reset-form input::placeholder {
+  color: #b5b1aa;
+}
+
+.reset-form input:focus {
+  border-color: #b98600;
+  box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.16);
 }
 
 .feedback {
-  min-height: 74px;
+  min-height: 64px;
   display: flex;
   align-items: flex-end;
-  margin-top: auto;
 }
 
 .feedback p {
   width: 100%;
-  margin: 0 0 10px;
-  padding: 9px 11px;
-  border-radius: 6px;
-  font-size: 12px;
-  line-height: 1.4;
-  font-weight: 700;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .feedback .danger {
-  background: #ffe6e6;
-  color: #ff4d4f;
+  background: #ffe8e8;
+  color: #e44447;
 }
 
 .feedback .success {
   background: #e8f8ef;
-  color: #16894e;
+  color: #188f54;
 }
 
-.reset-card button {
+.reset-form button {
   width: 100%;
-  height: 45px;
-  border-radius: 7px;
+  height: 50px;
+  border-radius: 5px;
   background: #ffc400;
-  color: #39352d;
+  color: #302c26;
   font-weight: 800;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 @media (max-width: 560px) {
-  .reset-page {
-    align-items: start;
-    padding-top: 110px;
+  .password-reset-main {
+    padding-top: 42px;
   }
 
   .back-link {
-    top: 24px;
-    left: 20px;
+    margin: 0 0 28px -12px;
   }
 }
 </style>

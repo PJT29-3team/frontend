@@ -1,96 +1,191 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-shell">
-      <AuthCard title="로그인">
-        <div class="social-label">소셜 로그인</div>
+  <div class="login-page">
+    <LoginHeader />
+
+    <main class="login-main">
+      <section class="login-panel" aria-labelledby="login-title">
+        <h1 id="login-title">로그인</h1>
+
+        <div class="section-label"><span>소셜 로그인</span></div>
         <a
-          class="social-button kakao"
+          class="login-button login-button--kakao"
           data-social-provider="kakao"
           :href="`${apiBaseUrl}/api/auth/social/kakao`"
+          aria-label="카카오 로그인"
         >
-          카카오 로그인
+          <img
+            class="login-button__kakao-image"
+            src="../assets/kakao-login-large-wide.png"
+            alt=""
+          />
         </a>
-        <a
-          class="social-button naver"
-          data-social-provider="naver"
-          :href="`${apiBaseUrl}/api/auth/social/naver`"
-        >
-          네이버 로그인
-        </a>
-        <div class="divider"><span>기본 로그인</span></div>
-        <a class="secondary-button route-button" href="/login/email">이메일로 로그인</a>
-        <a class="text-link reset-link" href="/password/reset/request">비밀번호 찾기</a>
-        <div class="link-row">
+
+        <div class="section-label section-label--basic"><span>기본 로그인</span></div>
+        <RouterLink class="login-button login-button--email" to="/login/email">
+          이메일로 로그인
+        </RouterLink>
+
+        <RouterLink class="password-link" to="/password/reset/request">
+          비밀번호 찾기
+        </RouterLink>
+
+        <p class="signup-prompt">
           <span>계정이 없으신가요?</span>
-          <a href="/signup">회원가입</a>
-        </div>
-      </AuthCard>
-    </div>
-  </main>
+          <RouterLink to="/signup">회원가입</RouterLink>
+        </p>
+      </section>
+    </main>
+
+    <LoginFooter />
+  </div>
 </template>
 
 <script setup>
-import AuthCard from '../components/AuthCard.vue'
+import LoginFooter from '../components/LoginFooter.vue'
+import LoginHeader from '../components/LoginHeader.vue'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 </script>
 
 <style scoped>
-.social-label,
-.divider {
-  color: #b5b0a8;
-  text-align: center;
-  font-size: 12px;
-  margin-bottom: 10px;
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: #fff;
+  color: #545045;
 }
 
-.social-button {
-  width: 100%;
-  height: 42px;
+.login-main {
   display: grid;
-  place-items: center;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  text-decoration: none;
+  place-items: start center;
+  padding: clamp(64px, 11vh, 118px) 20px 72px;
+}
+
+.login-panel {
+  width: min(100%, 420px);
+  text-align: center;
+}
+
+h1 {
+  margin: 0 0 48px;
+  color: #2f2b25;
+  font-size: 36px;
+  line-height: 1.3;
   font-weight: 800;
 }
 
-.kakao {
-  background: #ffde00;
-  color: #2c2417;
-}
-
-.naver {
-  background: #03c75a;
-  color: #fff;
-}
-
-.divider {
+.section-label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 14px 0;
+  gap: 14px;
+  margin-bottom: 18px;
+  color: #7a746b;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.divider::before,
-.divider::after {
+.section-label::before,
+.section-label::after {
   content: "";
   height: 1px;
   flex: 1;
-  background: #ece8e1;
+  background: #e5e1d9;
 }
 
-.route-button {
-  display: grid;
-  place-items: center;
+.section-label--basic {
+  margin-top: 34px;
+}
+
+.login-button {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #403a30;
+  font-size: 18px;
+  font-weight: 800;
   text-decoration: none;
 }
 
-.reset-link {
+.login-button--kakao {
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.login-button--kakao:hover,
+.login-button--kakao:focus-visible {
+  background: transparent;
+  filter: brightness(0.97);
+}
+
+.login-button__kakao-image {
   display: block;
-  margin: 14px 0;
-  text-align: center;
-  font-size: 13px;
-  color: #7f7a72;
+  width: 100%;
+  height: auto;
+}
+
+.login-button--email {
+  border-color: #cfc9be;
+  background: #fff;
+}
+
+.login-button--email:hover,
+.login-button--email:focus-visible {
+  border-color: #816843;
+  background: #fffaf0;
+}
+
+.login-button:focus-visible,
+.password-link:focus-visible {
+  outline: 3px solid rgba(255, 188, 0, 0.45);
+  outline-offset: 3px;
+}
+
+.password-link {
+  display: inline-block;
+  margin-top: 26px;
+  color: #60584c;
+  font-size: 16px;
+  font-weight: 700;
+  text-underline-offset: 5px;
+}
+
+.signup-prompt {
+  margin: 28px 0 0;
+  color: #777167;
+  font-size: 16px;
+}
+
+.signup-prompt span {
+  margin-right: 10px;
+}
+
+.signup-prompt a {
+  color: #816843;
+  font-weight: 800;
+  text-underline-offset: 5px;
+}
+
+@media (max-width: 560px) {
+  .login-main {
+    padding: 52px 20px 56px;
+  }
+
+  h1 {
+    margin-bottom: 40px;
+    font-size: 32px;
+  }
+
+  .login-button {
+    min-height: 58px;
+  }
 }
 </style>
