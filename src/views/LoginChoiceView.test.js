@@ -14,7 +14,7 @@ describe('LoginChoiceView', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('카카오 로그인')
+    expect(wrapper.get('[data-social-provider="kakao"]').attributes('aria-label')).toBe('카카오 로그인')
     expect(wrapper.text()).not.toContain('네이버 로그인')
     expect(wrapper.text()).toContain('이메일로 로그인')
     expect(wrapper.text()).toContain('비밀번호 찾기')

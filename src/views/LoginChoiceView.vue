@@ -23,9 +23,13 @@
           class="login-button login-button--kakao"
           data-social-provider="kakao"
           :href="`${apiBaseUrl}/api/auth/social/kakao`"
+          aria-label="카카오 로그인"
         >
-          <MessageCircle :size="20" :stroke-width="2.5" aria-hidden="true" />
-          <span>카카오 로그인</span>
+          <img
+            class="login-button__kakao-image"
+            src="../assets/kakao-login-large-wide.png"
+            alt=""
+          />
         </a>
 
         <div class="section-label section-label--basic"><span>기본 로그인</span></div>
@@ -52,8 +56,6 @@
 </template>
 
 <script setup>
-import { MessageCircle } from '@lucide/vue'
-
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 </script>
 
@@ -171,12 +173,23 @@ h1 {
 }
 
 .login-button--kakao {
-  background: #ffcc00;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
 }
 
 .login-button--kakao:hover,
 .login-button--kakao:focus-visible {
-  background: #ffbc00;
+  background: transparent;
+  filter: brightness(0.97);
+}
+
+.login-button__kakao-image {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .login-button--email {
