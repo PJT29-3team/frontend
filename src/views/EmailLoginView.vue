@@ -52,7 +52,11 @@
             </label>
           </div>
 
-          <div class="login-error" aria-live="polite">
+          <div
+            v-if="error || verificationRequired || verificationMessage"
+            class="login-error"
+            aria-live="polite"
+          >
             <p v-if="error" class="form-message danger">{{ error }}</p>
             <button
               v-if="verificationRequired"
