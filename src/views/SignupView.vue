@@ -65,7 +65,7 @@
               </button>
             </div>
             <p v-if="password" class="field-message" :class="isPasswordValid ? 'success' : 'danger'">
-              {{ isPasswordValid ? '사용 가능한 비밀번호입니다.' : '영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.' }}
+              {{ isPasswordValid ? '사용 가능한 비밀번호입니다.' : PASSWORD_RULE_MESSAGE }}
             </p>
           </div>
 
@@ -154,6 +154,7 @@ import { useRouter } from 'vue-router'
 import { checkEmailAvailability, signup } from '../api/authApi'
 import LoginFooter from '../components/LoginFooter.vue'
 import LoginHeader from '../components/LoginHeader.vue'
+import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../utils/passwordPolicy'
 
 const router = useRouter()
 const emailLocal = ref('')
@@ -187,9 +188,7 @@ const emailCheckMessage = computed(() => {
   if (!emailChecked.value) return ''
   return emailAvailable.value ? '사용 가능한 이메일입니다.' : '이미 사용 중인 이메일입니다.'
 })
-const isPasswordValid = computed(() =>
-  /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password.value)
-)
+const isPasswordValid = computed(() => isStrongPassword(password.value))
 const isPasswordMatched = computed(() =>
   Boolean(password.value) && password.value === passwordConfirm.value
 )

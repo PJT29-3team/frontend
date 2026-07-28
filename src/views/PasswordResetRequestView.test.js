@@ -25,10 +25,15 @@ describe('PasswordResetRequestView', () => {
   it('matches the first-step reset design and links back to email login', () => {
     const wrapper = mountView()
 
-    expect(wrapper.text()).toContain('STEP 1 · 본인 인증')
+    expect(wrapper.get('.login-header__wordmark').text()).toBe('작은둥지')
+    expect(wrapper.get('.reset-panel').exists()).toBe(true)
+    expect(wrapper.find('.reset-card').exists()).toBe(false)
+    expect(wrapper.text()).toContain('STEP 1 · 이메일 인증')
     expect(wrapper.text()).toContain('비밀번호 재설정')
-    expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/login/email')
+    expect(wrapper.text()).toContain('가입한 이메일 주소를 입력해주세요.')
+    expect(wrapper.findAllComponents(RouterLinkStub).some((link) => link.props('to') === '/login/email')).toBe(true)
     expect(wrapper.get('input[name="email"]').attributes('type')).toBe('email')
+    expect(wrapper.get('input[name="email"]').attributes('placeholder')).toBe('example@gmail.com')
   })
 
   it('validates email locally before requesting a reset', async () => {
