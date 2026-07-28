@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-labelledby="title desc">
+  <title id="title">집현전 로고</title>
+  <desc id="desc">집 지붕과 열린 책 심볼 옆에 집현전 워드마크가 놓인 가로형 로고</desc>
+  <g transform="translate(64 48)">
+    <rect width="224" height="224" rx="46" fill="#FFCC00"/>
+    <path d="M46 107l66-51 66 51" fill="none" stroke="#544F45" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M66 107v54c0 11 9 20 20 20h52c11 0 20-9 20-20v-54" fill="none" stroke="#544F45" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M82 129c12-7 22-7 30 0v37c-8-7-18-7-30 0z" fill="#FFF8D8" stroke="#544F45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M112 129c8-7 18-7 30 0v37c-12-7-22-7-30 0z" fill="#FFF8D8" stroke="#544F45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M112 129v37" stroke="#544F45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="156" cy="74" r="20" fill="#60584C"/>
+    <path d="M146 74l7 7 13-15" fill="none" stroke="#FFCC00" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(340 112)">
+    <text x="0" y="0" dominant-baseline="hanging" fill="#544F45" font-family="Apple SD Gothic Neo, Noto Sans KR, Pretendard, Malgun Gothic, sans-serif" font-size="86" font-weight="800">집현전</text>
+    <rect x="4" y="106" width="208" height="12" rx="6" fill="#FFBC00"/>
+  </g>
+</svg>

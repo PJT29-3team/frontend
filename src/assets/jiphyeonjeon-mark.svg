@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">집현전 심볼 로고</title>
+  <desc id="desc">노란색 배경 위에 집 지붕과 열린 책을 결합한 집현전 심볼</desc>
+  <rect width="256" height="256" rx="52" fill="#FFCC00"/>
+  <path d="M53 122L128 64l75 58" fill="none" stroke="#544F45" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M76 121v62c0 12 10 22 22 22h60c12 0 22-10 22-22v-62" fill="none" stroke="#544F45" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M94 146c13-8 24-8 34 0v42c-10-8-21-8-34 0z" fill="#FFF8D8" stroke="#544F45" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 146c10-8 21-8 34 0v42c-13-8-24-8-34 0z" fill="#FFF8D8" stroke="#544F45" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 146v42" stroke="#544F45" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="178" cy="84" r="23" fill="#60584C"/>
+  <path d="M167 84l7 8 15-17" fill="none" stroke="#FFCC00" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
