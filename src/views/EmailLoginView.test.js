@@ -60,7 +60,12 @@ describe('EmailLoginView', () => {
     expect(wrapper.get('input[name="saveEmail"]').exists()).toBe(true)
     expect(wrapper.get('input[name="autoLogin"]').exists()).toBe(true)
     expect(wrapper.get('input[name="password"]').attributes('type')).toBe('password')
-    expect(wrapper.get('.login-heading img').attributes('src')).toContain('senior-downsizing-hero.png')
+    expect(wrapper.get('.login-header__wordmark').text()).toBe('집현전')
+    expect(wrapper.get('.login-header__logo').attributes('src')).toContain('jiphyeonjeon-header-logo.png')
+    expect(wrapper.find('.email-login-card').exists()).toBe(false)
+    expect(wrapper.find('.login-heading img').exists()).toBe(false)
+    expect(wrapper.get('.email-login-panel').exists()).toBe(true)
+    expect(wrapper.get('.login-footer').text()).toContain('이용약관')
 
     await wrapper.get('button[aria-label="비밀번호 표시"]').trigger('click')
 
