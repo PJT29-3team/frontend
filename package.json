@@ -1,0 +1,26 @@
+{
+  "name": "jiphyeonjeon-member-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "test": "NODE_OPTIONS=--no-warnings vitest"
+  },
+  "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^7.3.1",
+    "@fortawesome/vue-fontawesome": "^3.3.2",
+    "@lucide/vue": "^1.25.0",
+    "@vitejs/plugin-vue": "latest",
+    "axios": "latest",
+    "vite": "latest",
+    "vue": "latest",
+    "vue-router": "latest"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "latest",
+    "jsdom": "latest",
+    "vitest": "latest"
+  }
+}
