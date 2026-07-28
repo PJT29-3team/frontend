@@ -43,6 +43,17 @@ describe('SocialLoginCallbackView', () => {
     expect(routerReplace).toHaveBeenCalledWith('/social/profile')
   })
 
+  it('routes an existing email member to secure account linking', async () => {
+    routeQuery.value = { linkRequired: 'true' }
+    const refresh = vi.spyOn(authStore, 'refresh')
+
+    mount(SocialLoginCallbackView)
+    await flushPromises()
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(routerReplace).toHaveBeenCalledWith('/social/link')
+  })
+
   it('shows a clear message and does not refresh when the OAuth state is invalid', async () => {
     routeQuery.value = { error: 'invalid_state' }
     const refresh = vi.spyOn(authStore, 'refresh')

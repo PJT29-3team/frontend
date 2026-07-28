@@ -52,6 +52,11 @@ onMounted(async () => {
     return
   }
 
+  if (route.query.linkRequired === 'true') {
+    await router.replace('/social/link')
+    return
+  }
+
   if (route.query.profileRequired === 'true') {
     await router.replace('/social/profile')
     return

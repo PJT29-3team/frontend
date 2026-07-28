@@ -35,6 +35,20 @@ describe('authStore', () => {
     expect(authStore.state.user.name).toBe('김집현')
   })
 
+  it('stores the issued session after linking a Kakao account', async () => {
+    vi.spyOn(authApi, 'linkKakaoAccount').mockResolvedValue({
+      accessToken: 'linked-access-token',
+      expiresInSeconds: 900,
+      user: { userId: 'user-1', email: 'senior@example.com', name: '김집현' },
+    })
+
+    await authStore.linkKakaoAccount('SeniorHome!23')
+
+    expect(authApi.linkKakaoAccount).toHaveBeenCalledWith('SeniorHome!23')
+    expect(authStore.state.accessToken).toBe('linked-access-token')
+    expect(authStore.state.user.email).toBe('senior@example.com')
+  })
+
   it('clears state after logout', async () => {
     vi.spyOn(authApi, 'logout').mockResolvedValue(undefined)
     authStore.setSession('access-token', { userId: 'user-1', email: 'senior@example.com' })
