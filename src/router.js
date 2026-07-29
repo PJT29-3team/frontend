@@ -14,7 +14,8 @@ const routes = [
   { path: '/me', component: () => import('./views/ProfileView.vue') },
   { path: '/social/profile', component: () => import('./views/SocialProfileCompletionView.vue') },
   { path: '/homes/current', component: () => import('./views/CurrentHomeView.vue') },
-  { path: '/homes/current/edit', component: () => import('./views/CurrentHomeEditView.vue') },
+  { path: '/homes/current/detail', component: () => import('./views/CurrentHomeDetailView.vue') },
+
   { path: '/properties/recommended', component: () => import('./views/RecommendedPropertyView.vue'), meta: { title: '추천 매물' } },
   { path: '/properties/condition', component: () => import('./views/PlaceholderView.vue'), meta: { title: '조건 변경' } },
   { path: '/properties/favorites', component: () => import('./views/PlaceholderView.vue'), meta: { title: '관심 매물' } },
