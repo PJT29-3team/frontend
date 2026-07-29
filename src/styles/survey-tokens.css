@@ -18,7 +18,11 @@
   max-width: 640px;
   margin: 0 auto;
   padding: 32px 20px 60px;
-  font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+  font-family:
+    "Pretendard",
+    "Noto Sans KR",
+    -apple-system,
+    sans-serif;
   color: var(--text-dark);
   /* senior-friendly baseline: generous size + line-height */
   font-size: 17px;
@@ -65,7 +69,7 @@
   transition: width 0.35s ease;
 }
 .progress-frac {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: "IBM Plex Mono", monospace;
   font-weight: 700;
   font-size: 14px;
   color: var(--kb-yellow-deep);
@@ -421,4 +425,61 @@
   .progress-fill {
     transition: none;
   }
+}
+.reset-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.reset-modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 32px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+}
+.reset-modal-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+  color: var(--text-dark);
+}
+.reset-modal-title {
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+.reset-modal-sub {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 28px;
+}
+.reset-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+.reset-modal-actions button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  border: 1.5px solid var(--card-border);
+}
+.reset-btn-cancel {
+  background: #fff;
+  color: var(--text-dark);
+}
+.reset-btn-confirm {
+  background: var(--kb-yellow);
+  border-color: var(--kb-yellow);
+  color: var(--btn-text);
 }
