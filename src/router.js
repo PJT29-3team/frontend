@@ -1,35 +1,68 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { authStore } from './stores/authStore'
+import { createRouter, createWebHistory } from "vue-router";
+import { authStore } from "./stores/authStore";
 
 const routes = [
-  { path: '/', component: () => import('./views/LandingView.vue') },
-  { path: '/main', component: () => import('./views/MainView.vue'), meta: { requiresAuth: true } },
-  { path: '/login', component: () => import('./views/LoginChoiceView.vue') },
-  { path: '/login/email', component: () => import('./views/EmailLoginView.vue') },
-  { path: '/signup', component: () => import('./views/SignupView.vue') },
-  { path: '/auth/email/verify', component: () => import('./views/EmailVerificationResultView.vue') },
-  { path: '/password/reset/request', component: () => import('./views/PasswordResetRequestView.vue') },
-  { path: '/auth/password/reset', component: () => import('./views/PasswordResetCompleteView.vue') },
-  { path: '/auth/social/callback', component: () => import('./views/SocialLoginCallbackView.vue') },
-  { path: '/me', component: () => import('./views/ProfileView.vue') },
-  { path: '/social/profile', component: () => import('./views/SocialProfileCompletionView.vue') },
-]
+  { path: "/", component: () => import("./views/LandingView.vue") },
+  {
+    path: "/main",
+    component: () => import("./views/MainView.vue"),
+    meta: { requiresAuth: true },
+  },
+  { path: "/login", component: () => import("./views/LoginChoiceView.vue") },
+  {
+    path: "/login/email",
+    component: () => import("./views/EmailLoginView.vue"),
+  },
+  { path: "/signup", component: () => import("./views/SignupView.vue") },
+  {
+    path: "/auth/email/verify",
+    component: () => import("./views/EmailVerificationResultView.vue"),
+  },
+  {
+    path: "/password/reset/request",
+    component: () => import("./views/PasswordResetRequestView.vue"),
+  },
+  {
+    path: "/auth/password/reset",
+    component: () => import("./views/PasswordResetCompleteView.vue"),
+  },
+  {
+    path: "/auth/social/callback",
+    component: () => import("./views/SocialLoginCallbackView.vue"),
+  },
+  { path: "/me", component: () => import("./views/ProfileView.vue") },
+  {
+    path: "/social/profile",
+    component: () => import("./views/SocialProfileCompletionView.vue"),
+  },
+  {
+    path: "/survey",
+    name: "survey",
+    component: () => import("@/views/SurveyView.vue"),
+  },
+  {
+    path: "/survey/:surveyId",
+    name: "survey-resume",
+    component: () => import("@/views/SurveyView.vue"),
+    props: true,
+  },
+];
 
 export function requireAuthentication(to) {
   if (to.meta.requiresAuth && !authStore.state.accessToken) {
     return {
-      path: '/login',
+      path: "/login",
       query: { redirect: to.fullPath },
-    }
+    };
   }
-  return true
+  return true;
 }
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
-router.beforeEach(requireAuthentication)
+router.beforeEach(requireAuthentication);
 
-export default router
+export default router;
