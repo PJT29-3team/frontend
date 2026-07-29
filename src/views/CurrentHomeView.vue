@@ -2,11 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { currentHomePreview } from '../data/currentHome'
+import CurrentHomeEditModal from '../components/home/CurrentHomeEditModal.vue'
 
 const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 const router = useRouter()
 const mapElement = ref(null)
 const mapError = ref('')
+const isEditModalOpen = ref(false)
 let map = null
 let propertyOverlay = null
 
@@ -82,7 +84,8 @@ async function renderMap() {
     })
   } catch { mapError.value = '지도를 불러오지 못했습니다. 카카오맵 도메인과 JavaScript 키를 확인해 주세요.' }
 }
-function editHome() { router.push('/homes/current/edit') }
+function editHome() { isEditModalOpen.value = true }
+function saveHome() { isEditModalOpen.value = false }
 onMounted(renderMap)
 onBeforeUnmount(() => { map = null })
 </script>
@@ -91,6 +94,7 @@ onBeforeUnmount(() => { map = null })
   <div class="home-content">
     <aside class="home-sidebar"><h1>우리집</h1><article class="home-summary-card"><h2>{{ currentHome.name }}</h2><p class="address">{{ currentHome.address }} · {{ currentHome.size }}</p><span class="status-chip">적정</span><div class="summary-divider"></div><div class="net-amount"><span>지금 매도 시 예상 실수령액</span><strong>{{ currentHome.expectedNetAmount }}</strong></div><button class="edit-button" type="button" @click="editHome">우리집 수정</button></article></aside>
     <section class="map-section" aria-label="현재 주택 위치"><div ref="mapElement" class="kakao-map"></div><div v-if="mapMessage" class="map-fallback" role="status"><strong>현재 주택 위치</strong><span>{{ mapMessage }}</span></div></section>
+    <CurrentHomeEditModal v-if="isEditModalOpen" :initial-address="currentHome.address" @close="isEditModalOpen = false" @save="saveHome" />
   </div>
 </template>
 
