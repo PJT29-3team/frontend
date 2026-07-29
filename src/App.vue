@@ -1,5 +1,6 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { Database, Heart, Search } from '@lucide/vue'
 import logoUrl from './assets/images/logo.png'
 
@@ -10,8 +11,16 @@ const steps = [
   { label: '금융상품 추천', icon: Database, to: '/financial-products' },
 ]
 
+const route = useRoute()
+
+const activeStepIndex = computed(() => {
+  const matchedIndex = [...steps].reverse().findIndex((step) => route.path.startsWith(step.to))
+  return matchedIndex === -1 ? 0 : steps.length - 1 - matchedIndex
+})
+
 function stepState(index) {
-  if (index === 0) return 'is-active'
+  if (index === activeStepIndex.value) return 'is-active'
+  if (index < activeStepIndex.value) return 'is-done'
   return 'is-pending'
 }
 </script>
@@ -33,10 +42,20 @@ function stepState(index) {
     <nav class="journey" aria-label="서비스 진행 단계">
       <ol class="journey-list">
         <li v-for="(step, index) in steps" :key="step.to" class="journey-item" :class="stepState(index)">
-          <button class="journey-link" type="button" :disabled="index !== 0" :aria-current="index === 0 ? 'step' : undefined">
+          <RouterLink
+            v-if="index <= activeStepIndex"
+            class="journey-link"
+            :to="step.to"
+            :aria-current="index === activeStepIndex ? 'step' : undefined"
+          >
             <span class="journey-icon" aria-hidden="true"><component :is="step.icon" class="journey-svg" /></span>
             <strong>{{ step.label }}</strong>
-            <small>{{ index === 0 ? '진행중' : '대기' }}</small>
+            <small>{{ index === activeStepIndex ? '진행중' : '완료' }}</small>
+          </RouterLink>
+          <button v-else class="journey-link" type="button" disabled>
+            <span class="journey-icon" aria-hidden="true"><component :is="step.icon" class="journey-svg" /></span>
+            <strong>{{ step.label }}</strong>
+            <small>대기</small>
           </button>
         </li>
       </ol>
@@ -59,7 +78,7 @@ function stepState(index) {
 .journey-list { position: relative; display: flex; width: min(730px, 100%); margin: 0 auto; padding: 0; list-style: none; justify-content: space-between; }
 .journey-list::before { content: ''; position: absolute; top: 27px; right: 12.5%; left: 12.5%; height: 4px; background: #eeece5; z-index: 0; }
 .journey-item { position: relative; z-index: 1; flex: 1; display: grid; justify-items: center; }
-.journey-link { display: grid; justify-items: center; min-width: 94px; padding: 0; border: 0; background: transparent; color: #bebaae; font-size: 14px; font-weight: 700; }
+.journey-link { display: grid; justify-items: center; min-width: 94px; padding: 0; border: 0; background: transparent; color: #bebaae; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .journey-link:disabled { cursor: not-allowed; opacity: 1; }
 .journey-icon { display: grid; width: 54px; height: 54px; place-items: center; border: 3px solid #eeece5; border-radius: 50%; background: #fff; color: #bdb9ac; line-height: 1; }
 .journey-svg { width: 29px; height: 29px; stroke-width: 3; }
@@ -68,6 +87,9 @@ function stepState(index) {
 .journey-item.is-active small { color: #dd9c00; }
 .journey-item.is-active .journey-icon { border-color: #bf8500; background: #fabb22; color: #fff; box-shadow: 0 0 0 1px #bf8500; }
 .journey-item.is-active .journey-link { color: #1f1f1f; }
+.journey-item.is-done small { color: #3d9961; }
+.journey-item.is-done .journey-icon { border-color: #3d9961; color: #3d9961; }
+.journey-item.is-done .journey-link { color: #545045; }
 .report-button { align-self: start; margin-top: 16px; padding: 6px 19px; border: 2px solid #f0d896; border-radius: 999px; background: #fffaf0; color: #8a6a20; font-weight: 700; white-space: nowrap; }
 .report-button span { margin-left: 12px; font-size: 18px; }
 @media (max-width: 1000px) { .topbar { padding: 0 22px; }.journey { margin-left: 27.5%; padding-right: 16px; padding-left: 16px; column-gap: 12px; }.journey-link { min-width: 0; }.report-button { padding-right: 12px; padding-left: 12px; } }
