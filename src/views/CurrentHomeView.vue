@@ -1,18 +1,16 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { currentHomePreview } from '../data/currentHome'
 
 const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 const router = useRouter()
 const mapElement = ref(null)
 const mapError = ref('')
-const isPanelOpen = ref(false)
 let map = null
 let propertyOverlay = null
 
-const currentHome = {
-  name: '중랑구 소형 아파트', address: '서울 중랑구 면목로 45', size: '18평', price: '2억 9,000만원', remainingAmount: '약 1억 7,200만원', expectedNetAmount: '2억 9,000만원', latitude: 37.5886, longitude: 127.0871,
-}
+const currentHome = currentHomePreview
 
 const mapMessage = computed(() => !KAKAO_MAP_KEY ? '카카오맵 JavaScript 키를 설정하면 이 위치의 지도가 표시됩니다.' : mapError.value)
 
@@ -43,8 +41,16 @@ function createMapCard() {
   const address = document.createElement('p')
   address.textContent = `${currentHome.address} · ${currentHome.size}`
   const amount = document.createElement('span')
-  amount.textContent = currentHome.expectedNetAmount
-  card.append(closeButton, title, address, amount)
+  amount.className = 'current-home-map-card__price'
+  amount.textContent = currentHome.price
+  const remaining = document.createElement('small')
+  remaining.textContent = `이사 후 최종 잔액 ${currentHome.remainingAmount}`
+  const detailButton = document.createElement('button')
+  detailButton.type = 'button'
+  detailButton.className = 'current-home-map-card__detail'
+  detailButton.textContent = '상세보기   ›'
+  detailButton.addEventListener('click', () => router.push('/homes/current/detail'))
+  card.append(closeButton, title, address, amount, remaining, detailButton)
   return card
 }
 
@@ -76,7 +82,6 @@ async function renderMap() {
     })
   } catch { mapError.value = '지도를 불러오지 못했습니다. 카카오맵 도메인과 JavaScript 키를 확인해 주세요.' }
 }
-function openDetails() { isPanelOpen.value = true; nextTick(() => map?.setCenter?.(new window.kakao.maps.LatLng(currentHome.latitude, currentHome.longitude))) }
 function editHome() { router.push('/homes/current/edit') }
 onMounted(renderMap)
 onBeforeUnmount(() => { map = null })
@@ -94,6 +99,6 @@ onBeforeUnmount(() => { map = null })
 </style>
 
 <style>
-.current-home-map-card { position: relative; width: 216px; padding: 13px 15px 11px; border-radius: 13px; background: #fff; box-shadow: 0 6px 20px rgba(47, 45, 41, .22); color: #2f2d29; transform: translateY(-8px); }.current-home-map-card::after { content: ''; position: absolute; bottom: -10px; left: 50%; border: 10px solid transparent; border-top-color: #fff; border-bottom: 0; transform: translateX(-50%); }.current-home-map-card strong { display: block; padding-right: 18px; font-size: 15px; }.current-home-map-card p { overflow: hidden; margin: 5px 0 8px; color: #77736b; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.current-home-map-card span { color: #1f1f1f; font-size: 17px; font-weight: 900; }.current-home-map-card__close { position: absolute; top: 8px; right: 9px; padding: 0; background: transparent; color: #aaa; font-size: 20px; line-height: 1; }
+.current-home-map-card { position: relative; width: 216px; padding: 13px 15px 12px; border-radius: 13px; background: #fff; box-shadow: 0 6px 20px rgba(47, 45, 41, .22); color: #2f2d29; transform: translateY(-8px); }.current-home-map-card::after { content: ''; position: absolute; bottom: -10px; left: 50%; border: 10px solid transparent; border-top-color: #fff; border-bottom: 0; transform: translateX(-50%); }.current-home-map-card strong { display: block; padding-right: 18px; font-size: 15px; }.current-home-map-card p { overflow: hidden; margin: 5px 0 10px; color: #77736b; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }.current-home-map-card__price { display: block; padding-top: 8px; border-top: 1px dashed #e5e3de; color: #1f1f1f; font-size: 18px; font-weight: 900; text-align: right; }.current-home-map-card small { display: block; margin-top: 5px; color: #77736b; font-size: 10px; text-align: right; }.current-home-map-card__detail { width: 100%; margin-top: 12px; padding: 9px 12px; border-radius: 7px; background: #ffcc00; color: #2f2d29; font-size: 12px; font-weight: 900; text-align: center; }.current-home-map-card__close { position: absolute; top: 8px; right: 9px; padding: 0; background: transparent; color: #aaa; font-size: 20px; line-height: 1; }
 @media (min-width: 721px) { .home-sidebar { margin-top: -112px; } }
 </style>
