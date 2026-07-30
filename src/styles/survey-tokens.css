@@ -483,3 +483,203 @@
   border-color: var(--kb-yellow);
   color: var(--btn-text);
 }
+
+/* ---------- 피그마 신규 6단계용 추가 클래스 ---------- */
+
+/* 1·2단계 상단 노란 안내 배너 */
+.info-banner {
+  background: var(--kb-yellow-soft);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kb-yellow-deep);
+  margin-bottom: 20px;
+}
+
+/* 이전 / 다음 2단 버튼 */
+.btn-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 32px;
+}
+.btn-row .primary-btn,
+.btn-row .secondary-btn {
+  margin-top: 0;
+  flex: 1;
+}
+.secondary-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--card-border);
+  background: #fff;
+  color: var(--text-dark);
+  font-weight: 700;
+  font-size: 16.5px;
+}
+.secondary-btn:focus-visible {
+  outline: 3px solid #1f2937;
+  outline-offset: 2px;
+}
+
+/* 금액 입력 아래 한글 환산 문구 */
+.field-help {
+  color: #b39b2e;
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+/* Bootstrap form-control 위에 얹는 금액 입력 스킨 */
+.amount-input.form-control {
+  border: 2px solid #e0cb55;
+  border-right: none;
+  border-radius: 14px 0 0 14px;
+  padding: 14px 16px;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-dark);
+}
+/* Bootstrap의 파란 focus ring을 걷어내는 대신 또렷한 초점 표시를 남긴다.
+   기본 테두리도 노란색이라 border-color만으로는 포커스가 구분되지 않는다. */
+.amount-input.form-control:focus {
+  border-color: var(--kb-yellow);
+  box-shadow: none;
+}
+.amount-input.form-control:focus-visible,
+.survey-select.form-select:focus-visible {
+  outline: 3px solid #1f2937;
+  outline-offset: 2px;
+}
+.amount-input.form-control.is-invalid {
+  border-color: var(--jh-danger, #ff4d4f);
+  background-image: none;
+}
+.amount-unit.input-group-text {
+  border: 2px solid #e0cb55;
+  border-left: none;
+  border-radius: 0 14px 14px 0;
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.amount-input.form-control.is-invalid + .amount-unit.input-group-text {
+  border-color: var(--jh-danger, #ff4d4f);
+}
+
+/* 2단계 셀렉트 */
+.survey-select.form-select {
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 44px 14px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.survey-select.form-select:focus {
+  border-color: var(--kb-yellow);
+  box-shadow: none;
+}
+.survey-label.form-label {
+  font-weight: 800;
+  font-size: 15.5px;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+/* 3단계 계산 결과 카드 */
+.calc-card {
+  background: var(--kb-yellow-soft);
+  border-radius: 16px;
+  padding: 22px 20px;
+  margin-top: 20px;
+}
+.calc-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calc-card-title {
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--text-dark);
+}
+.calc-card-amount {
+  font-weight: 800;
+  font-size: 19px;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.calc-toggle {
+  background: none;
+  border: none;
+  padding: 10px 0 0;
+  color: var(--kb-yellow-deep);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.calc-body {
+  background: #fdf8dd;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #6b5a20;
+}
+.calc-body p {
+  margin: 0;
+}
+
+/* 2단계 각주 + 면책 문구 */
+.footnote {
+  margin-top: 26px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #9aa0a6;
+}
+.footnote strong {
+  display: block;
+  font-weight: 600;
+  color: #8a8f94;
+}
+.disclaimer {
+  margin-top: 18px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #b0a98f;
+}
+.disclaimer p {
+  margin: 0;
+}
+
+/* 6단계 매물 수 + 선택 안내 배너 */
+.region-count {
+  margin-left: 5px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.region-chip.on .region-count {
+  color: var(--btn-text);
+}
+.selection-banner {
+  margin-top: 28px;
+  background: var(--kb-yellow-soft);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--kb-yellow-deep);
+}
+
+/* Bootstrap invalid-feedback을 토큰 톤에 맞춘다 */
+.survey-shell .invalid-feedback {
+  font-size: 13px;
+  font-weight: 600;
+}
