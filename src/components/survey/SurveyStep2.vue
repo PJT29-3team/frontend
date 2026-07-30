@@ -29,7 +29,6 @@ function shownError(field) {
   return submitted.value ? errors.value[field] || "" : "";
 }
 
-// select는 항상 문자열을 주므로 숫자/불리언으로 되돌린다.
 function toYears(event) {
   const raw = event.target.value;
   return raw === "" ? null : Number(raw);

@@ -3,7 +3,6 @@ defineProps({
   step: { type: Number, required: true },
   total: { type: Number, required: true },
   percent: { type: Number, required: true },
-  /** 진행바 왼쪽 ‹ 버튼 노출 (피그마 6단계) */
   showBack: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
 });

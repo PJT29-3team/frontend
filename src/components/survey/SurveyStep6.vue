@@ -21,7 +21,6 @@ const shownError = computed(() =>
   submitted.value ? errors.value.desiredRegions || "" : "",
 );
 
-// "남양주시 선택하셨어요" / 여러 곳이면 "남양주시 외 2곳 선택하셨어요"
 const selectionText = computed(() => {
   const picked = survey.desiredRegions;
   if (picked.length === 0) return "";
@@ -34,7 +33,6 @@ const selectionText = computed(() => {
 function submit() {
   submitted.value = true;
   if (!isValid.value) return;
-  // 마지막 단계에서 답변 전체를 백엔드로 보내 확정 계산 결과를 받는다.
   survey.submitSurvey(survey.desiredRegions);
   emit("next");
 }
@@ -43,7 +41,9 @@ function submit() {
 <template>
   <div>
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
-    <p class="step-desc">매물 많은 순으로 보여드려요 · 여러 곳 함께 골라도 돼요</p>
+    <p class="step-desc">
+      매물 많은 순으로 보여드려요 · 여러 곳 함께 골라도 돼요
+    </p>
 
     <div class="d-flex gap-2">
       <button

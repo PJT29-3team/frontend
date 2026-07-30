@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import { useSurveyStore, PROGRESS_STEPS_TOTAL, formatKRW } from "@/stores/survey";
+import { useSurveyStore, PROGRESS_STEPS_TOTAL } from "@/stores/survey";
 import "@/styles/survey-tokens.css";
 
 import SurveyIntro from "@/components/survey/SurveyIntro.vue";
@@ -41,11 +41,6 @@ onMounted(() => {
   }
 });
 
-/** 0.6 -> "60%" */
-function toPercent(weight) {
-  return `${Math.round(weight * 100)}%`;
-}
-
 const showResetConfirm = ref(false);
 function confirmReset() {
   showResetConfirm.value = false;
@@ -74,55 +69,7 @@ function confirmReset() {
           @reset="showResetConfirm = true"
         />
 
-        <div v-if="survey.done" class="survey-result">
-          <h2 class="step-title">설문이 완료됐어요</h2>
-          <p class="step-desc">
-            {{ formatKRW(survey.maxPurchaseBudget) }} 이하의 집을 찾아볼게요
-          </p>
-
-          <div class="summary-stat">
-            <div class="label">매도 예상 실수령액</div>
-            <div class="value">{{ formatKRW(survey.netProceeds) }}</div>
-          </div>
-          <div class="summary-stat">
-            <div class="label">양도세</div>
-            <div class="value">{{ formatKRW(survey.taxResult.amount) }}</div>
-          </div>
-          <div class="summary-stat">
-            <div class="label">중개수수료</div>
-            <div class="value">{{ formatKRW(survey.brokerage.amount) }}</div>
-          </div>
-          <div class="summary-stat">
-            <div class="label">이사 후 남기는 금액</div>
-            <div class="value">{{ formatKRW(survey.reserveAmount) }}</div>
-          </div>
-
-          <template v-if="survey.weights">
-            <p class="step-desc mt-4 mb-2">추천에 반영할 기준이에요</p>
-            <div class="summary-stat">
-              <div class="label">주거안전</div>
-              <div class="value">{{ toPercent(survey.weights.safety) }}</div>
-            </div>
-            <div class="summary-stat">
-              <div class="label">생활편의</div>
-              <div class="value">{{ toPercent(survey.weights.convenience) }}</div>
-            </div>
-            <div class="summary-stat">
-              <div class="label">자산안정</div>
-              <div class="value">{{ toPercent(survey.weights.asset) }}</div>
-            </div>
-          </template>
-
-          <p v-else-if="survey.calculationFailed" class="disclaimer text-center">
-            추천 기준은 잠시 후 다시 계산할게요. 위 금액은 예상 계산값이에요.
-          </p>
-
-          <button type="button" class="primary-btn" @click="survey.reset">
-            다시 설문하기
-          </button>
-        </div>
-
-        <component :is="currentStep" v-else @prev="survey.back" />
+        <component :is="currentStep" @prev="survey.back" />
 
         <p v-if="survey.errorMessage" class="field-help text-center mt-3">
           {{ survey.errorMessage }}

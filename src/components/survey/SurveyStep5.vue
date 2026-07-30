@@ -6,7 +6,6 @@ import { validatePreference } from "@/utils/surveyValidation";
 const survey = useSurveyStore();
 const emit = defineEmits(["next", "prev"]);
 
-// housing_preference_profiles의 profile_code와 짝을 이룬다.
 const PROFILES = [
   {
     profileCode: "SAFETY_FIRST",
@@ -52,9 +51,7 @@ function submit() {
 
 <template>
   <div>
-    <h2 class="step-title">
-      새로 살 집,<br />무엇이 가장 마음 쓰이세요?
-    </h2>
+    <h2 class="step-title">새로 살 집,<br />무엇이 가장 마음 쓰이세요?</h2>
 
     <button
       v-for="p in PROFILES"

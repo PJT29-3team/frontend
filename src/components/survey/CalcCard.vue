@@ -4,13 +4,10 @@ import { computed, ref } from "vue";
 const props = defineProps({
   title: { type: String, required: true },
   amount: { type: Number, default: 0 },
-  /** "최대 3,168,000원" 처럼 금액 앞에 붙는 수식어 */
   prefix: { type: String, default: "" },
-  /** 계산 근거 문자열 배열 (housingTax.js가 돌려주는 steps) */
   steps: { type: Array, default: () => [] },
 });
 
-// 피그마 기본 상태가 펼침("계산식 접기" 노출)이다.
 const open = ref(true);
 
 const amountText = computed(() => {

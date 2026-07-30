@@ -7,9 +7,7 @@ const props = defineProps({
   inputId: { type: String, required: true },
   label: { type: String, default: "" },
   error: { type: String, default: "" },
-  /** 금액 증감 칩(+1,000만 / +5,000만 / +1억 / 지우기) 노출 여부 */
   chips: { type: Boolean, default: false },
-  /** 한글 환산 앞에 "=" 를 붙일지 (피그마 4단계 표기) */
   equals: { type: Boolean, default: false },
 });
 
@@ -29,7 +27,6 @@ const helpLine = computed(() => {
   return props.equals ? `= ${won}` : won;
 });
 
-// 콤마·공백을 걷어내고 숫자만 스토어에 넣는다.
 function onInput(event) {
   const digits = event.target.value.replace(/[^0-9]/g, "");
   emit("update:modelValue", digits === "" ? null : Number(digits));
