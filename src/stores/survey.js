@@ -1,231 +1,261 @@
-import { defineStore } from 'pinia';
-import surveyApi from '@/api/survey';
+import { defineStore } from "pinia";
+import surveyApi from "@/api/survey";
+import { authStore } from "@/stores/authStore";
+import {
+  calculateBrokerageFee,
+  calculateCapitalGainsTax,
+} from "@/utils/housingTax";
 
-// Mirrors SURVEY_STEP common codes; BUDGET_SUMMARY is a UI-only sub-view
-// (not its own slot in the 1/5..5/5 progress bar).
 export const STEP_ORDER = [
-  'CURRENT_HOME',
-  'PREFERENCE_PROFILE',
-  'MORTGAGE',
-  'RESERVE_BUDGET',
-  'BUDGET_SUMMARY',
-  'DESIRED_REGION',
+  "SALE_PRICE",
+  "HOLDING_PERIOD",
+  "TAX_SUMMARY",
+  "MORTGAGE",
+  "RESERVE_BUDGET",
+  "PREFERENCE_PROFILE",
+  "DESIRED_REGION",
 ];
-export const PROGRESS_STEPS_TOTAL = 5;
+export const PROGRESS_STEPS_TOTAL = 6;
+
+const PROGRESS_NUMBER = {
+  SALE_PRICE: 1,
+  TAX_SUMMARY: 2,
+  MORTGAGE: 3,
+  RESERVE_BUDGET: 4,
+  PREFERENCE_PROFILE: 5,
+  DESIRED_REGION: 6,
+};
 
 export function formatKRW(n) {
-  if (n === null || n === undefined || Number.isNaN(n)) return '';
-  const eok = Math.floor(n / 100_000_000);
-  const man = Math.round((n % 100_000_000) / 10_000);
-  let out = '';
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return "";
+  const value = Number(n);
+  if (value === 0) return "0원";
+  const eok = Math.floor(value / 100_000_000);
+  const man = Math.round((value % 100_000_000) / 10_000);
+  let out = "";
   if (eok > 0) out += `${eok}억 `;
-  if (man > 0) out += `${man.toLocaleString('ko-KR')}만`;
-  return out.trim() + '원';
+  if (man > 0) out += `${man.toLocaleString("ko-KR")}만`;
+  return out.trim() + "원";
 }
 
-export const useSurveyStore = defineStore('survey', {
+function emptyAnswers() {
+  return {
+    purchasePrice: null,
+    expectedSalePrice: null,
+    holdingYears: null,
+    residenceYears: null,
+    isRegulatedArea: null,
+    hasMortgage: null,
+    mortgageBalance: null,
+    reserveAmount: null,
+    profileCode: null,
+    desiredRegions: [],
+  };
+}
+
+export function toCalculationRequest(state) {
+  return {
+    acquisitionPrice: state.purchasePrice,
+    transferPrice: state.expectedSalePrice,
+    holdingYears: state.holdingYears,
+    residenceYears: state.residenceYears,
+    regulatedArea: state.isRegulatedArea,
+    hasMortgage: state.hasMortgage ?? false,
+    mortgageBalance: state.hasMortgage ? state.mortgageBalance : null,
+    requiredReserve: state.reserveAmount,
+    recommendationType: state.profileCode,
+  };
+}
+
+export const useSurveyStore = defineStore("survey", {
   state: () => ({
     showIntro: true,
     stepIndex: 0,
     done: false,
     loading: false,
     errorMessage: null,
+    calculation: null,
+    calculationFailed: false,
+    fieldErrors: {},
 
-    userName: '',
-    surveyId: null,
-    status: 'IN_PROGRESS',
-    currentStepCode: 'INTRO',
+    userName: "",
 
-    userHome: {
-      roadAddress: '',
-      jibunAddress: '',
-      buildingName: '',
-      detailAddress: '',
-      postalCode: '',
-      latitude: null,
-      longitude: null,
-      moveInDateYmd: null,
-    },
-
-    profileCode: null,
-    hasMortgage: null,
-    mortgageBalanceAmount: 0,
-
-    reserveOptionCode: null,
-    reserveCustomAmount: null,
-    reserveAmountUsed: null,
-    maxPurchaseBudgetAmount: null,
-
-    desiredRegions: [],
+    ...emptyAnswers(),
   }),
 
   getters: {
-    progressStep: (state) => Math.min(state.stepIndex + 1, PROGRESS_STEPS_TOTAL),
-    progressPct: (state) => (Math.min(state.stepIndex + 1, PROGRESS_STEPS_TOTAL) / PROGRESS_STEPS_TOTAL) * 100,
     currentStepName: (state) => STEP_ORDER[state.stepIndex],
+    progressStep: (state) =>
+      PROGRESS_NUMBER[STEP_ORDER[state.stepIndex]] ?? null,
+    showProgress() {
+      return this.progressStep !== null;
+    },
+    progressPct() {
+      return ((this.progressStep ?? 0) / PROGRESS_STEPS_TOTAL) * 100;
+    },
+
+    displayName: (state) =>
+      state.userName || authStore.state.user?.name || "고객",
+
+    taxResult(state) {
+      if (state.calculation) return state.calculation.capitalGainsTax;
+      return calculateCapitalGainsTax({
+        purchasePrice: state.purchasePrice,
+        salePrice: state.expectedSalePrice,
+        holdingYears: state.holdingYears,
+        residenceYears: state.residenceYears,
+        isRegulatedArea: state.isRegulatedArea,
+      });
+    },
+
+    brokerage(state) {
+      if (state.calculation) return state.calculation.brokerageFee;
+      return calculateBrokerageFee(state.expectedSalePrice);
+    },
+
+    netProceeds() {
+      return Math.max(
+        (this.expectedSalePrice || 0) -
+          this.taxResult.amount -
+          this.brokerage.amount,
+        0,
+      );
+    },
+
+    mortgageRepayment(state) {
+      return state.hasMortgage ? state.mortgageBalance || 0 : 0;
+    },
+
+    afterMortgage() {
+      return Math.max(this.netProceeds - this.mortgageRepayment, 0);
+    },
+
+    maxPurchaseBudget(state) {
+      if (state.calculation) return state.calculation.availableAsset;
+      return Math.max(this.afterMortgage - (this.reserveAmount || 0), 0);
+    },
+
+    weights: (state) => state.calculation?.weights ?? null,
   },
 
   actions: {
-    _applyResponse(data) {
-      this.userName = data.userName;
-      this.surveyId = data.survey?.surveyId ?? this.surveyId;
-      this.status = data.survey?.status ?? this.status;
-      this.currentStepCode = data.survey?.currentStepCode ?? this.currentStepCode;
-      this.profileCode = data.survey?.profileCode ?? this.profileCode;
-      this.hasMortgage = data.survey?.hasMortgage ?? this.hasMortgage;
-      this.mortgageBalanceAmount = data.survey?.mortgageBalanceAmount ?? this.mortgageBalanceAmount;
-      this.reserveOptionCode = data.survey?.reserveOptionCode ?? this.reserveOptionCode;
-      this.reserveCustomAmount = data.survey?.reserveCustomAmount ?? this.reserveCustomAmount;
-      this.reserveAmountUsed = data.survey?.reserveAmountUsed ?? this.reserveAmountUsed;
-      this.maxPurchaseBudgetAmount = data.survey?.maxPurchaseBudgetAmount ?? this.maxPurchaseBudgetAmount;
-      if (data.userHome) this.userHome = { ...this.userHome, ...data.userHome };
-      this.desiredRegions = data.desiredRegions ?? [];
+    init() {
+      this.stepIndex = 0;
     },
 
-    async init() {
-      this.loading = true;
-      this.errorMessage = null;
-      try {
-        const data = await surveyApi.start();
-        this._applyResponse(data);
-        // Resume mid-survey at the right screen instead of always showing step 1.
-        const idx = STEP_ORDER.indexOf(this.currentStepCode);
-        this.stepIndex = idx >= 0 ? idx : 0;
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '설문 정보를 불러오지 못했습니다';
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // Used by the /survey/:surveyId route (e.g. a saved link/bookmark) to
-    // jump straight into an existing survey, skipping the intro screen.
-    async loadById(surveyId) {
-      this.loading = true;
-      this.errorMessage = null;
-      try {
-        const data = await surveyApi.get(surveyId);
-        this._applyResponse(data);
-        this.showIntro = false;
-        const idx = STEP_ORDER.indexOf(this.currentStepCode);
-        this.stepIndex = idx >= 0 ? idx : 0;
-        this.done = this.status === 'COMPLETED';
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '설문 정보를 불러오지 못했습니다';
-      } finally {
-        this.loading = false;
-      }
+    loadById() {
+      this.init();
     },
 
     startSurvey() {
       this.showIntro = false;
+      this.stepIndex = 0;
+      this.done = false;
     },
 
-    async saveCurrentHome(payload) {
-      this.loading = true;
+    next() {
       this.errorMessage = null;
-      try {
-        const data = await surveyApi.saveCurrentHome(this.surveyId, payload);
-        this._applyResponse(data);
-        this.stepIndex++;
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '주소 저장에 실패했습니다';
-      } finally {
-        this.loading = false;
-      }
+      if (this.stepIndex < STEP_ORDER.length - 1) this.stepIndex += 1;
+    },
+
+    back() {
+      this.errorMessage = null;
+      if (this.stepIndex > 0) this.stepIndex -= 1;
+      else this.showIntro = true;
+    },
+
+    async saveSalePrice({ purchasePrice, expectedSalePrice }) {
+      this.purchasePrice = purchasePrice;
+      this.expectedSalePrice = expectedSalePrice;
+      this.next();
+    },
+
+    async saveHoldingPeriod({ holdingYears, residenceYears, isRegulatedArea }) {
+      this.holdingYears = holdingYears;
+      this.residenceYears = residenceYears;
+      this.isRegulatedArea = isRegulatedArea;
+      this.next();
+    },
+
+    async saveMortgage({ hasMortgage, mortgageBalance }) {
+      this.hasMortgage = hasMortgage;
+      this.mortgageBalance = hasMortgage ? mortgageBalance : null;
+      this.next();
+    },
+
+    advanceFromTaxSummary() {
+      this.next();
+    },
+
+    async saveReserveBudget({ reserveAmount }) {
+      this.reserveAmount = reserveAmount;
+      this.next();
     },
 
     async savePreference(profileCode) {
-      this.loading = true;
-      this.errorMessage = null;
-      try {
-        const data = await surveyApi.savePreference(this.surveyId, profileCode);
-        this._applyResponse(data);
-        this.stepIndex++;
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '선호 유형 저장에 실패했습니다';
-      } finally {
-        this.loading = false;
-      }
+      this.profileCode = profileCode;
+      this.next();
     },
 
-    async saveMortgage(payload) {
-      this.loading = true;
-      this.errorMessage = null;
-      try {
-        const data = await surveyApi.saveMortgage(this.surveyId, payload);
-        this._applyResponse(data);
-        this.stepIndex++;
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '대출 정보 저장에 실패했습니다';
-      } finally {
-        this.loading = false;
-      }
+    async saveDesiredRegions(regions) {
+      this.desiredRegions = regions;
+      this.done = true;
     },
 
-    async saveReserveBudget(payload) {
+    async fetchCalculation() {
       this.loading = true;
-      this.errorMessage = null;
       try {
-        // Backend resolves reserveAmountUsed / maxPurchaseBudgetAmount against the
-        // latest completed home_analysis_snapshots row; 409 means analysis isn't ready yet.
-        const data = await surveyApi.saveReserveBudget(this.surveyId, payload);
-        this._applyResponse(data);
-        this.stepIndex++; // -> BUDGET_SUMMARY
+        this.calculation = await surveyApi.calculate(
+          toCalculationRequest(this),
+        );
+        this.calculationFailed = false;
       } catch (err) {
-        if (err?.response?.status === 409) {
-          this.errorMessage = '현재집 분석이 아직 완료되지 않았어요. 잠시 후 다시 시도해주세요';
-        } else {
-          this.errorMessage = err?.response?.data?.message || '유보금 저장에 실패했습니다';
+        this.calculation = null;
+        this.calculationFailed = true;
+        const fieldErrors = err?.response?.data?.errors;
+        if (err?.response?.status === 400) {
+          this.errorMessage =
+            err.response.data?.message || "입력값을 다시 확인해주세요";
+          this.fieldErrors = fieldErrors || {};
         }
       } finally {
         this.loading = false;
       }
+      return this.calculation;
     },
 
-    advanceFromSummary() {
-      this.stepIndex++; // BUDGET_SUMMARY -> DESIRED_REGION, no API call of its own
+    async submitSurvey(regions) {
+      await this.saveDesiredRegions(regions);
+      await this.fetchCalculation();
     },
 
-    async saveDesiredRegions(regions) {
-      this.loading = true;
-      this.errorMessage = null;
-      try {
-        const data = await surveyApi.saveDesiredRegions(this.surveyId, regions);
-        this._applyResponse(data);
-        this.done = true;
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '희망 지역 저장에 실패했습니다';
-      } finally {
-        this.loading = false;
-      }
+    toggleRegion(sidoName, sigunguName) {
+      const idx = this.desiredRegions.findIndex(
+        (r) => r.sidoName === sidoName && r.sigunguName === sigunguName,
+      );
+      if (idx >= 0) this.desiredRegions.splice(idx, 1);
+      else
+        this.desiredRegions.push({
+          sidoName,
+          sigunguName,
+          eupmyeondongName: null,
+        });
     },
 
-    back() {
-      if (this.stepIndex > 0) this.stepIndex--;
+    isRegionSelected(sidoName, sigunguName) {
+      return this.desiredRegions.some(
+        (r) => r.sidoName === sidoName && r.sigunguName === sigunguName,
+      );
     },
 
     async reset() {
-      this.loading = true;
-      this.errorMessage = null;
-      try {
-        const data = await surveyApi.reset();
-        this._applyResponse(data);
-        this.showIntro = true;
-        this.stepIndex = 0;
-        this.done = false;
-        this.userHome = { roadAddress: '', jibunAddress: '', buildingName: '', detailAddress: '', postalCode: '', latitude: null, longitude: null, moveInDateYmd: null };
-        this.profileCode = null;
-        this.hasMortgage = null;
-        this.mortgageBalanceAmount = 0;
-        this.reserveOptionCode = null;
-        this.reserveCustomAmount = null;
-        this.desiredRegions = [];
-      } catch (err) {
-        this.errorMessage = err?.response?.data?.message || '초기화에 실패했습니다';
-      } finally {
-        this.loading = false;
-      }
+      Object.assign(this, emptyAnswers());
+      this.showIntro = true;
+      this.stepIndex = 0;
+      this.done = false;
+      this.calculation = null;
+      this.calculationFailed = false;
+      this.fieldErrors = {};
     },
   },
 });
