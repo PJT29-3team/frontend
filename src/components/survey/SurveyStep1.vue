@@ -19,7 +19,6 @@ const errors = computed(() =>
 );
 const isValid = computed(() => Object.keys(errors.value).length === 0);
 
-// 입력을 시작하기 전에는 오류 문구를 띄우지 않는다.
 function shownError(field) {
   return submitted.value ? errors.value[field] || "" : "";
 }
@@ -60,7 +59,6 @@ function submit() {
     </div>
 
     <p class="text-center mt-4">
-      <!-- 연결할 시세조회 서비스는 아직 정해지지 않아 자리만 마련해 둔다. -->
       <a class="text-link" href="#" @click.prevent>
         팔고싶은 가격을 정확히 모르겠어요 — 시세조회 사이트 연결
       </a>

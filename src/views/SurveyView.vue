@@ -11,6 +11,7 @@ import SurveyStep3 from "@/components/survey/SurveyStep3.vue";
 import SurveyStep4 from "@/components/survey/SurveyStep4.vue";
 import SurveyStep5 from "@/components/survey/SurveyStep5.vue";
 import SurveyStep6 from "@/components/survey/SurveyStep6.vue";
+import SurveyStep7 from "@/components/survey/SurveyStep7.vue";
 
 const props = defineProps({
   surveyId: { type: String, default: null },
@@ -18,7 +19,6 @@ const props = defineProps({
 
 const survey = useSurveyStore();
 
-// STEP_ORDER와 같은 순서로 둔다.
 const STEP_COMPONENTS = [
   SurveyStep1,
   SurveyStep2,
@@ -26,6 +26,7 @@ const STEP_COMPONENTS = [
   SurveyStep4,
   SurveyStep5,
   SurveyStep6,
+  SurveyStep7,
 ];
 
 const currentStep = computed(() => STEP_COMPONENTS[survey.stepIndex]);
@@ -60,6 +61,7 @@ function confirmReset() {
 
       <template v-else>
         <SurveyProgress
+          v-if="survey.showProgress"
           :step="survey.progressStep"
           :total="PROGRESS_STEPS_TOTAL"
           :percent="survey.progressPct"

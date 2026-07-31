@@ -10,11 +10,21 @@ export const STEP_ORDER = [
   "SALE_PRICE",
   "HOLDING_PERIOD",
   "TAX_SUMMARY",
+  "MORTGAGE",
   "RESERVE_BUDGET",
   "PREFERENCE_PROFILE",
   "DESIRED_REGION",
 ];
-export const PROGRESS_STEPS_TOTAL = STEP_ORDER.length;
+export const PROGRESS_STEPS_TOTAL = 6;
+
+const PROGRESS_NUMBER = {
+  SALE_PRICE: 1,
+  TAX_SUMMARY: 2,
+  MORTGAGE: 3,
+  RESERVE_BUDGET: 4,
+  PREFERENCE_PROFILE: 5,
+  DESIRED_REGION: 6,
+};
 
 export function formatKRW(n) {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return "";
@@ -35,6 +45,8 @@ function emptyAnswers() {
     holdingYears: null,
     residenceYears: null,
     isRegulatedArea: null,
+    hasMortgage: null,
+    mortgageBalance: null,
     reserveAmount: null,
     profileCode: null,
     desiredRegions: [],
@@ -48,8 +60,8 @@ export function toCalculationRequest(state) {
     holdingYears: state.holdingYears,
     residenceYears: state.residenceYears,
     regulatedArea: state.isRegulatedArea,
-    hasMortgage: false,
-    mortgageBalance: null,
+    hasMortgage: state.hasMortgage ?? false,
+    mortgageBalance: state.hasMortgage ? state.mortgageBalance : null,
     requiredReserve: state.reserveAmount,
     recommendationType: state.profileCode,
   };
@@ -72,13 +84,15 @@ export const useSurveyStore = defineStore("survey", {
   }),
 
   getters: {
-    progressStep: (state) =>
-      Math.min(state.stepIndex + 1, PROGRESS_STEPS_TOTAL),
-    progressPct: (state) =>
-      (Math.min(state.stepIndex + 1, PROGRESS_STEPS_TOTAL) /
-        PROGRESS_STEPS_TOTAL) *
-      100,
     currentStepName: (state) => STEP_ORDER[state.stepIndex],
+    progressStep: (state) =>
+      PROGRESS_NUMBER[STEP_ORDER[state.stepIndex]] ?? null,
+    showProgress() {
+      return this.progressStep !== null;
+    },
+    progressPct() {
+      return ((this.progressStep ?? 0) / PROGRESS_STEPS_TOTAL) * 100;
+    },
 
     displayName: (state) =>
       state.userName || authStore.state.user?.name || "고객",
@@ -99,8 +113,7 @@ export const useSurveyStore = defineStore("survey", {
       return calculateBrokerageFee(state.expectedSalePrice);
     },
 
-    netProceeds(state) {
-      if (state.calculation) return state.calculation.netProceeds;
+    netProceeds() {
       return Math.max(
         (this.expectedSalePrice || 0) -
           this.taxResult.amount -
@@ -109,9 +122,17 @@ export const useSurveyStore = defineStore("survey", {
       );
     },
 
+    mortgageRepayment(state) {
+      return state.hasMortgage ? state.mortgageBalance || 0 : 0;
+    },
+
+    afterMortgage() {
+      return Math.max(this.netProceeds - this.mortgageRepayment, 0);
+    },
+
     maxPurchaseBudget(state) {
       if (state.calculation) return state.calculation.availableAsset;
-      return Math.max(this.netProceeds - (this.reserveAmount || 0), 0);
+      return Math.max(this.afterMortgage - (this.reserveAmount || 0), 0);
     },
 
     weights: (state) => state.calculation?.weights ?? null,
@@ -156,6 +177,12 @@ export const useSurveyStore = defineStore("survey", {
       this.next();
     },
 
+    async saveMortgage({ hasMortgage, mortgageBalance }) {
+      this.hasMortgage = hasMortgage;
+      this.mortgageBalance = hasMortgage ? mortgageBalance : null;
+      this.next();
+    },
+
     advanceFromTaxSummary() {
       this.next();
     },
@@ -185,7 +212,6 @@ export const useSurveyStore = defineStore("survey", {
       } catch (err) {
         this.calculation = null;
         this.calculationFailed = true;
-        // 400이면 필드 오류를 그대로 보여준다. 그 밖에는 로컬 계산으로 조용히 넘어간다.
         const fieldErrors = err?.response?.data?.errors;
         if (err?.response?.status === 400) {
           this.errorMessage =
@@ -198,7 +224,6 @@ export const useSurveyStore = defineStore("survey", {
       return this.calculation;
     },
 
-    /** 6단계 제출: 희망 지역 저장 + 확정 계산 요청을 함께 수행한다. */
     async submitSurvey(regions) {
       await this.saveDesiredRegions(regions);
       await this.fetchCalculation();

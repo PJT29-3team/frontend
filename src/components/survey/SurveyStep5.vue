@@ -1,79 +1,49 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useSurveyStore } from "@/stores/survey";
-import { validatePreference } from "@/utils/surveyValidation";
+import { validateReserveBudget } from "@/utils/surveyValidation";
+import AmountField from "./AmountField.vue";
 
 const survey = useSurveyStore();
 const emit = defineEmits(["next", "prev"]);
 
-const PROFILES = [
-  {
-    profileCode: "SAFETY_FIRST",
-    icon: "🛡️",
-    label: "병원이 가깝고, 동네가 안전했으면 해요",
-  },
-  {
-    profileCode: "CONVENIENCE_FIRST",
-    icon: "🛒",
-    label: "장보기·산책·대중교통·은행이 가까웠으면 해요",
-  },
-  {
-    profileCode: "VALUE_STABILITY",
-    icon: "💰",
-    label: "나중에 팔기 쉬운 집이면 좋겠어요",
-  },
-  {
-    profileCode: "BALANCED",
-    icon: "⚖️",
-    label: "안전·편의·비용이 균형있는 집이면 좋겠어요",
-  },
-];
-
-const profileCode = ref(survey.profileCode);
+const reserveAmount = ref(survey.reserveAmount);
 const submitted = ref(false);
 
 const errors = computed(() =>
-  validatePreference({ profileCode: profileCode.value }),
+  validateReserveBudget({
+    reserveAmount: reserveAmount.value,
+    netProceeds: survey.afterMortgage,
+  }),
 );
 const isValid = computed(() => Object.keys(errors.value).length === 0);
 
 const shownError = computed(() =>
-  submitted.value ? errors.value.profileCode || "" : "",
+  submitted.value ? errors.value.reserveAmount || "" : "",
 );
 
 function submit() {
   submitted.value = true;
   if (!isValid.value) return;
-  survey.savePreference(profileCode.value);
+  survey.saveReserveBudget({ reserveAmount: reserveAmount.value });
   emit("next");
 }
 </script>
 
 <template>
   <div>
-    <h2 class="step-title">새로 살 집,<br />무엇이 가장 마음 쓰이세요?</h2>
+    <h2 class="step-title">
+      이사하고 나서 최소<br />얼마 정도는 남아있으면 될까요?
+    </h2>
 
-    <button
-      v-for="p in PROFILES"
-      :key="p.profileCode"
-      type="button"
-      class="pref-card"
-      :class="{ selected: profileCode === p.profileCode }"
-      :aria-pressed="profileCode === p.profileCode"
-      @click="profileCode = p.profileCode"
-    >
-      <div class="pref-icon" aria-hidden="true">{{ p.icon }}</div>
-      <div class="flex-grow-1">
-        <div class="pref-title">{{ p.label }}</div>
-      </div>
-      <div class="pref-check" :class="{ on: profileCode === p.profileCode }">
-        ✓
-      </div>
-    </button>
-
-    <div v-if="shownError" class="invalid-feedback d-block">
-      {{ shownError }}
-    </div>
+    <AmountField
+      v-model="reserveAmount"
+      input-id="survey-reserve-amount"
+      label="이사후 남기고싶은 금액"
+      equals
+      chips
+      :error="shownError"
+    />
 
     <div class="btn-row">
       <button type="button" class="secondary-btn" @click="emit('prev')">

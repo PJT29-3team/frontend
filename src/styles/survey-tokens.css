@@ -549,10 +549,15 @@
   border-color: var(--kb-yellow);
   box-shadow: none;
 }
-.amount-input.form-control:focus-visible,
 .survey-select.form-select:focus-visible {
   outline: 3px solid #1f2937;
   outline-offset: 2px;
+}
+/* 초점 표시는 "원" 단위까지 감싸도록 input-group 전체에 준다. */
+.input-group:focus-within {
+  outline: 3px solid #1f2937;
+  outline-offset: 2px;
+  border-radius: 14px;
 }
 .amount-input.form-control.is-invalid {
   border-color: var(--jh-danger, #ff4d4f);
@@ -682,4 +687,44 @@
 .survey-shell .invalid-feedback {
   font-size: 13px;
   font-weight: 600;
+}
+
+/* ---------- 2단계 매도 결과 카드 ---------- */
+.result-card {
+  background: #fdf6d8;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-top: 14px;
+}
+.result-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.result-label {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-dark);
+}
+.result-value {
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.result-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--kb-yellow-deep);
+}
+.result-divider {
+  margin: 28px 0 18px;
+  border: 0;
+  border-top: 1px solid #d9d9d9;
+}
+.result-card.total .result-label,
+.result-card.total .result-value {
+  font-size: 19px;
 }

@@ -34,17 +34,9 @@ function toYears(event) {
   return raw === "" ? null : Number(raw);
 }
 
-function onHoldingChange(event) {
-  holdingYears.value = toYears(event);
-}
-
-function onResidenceChange(event) {
-  residenceYears.value = toYears(event);
-}
-
-function onRegulatedChange(event) {
+function toRegulated(event) {
   const raw = event.target.value;
-  isRegulatedArea.value = raw === "" ? null : raw === "true";
+  return raw === "" ? null : raw === "true";
 }
 
 function submit() {
@@ -76,7 +68,7 @@ function submit() {
         class="form-select survey-select"
         :class="{ 'is-invalid': !!shownError('holdingYears') }"
         :value="holdingYears === null ? '' : String(holdingYears)"
-        @change="onHoldingChange"
+        @change="holdingYears = toYears($event)"
       >
         <option value="">선택해주세요</option>
         <option v-for="o in YEAR_OPTIONS" :key="o.value" :value="o.value">
@@ -97,7 +89,7 @@ function submit() {
         class="form-select survey-select"
         :class="{ 'is-invalid': !!shownError('residenceYears') }"
         :value="residenceYears === null ? '' : String(residenceYears)"
-        @change="onResidenceChange"
+        @change="residenceYears = toYears($event)"
       >
         <option value="">선택해주세요</option>
         <option v-for="o in YEAR_OPTIONS" :key="o.value" :value="o.value">
@@ -118,7 +110,7 @@ function submit() {
         class="form-select survey-select"
         :class="{ 'is-invalid': !!shownError('isRegulatedArea') }"
         :value="isRegulatedArea === null ? '' : String(isRegulatedArea)"
-        @change="onRegulatedChange"
+        @change="isRegulatedArea = toRegulated($event)"
       >
         <option value="">선택해주세요</option>
         <option value="false">아니요</option>

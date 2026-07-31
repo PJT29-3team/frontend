@@ -13,6 +13,9 @@ export const MESSAGES = {
   residenceYears: "거주기간을 선택해주세요.",
   residenceOverHolding: "거주기간은 보유기간보다 길 수 없어요.",
   isRegulatedArea: "조정대상지역 해당 여부를 선택해주세요.",
+  hasMortgage: "대출 보유 여부를 선택해주세요.",
+  mortgageBalance: "남은 대출 잔액을 입력해주세요.",
+  mortgageOverProceeds: "대출 잔액이 집을 팔고 남는 돈보다 많아요.",
   reserveAmount: "남기고 싶은 금액을 입력해주세요.",
   reserveOverProceeds: "이사 후 남길 금액이 예상 실수령액보다 많아요.",
   profileCode: "하나를 선택해주세요.",
@@ -90,6 +93,35 @@ export function validateReserveBudget({ reserveAmount, netProceeds } = {}) {
   return errors;
 }
 
+/** 3단계: 대출 여부와 잔액 */
+export function validateMortgage({
+  hasMortgage,
+  mortgageBalance,
+  netProceeds,
+} = {}) {
+  const errors = {};
+  if (typeof hasMortgage !== "boolean") {
+    errors.hasMortgage = MESSAGES.hasMortgage;
+    return errors;
+  }
+  if (!hasMortgage) return errors; // 대출이 없으면 잔액을 묻지 않는다.
+
+  if (
+    typeof mortgageBalance !== "number" ||
+    !Number.isFinite(mortgageBalance) ||
+    mortgageBalance <= 0
+  ) {
+    errors.mortgageBalance = MESSAGES.mortgageBalance;
+  } else if (
+    typeof netProceeds === "number" &&
+    Number.isFinite(netProceeds) &&
+    mortgageBalance > netProceeds
+  ) {
+    errors.mortgageBalance = MESSAGES.mortgageOverProceeds;
+  }
+  return errors;
+}
+
 /** 5단계: 선호 유형 */
 export function validatePreference({ profileCode } = {}) {
   const errors = {};
@@ -113,6 +145,7 @@ export const VALIDATORS = {
   SALE_PRICE: validateSalePrice,
   HOLDING_PERIOD: validateHoldingPeriod,
   TAX_SUMMARY: validateTaxSummary,
+  MORTGAGE: validateMortgage,
   RESERVE_BUDGET: validateReserveBudget,
   PREFERENCE_PROFILE: validatePreference,
   DESIRED_REGION: validateDesiredRegions,
