@@ -1,11 +1,3 @@
-/**
- * 설문 단계별 유효성 검사.
- *
- * 각 함수는 필드명을 키로 하는 오류 메시지 객체를 돌려준다.
- * 오류가 없으면 빈 객체이므로 `isStepValid()`로 통과 여부를 판단한다.
- * 단계 컴포넌트는 이 결과를 `다음` 버튼 disabled와 invalid-feedback 문구에 함께 쓴다.
- */
-
 export const MESSAGES = {
   purchasePrice: "실거래가를 입력해주세요.",
   expectedSalePrice: "팔고 싶은 가격을 입력해주세요.",
@@ -30,7 +22,6 @@ function isSelectedYears(value) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
-/** 1단계: 샀던 가격 / 팔고 싶은 가격 */
 export function validateSalePrice({ purchasePrice, expectedSalePrice } = {}) {
   const errors = {};
   if (!isPositiveAmount(purchasePrice)) {
@@ -42,7 +33,6 @@ export function validateSalePrice({ purchasePrice, expectedSalePrice } = {}) {
   return errors;
 }
 
-/** 2단계: 보유기간 / 거주기간 / 조정대상지역 */
 export function validateHoldingPeriod({
   holdingYears,
   residenceYears,
@@ -54,10 +44,7 @@ export function validateHoldingPeriod({
   }
   if (!isSelectedYears(residenceYears)) {
     errors.residenceYears = MESSAGES.residenceYears;
-  } else if (
-    isSelectedYears(holdingYears) &&
-    residenceYears > holdingYears
-  ) {
+  } else if (isSelectedYears(holdingYears) && residenceYears > holdingYears) {
     errors.residenceYears = MESSAGES.residenceOverHolding;
   }
   if (typeof isRegulatedArea !== "boolean") {
@@ -66,15 +53,9 @@ export function validateHoldingPeriod({
   return errors;
 }
 
-/** 3단계: 계산 결과 표시 전용이라 검사할 입력이 없다. */
 export function validateTaxSummary() {
   return {};
 }
-
-/**
- * 4단계: 이사 후 남기고 싶은 금액.
- * 매도 실수령액을 넘으면 살 집을 구할 수 없으므로 막는다.
- */
 export function validateReserveBudget({ reserveAmount, netProceeds } = {}) {
   const errors = {};
   if (
@@ -93,7 +74,6 @@ export function validateReserveBudget({ reserveAmount, netProceeds } = {}) {
   return errors;
 }
 
-/** 3단계: 대출 여부와 잔액 */
 export function validateMortgage({
   hasMortgage,
   mortgageBalance,
@@ -104,7 +84,7 @@ export function validateMortgage({
     errors.hasMortgage = MESSAGES.hasMortgage;
     return errors;
   }
-  if (!hasMortgage) return errors; // 대출이 없으면 잔액을 묻지 않는다.
+  if (!hasMortgage) return errors;
 
   if (
     typeof mortgageBalance !== "number" ||
@@ -122,7 +102,6 @@ export function validateMortgage({
   return errors;
 }
 
-/** 5단계: 선호 유형 */
 export function validatePreference({ profileCode } = {}) {
   const errors = {};
   if (!profileCode) {
@@ -131,7 +110,6 @@ export function validatePreference({ profileCode } = {}) {
   return errors;
 }
 
-/** 6단계: 희망 지역 */
 export function validateDesiredRegions({ desiredRegions } = {}) {
   const errors = {};
   if (!Array.isArray(desiredRegions) || desiredRegions.length === 0) {
@@ -140,7 +118,6 @@ export function validateDesiredRegions({ desiredRegions } = {}) {
   return errors;
 }
 
-/** STEP_ORDER의 단계 코드 -> 검사 함수 */
 export const VALIDATORS = {
   SALE_PRICE: validateSalePrice,
   HOLDING_PERIOD: validateHoldingPeriod,

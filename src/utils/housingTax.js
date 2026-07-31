@@ -1,20 +1,8 @@
-/**
- * 설문 3단계에서 보여줄 1세대 1주택 기준 양도소득세·중개수수료 추정 계산.
- *
- * 참고용 추정치이며 법률·세무 자문을 대체하지 않는다(2단계 면책 문구와 같은 전제).
- * 지방소득세(양도세의 10%), 필요경비, 감면·중과 특례는 계산에 넣지 않는다.
- *
- * 각 함수는 금액과 함께 `steps`(계산 근거 문자열 배열)를 돌려주고,
- * 3단계 UI는 이 배열을 "계산식 펼치기" 영역에 그대로 출력한다.
- */
-
-/** 고가주택 기준. 이 금액 이하이면 1세대 1주택 비과세 대상이 된다. */
 export const HIGH_VALUE_HOME_THRESHOLD = 1_200_000_000;
 /** 양도소득 기본공제 */
 export const BASIC_DEDUCTION = 2_500_000;
 export const VAT_RATE = 0.1;
 
-/** 주택 매매 중개보수 상한요율 (공인중개사법 시행규칙 별표1) */
 const BROKERAGE_BRACKETS = [
   { under: 50_000_000, rate: 0.006, cap: 250_000 },
   { under: 200_000_000, rate: 0.005, cap: 800_000 },
@@ -24,7 +12,6 @@ const BROKERAGE_BRACKETS = [
   { under: Infinity, rate: 0.007, cap: null },
 ];
 
-/** 양도소득세 기본세율 (2023년 이후) */
 const TAX_BRACKETS = [
   { upTo: 14_000_000, rate: 0.06, deduction: 0 },
   { upTo: 50_000_000, rate: 0.15, deduction: 1_260_000 },
@@ -40,15 +27,10 @@ function won(n) {
   return Math.floor(n).toLocaleString("ko-KR");
 }
 
-/** 0.004 -> "0.4%" (부동소수점 잔여물 제거) */
 function percent(rate) {
   return `${Number((rate * 100).toFixed(4))}%`;
 }
 
-/**
- * 주택 매매 중개수수료(부가세 포함)를 계산한다.
- * 상한요율 기준이라 실제로는 이 금액 안에서 협의된다.
- */
 export function calculateBrokerageFee(salePrice) {
   const price = Number(salePrice) || 0;
   if (price <= 0) {
@@ -74,11 +56,6 @@ export function calculateBrokerageFee(salePrice) {
   return { amount, rate: bracket.rate, baseFee, vat, steps };
 }
 
-/**
- * 장기보유특별공제율.
- * 1세대 1주택이면서 2년 이상 거주하면 보유·거주 각각 연 4%(합계 최대 80%),
- * 그렇지 않으면 연 2%(최대 30%)를 적용한다. 보유 3년 미만은 공제가 없다.
- */
 function longTermDeductionRate(holdingYears, residenceYears) {
   if (holdingYears < 3) return 0;
   if (residenceYears >= 2) {
@@ -89,7 +66,6 @@ function longTermDeductionRate(holdingYears, residenceYears) {
   return Math.min(Math.min(holdingYears, 15) * 0.02, 0.3);
 }
 
-/** 보유 2년 미만 단기 양도 중과세율 */
 function shortTermRate(holdingYears) {
   if (holdingYears < 1) return 0.7;
   return 0.6;
