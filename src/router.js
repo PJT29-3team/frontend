@@ -6,7 +6,22 @@ const routes = [
   {
     path: "/main",
     component: () => import("./views/MainView.vue"),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, process: true },
+  },
+  {
+    path: "/process/survey",
+    component: () => import("./views/ProcessPlaceholderView.vue"),
+    meta: { requiresAuth: true, process: true, title: '설문 조사', description: '나에게 꼭 맞는 주거 조건을 확인하는 설문 조사 페이지입니다.' },
+  },
+  {
+    path: "/process/recommended",
+    component: () => import("./views/ProcessPlaceholderView.vue"),
+    meta: { requiresAuth: true, process: true, title: '추천 매물', description: '설문 결과를 바탕으로 추천 매물을 살펴보는 페이지입니다.' },
+  },
+  {
+    path: "/evaluation-method",
+    component: () => import("./views/EvaluationMethodView.vue"),
+    meta: { requiresAuth: true, process: true },
   },
   { path: "/login", component: () => import("./views/LoginChoiceView.vue") },
   {
