@@ -49,7 +49,7 @@ const routes = [
   {
     path: "/recommend",
     name: "recommend-list",
-    component: () => import("@/views/house/ecommendationList.vue"),
+    component: () => import("@/views/house/RecommendationList.vue"),
   },
 ];
 
