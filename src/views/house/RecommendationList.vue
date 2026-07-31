@@ -61,7 +61,7 @@
           </div>
 
           <div class="map-area">
-            <HomeMapView />
+            <HomeMapView :homes="dummyHomes"/>
           </div>
         </div>
       </section>
