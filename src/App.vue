@@ -3,45 +3,12 @@ import { RouterLink, RouterView } from 'vue-router'
 import { Database, Heart, Search } from '@lucide/vue'
 import logoUrl from './assets/images/logo.png'
 
-const steps = [
-  { label: '현재 주택', icon: Search, to: '/homes/current' },
-  { label: '추천 매물', icon: Search, to: '/properties/recommended' },
-  { label: '관심 매물', icon: Heart, to: '/properties/favorites' },
-  { label: '금융상품 추천', icon: Database, to: '/financial-products' },
-]
 
-function stepState(index) {
-  if (index === 0) return 'is-active'
-  return 'is-pending'
-}
 </script>
 
 <template>
   <main class="app-shell">
-    <header class="topbar">
-      <RouterLink class="brand" to="/homes/current" aria-label="작은 둥지 홈">
-        <img :src="logoUrl" alt="" />
-        <span>작은 둥지</span>
-      </RouterLink>
-      <div class="topbar-actions">
-        <button class="outline-button" type="button">마이페이지</button>
-        <span class="welcome-text">홍길동님 환영합니다.</span>
-        <button class="outline-button" type="button">로그아웃</button>
-      </div>
-    </header>
 
-    <nav class="journey" aria-label="서비스 진행 단계">
-      <ol class="journey-list">
-        <li v-for="(step, index) in steps" :key="step.to" class="journey-item" :class="stepState(index)">
-          <button class="journey-link" type="button" :disabled="index !== 0" :aria-current="index === 0 ? 'step' : undefined">
-            <span class="journey-icon" aria-hidden="true"><component :is="step.icon" class="journey-svg" /></span>
-            <strong>{{ step.label }}</strong>
-            <small>{{ index === 0 ? '진행중' : '대기' }}</small>
-          </button>
-        </li>
-      </ol>
-      <button class="report-button" type="button">보고서 받기 <span aria-hidden="true">▾</span></button>
-    </nav>
 
     <RouterView />
   </main>
