@@ -14,6 +14,7 @@
             v-for="home in dummyHomes"
             :key="home.id"
             :home="home"
+            @toggle-favorite="toggleFavorite"
           />
         </div>
 
@@ -91,14 +92,21 @@ import AppHeader from '@/components/common/AppHeader.vue';
 import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '../../components/house/HomeMapView.vue';
 import StepIndicator from '@/components/common/StepIndicator.vue';
+import { reactive } from 'vue';
 
-const dummyHomes = [
+const dummyHomes = reactive ([
     { id : 1, rank : 1, price : '3억 4,500만원', address : '야탑동 탑마을(선경) · 24평', score : 88, isFavorite : true },
     { id: 2, rank: 2, price: '3억 5,000만원', address: '정자동 한솔마을(주공5단지) · 21평', score: 84, isFavorite: false },
     { id: 3, rank: 3, price: '3억 3,800만원', address: '서현동 풍림아이원플러스 · 23평', score: 79, isFavorite: true },
     { id: 4, rank: 4, price: '2억 9,500만원', address: '정자동 인빌리전자A · 25평', score: 76, isFavorite: true },
     { id: 5, rank: 5, price: '3억 2,000만원', address: '수내동 파크뷰(오피스텔) · 22평', score: 72, isFavorite: false },
-]
+]);
+
+// 관심버튼 활성/비활성
+function toggleFavorite(homeId) {
+  const home = dummyHomes.find(h => h.id === homeId);
+  if (home) home.isFavorite = !home.isFavorite;
+}
 </script>
 
 <style scoped>

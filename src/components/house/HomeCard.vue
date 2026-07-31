@@ -19,7 +19,11 @@
         <span class="icon-circle">?</span>
         세부정보 보기
       </button>
-      <button class="favorite-btn" :class="{ active: home.isFavorite }">
+      <button 
+      class="favorite-btn" 
+      :class="{ active: home.isFavorite }"
+      @click="$emit('toggle-favorite', home.id)"
+      >
         <span class="heart-icon">{{ home.isFavorite ? '♥' : '♡' }}</span>
         {{ home.isFavorite ? '담았어요' : '관심 목록에 담기' }}
       </button>
@@ -28,7 +32,8 @@
 </template>
 
 <script setup>
-defineProps(['home'])
+defineProps(['home']);
+defineEmits(['toggle-favorite']);
 </script>
 
 <style scoped>
