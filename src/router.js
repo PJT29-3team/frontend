@@ -46,6 +46,11 @@ const routes = [
     component: () => import("@/views/SurveyView.vue"),
     props: true,
   },
+  {
+    path: "/recommend",
+    name: "recommend-list",
+    component: () => import("@/views/house/ecommendationList.vue"),
+  },
 ];
 
 export function requireAuthentication(to) {
