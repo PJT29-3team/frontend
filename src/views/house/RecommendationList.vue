@@ -11,7 +11,7 @@
           <p class="sub-title">이중에서 최대 3곳을 관심 목록에 담아보세요.</p>
 
           <HomeCard
-            v-for="home in dummyHomes"
+            v-for="home in displayedHomes"
             :key="home.id"
             :home="home"
             :is-selected="home.id === selectedId"
@@ -25,7 +25,7 @@
         />
 
         <div class="map-area">
-            <HomeMapView :homes="dummyHomes"/>
+            <HomeMapView :homes="displayedHomes"/>
           </div>
       </section>
 
@@ -73,6 +73,8 @@ const selectedId = ref(dummyHomes[0].id); // 기본값 : 1번 (적합도 1위)
 const selectedHome = computed(() => {
   return dummyHomes.find(h => h.id === selectedId.value);
 });
+
+const displayedHomes = computed(() => dummyHomes.slice(0, 5));
 
 function selectHome(homeId) {
   selectedId.value = homeId;
