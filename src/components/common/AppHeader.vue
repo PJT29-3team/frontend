@@ -11,6 +11,7 @@
       </button>
       <button class="mypage-btn">마이페이지</button>
       <span class="user-name">{{ authStore.state.user?.name }} 님, 환영합니다.</span>
+      <button class="logout-btn" @click="handleLogout">로그아웃</button>
     </div>
   </header>
 </template>
@@ -18,6 +19,14 @@
 <script setup>
 import logo from '@/assets/jiphyeonjeon-header-logo.png';
 import { authStore } from '@/stores/authStore.js';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+async function handleLogout() {
+  await authStore.logout() 
+  router.push('/login');
+}
 </script>
 
 <style scoped>
@@ -59,6 +68,16 @@ import { authStore } from '@/stores/authStore.js';
   border: 2px solid #A69C8C;
   padding: 8px 16px;
   color: white;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }
 
 .user-name {
