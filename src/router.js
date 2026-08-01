@@ -51,6 +51,11 @@ const routes = [
     name: "recommend-list",
     component: () => import("@/views/house/RecommendationList.vue"),
   },
+  {
+    path: '/recommend/:homeId',
+    name: 'property-detail',
+  component: () => import('@/views/house/PropertyDetail.vue')
+}
 ];
 
 export function requireAuthentication(to) {
