@@ -14,37 +14,39 @@
             v-for="home in dummyHomes"
             :key="home.id"
             :home="home"
+            :is-selected="home.id === selectedId"
+            @select="selectHome"
           />
         </div>
 
         <!-- 남는 돈 패널, 지도 -->
         <div class="right-panel">
           <div class="summary-card">
-            <p class="summary-title">야탑동 탑마을(선경)로 옮기시면</p>
+            <p class="summary-title">{{ selectedHome.address }}로 옮기시면</p>
             <div class="summary-row">
               <span>내집 팔고 대출 갚고 남는 돈</span>
               <span>5억 683만원</span>
             </div>
             <div class="summary-row">
               <span>이 집 가격</span>
-              <span>- 3억 4,500만원</span>
+              <span>- {{ selectedHome.price }}</span>
             </div>
 
             <div class="summary-sub">
               <p class="summary-sub-title">집 살 때 드는 비용</p>
               <div class="summary-row small">
                 <span>취득세(1.1%)</span>
-                <span>- 379만원</span>
+                <span>- {{ formatKoreanMoney(acquisitionTax) }}</span>
               </div>
               <div class="summary-row small">
                 <span>중개보수(0.4%)</span>
-                <span>- 151만원</span>
+                <span>- {{ formatKoreanMoney(brokerFee) }}</span>
               </div>
             </div>
 
             <div class="summary-row total">
               <span>실제 총 지출</span>
-              <span>- 3억 5,030만원</span>
+              <span>- {{ formatKoreanMoney(totalCost) }}</span>
             </div>
 
             <div class="result-box">
@@ -91,18 +93,42 @@ import AppHeader from '@/components/common/AppHeader.vue';
 import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '../../components/house/HomeMapView.vue';
 import StepIndicator from '@/components/common/StepIndicator.vue';
-import { reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { favoriteStore } from '@/stores/favoriteStore.js';
 
 const dummyHomes = reactive ([
-    { id : 1, rank : 1, price : '3억 4,500만원', address : '야탑동 탑마을(선경) · 24평', score : 88, isFavorite : true },
-    { id: 2, rank: 2, price: '3억 5,000만원', address: '정자동 한솔마을(주공5단지) · 21평', score: 84, isFavorite: false },
-    { id: 3, rank: 3, price: '3억 3,800만원', address: '서현동 풍림아이원플러스 · 23평', score: 79, isFavorite: true },
-    { id: 4, rank: 4, price: '2억 9,500만원', address: '정자동 인빌리전자A · 25평', score: 76, isFavorite: true },
-    { id: 5, rank: 5, price: '3억 2,000만원', address: '수내동 파크뷰(오피스텔) · 22평', score: 72, isFavorite: false },
+    { id: 1, rank: 1, price : '3억 4,500만원', priceNum: 34500, address : '야탑동 탑마을(선경) · 24평', score : 88, isFavorite : true },
+    { id: 2, rank: 2, price: '3억 5,000만원', priceNum: 35000, address: '정자동 한솔마을(주공5단지) · 21평', score: 84, isFavorite: false },
+    { id: 3, rank: 3, price: '3억 3,800만원', priceNum: 33800, address: '서현동 풍림아이원플러스 · 23평', score: 79, isFavorite: true },
+    { id: 4, rank: 4, price: '2억 9,500만원', priceNum: 29500, address: '정자동 인빌리전자A · 25평', score: 76, isFavorite: true },
+    { id: 5, rank: 5, price: '3억 2,000만원', priceNum: 32000, address: '수내동 파크뷰(오피스텔) · 22평', score: 72, isFavorite: false },
 ]);
 
 const favStore = favoriteStore();
+
+const selectedId = ref(dummyHomes[0].id); // 기본값 : 1번 (적합도 1위)
+
+const selectedHome = computed(() => {
+  return dummyHomes.find(h => h.id === selectedId.value);
+});
+
+function selectHome(homeId) {
+  selectedId.value = homeId;
+}
+
+// 오른쪽 패널에 있는 계산용 computed
+const acquisitionTax = computed(() => Math.round(selectedHome.value.priceNum * 0.011));
+const brokerFee = computed(() => Math.round(selectedHome.value.priceNum * 0.004));
+const totalCost = computed(() => selectedHome.value.priceNum + acquisitionTax.value + brokerFee.value);
+
+function formatKoreanMoney(manwon) {
+  const eok = Math.floor(manwon / 10000);
+  const man = manwon % 10000;
+  
+  if (eok === 0) return `${man.toLocaleString()}만원`;
+  if (man === 0) return `${eok}억원`;
+  return `${eok}억 ${man.toLocaleString()}만원`;
+}
 </script>
 
 <style scoped>

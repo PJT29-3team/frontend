@@ -1,5 +1,8 @@
 <template>
-  <div class="home-card" :class="{ 'is-favorite': store.isFavorite(home.id) }">
+  <div class="home-card" 
+  :class="{ 'is-selected' : isSelected }"
+  @click="emit('select', home.id)"
+  >
     <div class="rank">{{ home.rank }}</div>
 
     <div class="info">
@@ -22,7 +25,7 @@
       <button 
       class="favorite-btn" 
       :class="{ active: store.isFavorite(home.id) }"
-      @click="store.toggleFavorite(home.id)"
+      @click.stop="store.toggleFavorite(home.id)"
       >
         <span class="heart-icon">{{ store.isFavorite(home.id) ? '♥' : '♡' }}</span>
         {{ store.isFavorite(home.id) ? '담았어요' : '관심 목록에 담기' }}
@@ -34,7 +37,8 @@
 <script setup>
 import { favoriteStore } from '@/stores/favoriteStore';
 
-const props = defineProps(['home']);
+const props = defineProps(['home', 'isSelected']);
+const emit = defineEmits(['select']);
 const store = favoriteStore();
 </script>
 
@@ -49,15 +53,11 @@ const store = favoriteStore();
   margin-bottom: 12px;
 }
 
-.home-card.is-favorite {
-  background: #fffbea;
-  border-color: #f0c14b;
-}
-
-/* rank 배경도 찜 상태면 노란색으로 */
-.home-card.is-favorite .rank {
-  background: #f5c518;
-  color: #4a3a00;
+.home-card.is-selected {
+  background: #fff4d6;
+  border-color: #545045;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px #545045;
 }
 
 .rank {
