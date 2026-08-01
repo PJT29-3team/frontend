@@ -19,14 +19,13 @@
           />
         </div>
 
-        <PurchaseCostPanel 
-          v-if="selectedHome" 
-          :selected-home="selectedHome"
-        />
-
-        <div class="map-area">
+        <div class="right-column">
+          <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
+          
+          <div class="map-area">
             <HomeMapView :homes="displayedHomes"/>
           </div>
+        </div>
       </section>
 
       <!-- 구분선 -->
@@ -169,9 +168,18 @@ function selectHome(homeId) {
   line-height: 1.6;
 }
 
+/* 오른쪽 패널 */
+.right-column {
+  flex: 1;   
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 /* 지도 부분 */
 .map-area {
-  flex: 1;
+  flex: 1;                 /* 남는 세로 공간을 다 채움 → 왼쪽 목록이랑 높이 맞춰짐 */
   min-height: 300px;
   border-radius: 12px;
   overflow: hidden;
