@@ -10,14 +10,14 @@
         보고서 받기 <span class="arrow">▾</span>
       </button>
       <button class="mypage-btn">마이페이지</button>
-      <!-- 홍길동 은 하드코딩 됨. -->
-      <span class="user-name">홍길동 님, 환영합니다.</span>
+      <span class="user-name">{{ authStore.state.user?.name }} 님, 환영합니다.</span>
     </div>
   </header>
 </template>
 
 <script setup>
-import logo from '@/assets/jiphyeonjeon-header-logo.png'
+import logo from '@/assets/jiphyeonjeon-header-logo.png';
+import { authStore } from '@/stores/authStore.js';
 </script>
 
 <style scoped>
