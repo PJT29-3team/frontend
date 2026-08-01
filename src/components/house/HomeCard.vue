@@ -1,5 +1,5 @@
 <template>
-  <div class="home-card" :class="{ 'is-favorite': home.isFavorite }">
+  <div class="home-card" :class="{ 'is-favorite': store.isFavorite(home.id) }">
     <div class="rank">{{ home.rank }}</div>
 
     <div class="info">
@@ -21,19 +21,21 @@
       </button>
       <button 
       class="favorite-btn" 
-      :class="{ active: home.isFavorite }"
-      @click="$emit('toggle-favorite', home.id)"
+      :class="{ active: store.isFavorite(home.id) }"
+      @click="store.toggleFavorite(home.id)"
       >
-        <span class="heart-icon">{{ home.isFavorite ? '♥' : '♡' }}</span>
-        {{ home.isFavorite ? '담았어요' : '관심 목록에 담기' }}
+        <span class="heart-icon">{{ store.isFavorite(home.id) ? '♥' : '♡' }}</span>
+        {{ store.isFavorite(home.id) ? '담았어요' : '관심 목록에 담기' }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-defineProps(['home']);
-defineEmits(['toggle-favorite']);
+import { favoriteStore } from '@/stores/favoriteStore';
+
+const props = defineProps(['home']);
+const store = favoriteStore();
 </script>
 
 <style scoped>

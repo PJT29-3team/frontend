@@ -14,7 +14,6 @@
             v-for="home in dummyHomes"
             :key="home.id"
             :home="home"
-            @toggle-favorite="toggleFavorite"
           />
         </div>
 
@@ -74,7 +73,7 @@
         <button class="retry-btn">← 설문조사 다시하기</button>
         <button class="condition-btn">마음에 드는 집이 없나요? <br>조건을 바꿔볼게요.</button>
         <div class="compare-area">
-          <span class="picked-count">담은 매물 2/3</span>
+          <span class="picked-count">담은 매물 {{ favStore.count }}/3</span>
           <button class="compare-btn">현재 담은 매물 비교하러 가기 →</button>
         </div>
       </div>
@@ -93,6 +92,7 @@ import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '../../components/house/HomeMapView.vue';
 import StepIndicator from '@/components/common/StepIndicator.vue';
 import { reactive } from 'vue';
+import { favoriteStore } from '@/stores/favoriteStore.js';
 
 const dummyHomes = reactive ([
     { id : 1, rank : 1, price : '3억 4,500만원', address : '야탑동 탑마을(선경) · 24평', score : 88, isFavorite : true },
@@ -102,11 +102,7 @@ const dummyHomes = reactive ([
     { id: 5, rank: 5, price: '3억 2,000만원', address: '수내동 파크뷰(오피스텔) · 22평', score: 72, isFavorite: false },
 ]);
 
-// 관심버튼 활성/비활성
-function toggleFavorite(homeId) {
-  const home = dummyHomes.find(h => h.id === homeId);
-  if (home) home.isFavorite = !home.isFavorite;
-}
+const favStore = favoriteStore();
 </script>
 
 <style scoped>
