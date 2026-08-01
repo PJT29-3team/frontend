@@ -11,7 +11,7 @@
           <p class="sub-title">이중에서 최대 3곳을 관심 목록에 담아보세요.</p>
 
           <HomeCard
-            v-for="home in dummyHomes"
+            v-for="home in displayedHomes"
             :key="home.id"
             :home="home"
             :is-selected="home.id === selectedId"
@@ -19,51 +19,11 @@
           />
         </div>
 
-        <!-- 남는 돈 패널, 지도 -->
-        <div class="right-panel">
-          <div class="summary-card">
-            <p class="summary-title">{{ selectedHome.address }}로 옮기시면</p>
-            <div class="summary-row">
-              <span>내집 팔고 대출 갚고 남는 돈</span>
-              <span>5억 683만원</span>
-            </div>
-            <div class="summary-row">
-              <span>이 집 가격</span>
-              <span>- {{ selectedHome.price }}</span>
-            </div>
-
-            <div class="summary-sub">
-              <p class="summary-sub-title">집 살 때 드는 비용</p>
-              <div class="summary-row small">
-                <span>취득세(1.1%)</span>
-                <span>- {{ formatKoreanMoney(acquisitionTax) }}</span>
-              </div>
-              <div class="summary-row small">
-                <span>중개보수(0.4%)</span>
-                <span>- {{ formatKoreanMoney(brokerFee) }}</span>
-              </div>
-            </div>
-
-            <div class="summary-row total">
-              <span>실제 총 지출</span>
-              <span>- {{ formatKoreanMoney(totalCost) }}</span>
-            </div>
-
-            <div class="result-box">
-              <span>남는 돈</span>
-              <strong>약 1억 5650만원</strong>
-            </div>
-            <p class="goal-compare">
-                목표 1억 5,000만원 대비 <span class="diff">+650만원 여유</span>
-            </p>
-
-            <p class="summary-note">
-              취득세율은 1주택 조정대상지역 외 기준 예시이며, 실제 세율은 주택 수와 지역, 거래가 구간에 따라 달라져요.
-            </p>
-          </div>
-
+        <div class="right-column">
+          <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
+          
           <div class="map-area">
-            <HomeMapView :homes="dummyHomes"/>
+            <HomeMapView :homes="displayedHomes"/>
           </div>
         </div>
       </section>
@@ -91,8 +51,9 @@
 <script setup>
 import AppHeader from '@/components/common/AppHeader.vue';
 import HomeCard from '@/components/house/HomeCard.vue';
-import HomeMapView from '../../components/house/HomeMapView.vue';
+import HomeMapView from '@/components/house/HomeMapView.vue';
 import StepIndicator from '@/components/common/StepIndicator.vue';
+import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
 import { computed, reactive, ref } from 'vue';
 import { favoriteStore } from '@/stores/favoriteStore.js';
 
@@ -112,22 +73,10 @@ const selectedHome = computed(() => {
   return dummyHomes.find(h => h.id === selectedId.value);
 });
 
+const displayedHomes = computed(() => dummyHomes.slice(0, 5));
+
 function selectHome(homeId) {
   selectedId.value = homeId;
-}
-
-// 오른쪽 패널에 있는 계산용 computed
-const acquisitionTax = computed(() => Math.round(selectedHome.value.priceNum * 0.011));
-const brokerFee = computed(() => Math.round(selectedHome.value.priceNum * 0.004));
-const totalCost = computed(() => selectedHome.value.priceNum + acquisitionTax.value + brokerFee.value);
-
-function formatKoreanMoney(manwon) {
-  const eok = Math.floor(manwon / 10000);
-  const man = manwon % 10000;
-  
-  if (eok === 0) return `${man.toLocaleString()}만원`;
-  if (man === 0) return `${eok}억원`;
-  return `${eok}억 ${man.toLocaleString()}만원`;
 }
 </script>
 
@@ -153,11 +102,6 @@ function formatKoreanMoney(manwon) {
   flex-direction: column;
 }
 
-.right-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
 
 .main-title {
   margin: 0 0 4px;
@@ -224,89 +168,21 @@ function formatKoreanMoney(manwon) {
   line-height: 1.6;
 }
 
-/* 남는 돈 요약 카드 */
-.summary-card {
-  background: #545045;
-  color: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.summary-title {
-  font-size: 13px;
-  color: #ddd;
-  margin: 0 0 12px;
-}
-
-.summary-row {
+/* 오른쪽 패널 */
+.right-column {
+  flex: 1;   
   display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  padding: 4px 0;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
-.summary-row.small {
-  font-size: 12px;
-  color: #ccc;
-  padding: 2px 0;
-}
-
-.summary-row.total {
-  border-top: 1px solid #6b665a;
-  margin-top: 8px;
-  padding-top: 8px;
-  font-weight: 700;
-}
-
-.summary-sub {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 8px 0;
-}
-
-.summary-sub-title {
-  font-size: 12px;
-  color: #ccc;
-  margin: 0 0 4px;
-}
-
-.result-box {
-  background: #f5c518;
-  color: #4a3a00;
-  border-radius: 8px;
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  font-weight: 700;
-}
-
-.summary-note {
-  font-size: 11px;
-  color: #bbb;
-  margin-top: 10px;
-  line-height: 1.5;
-}
-
+/* 지도 부분 */
 .map-area {
-  flex: 1;
+  flex: 1;                 /* 남는 세로 공간을 다 채움 → 왼쪽 목록이랑 높이 맞춰짐 */
   min-height: 300px;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f0e8;
-}
-
-.goal-compare {
-  font-size: 12px;
-  color: #999;
-  margin: 8px 0 0;
-}
-
-.diff {
-  color: #7ec850;
-  font-weight: 700;
 }
 </style>
