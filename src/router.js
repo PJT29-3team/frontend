@@ -57,6 +57,11 @@ const routes = [
     name: "recommendation-result",
     component: () => import("@/views/RecommendationResultView.vue"),
   },
+  {
+    path: "/recommendation/favorites",
+    name: "recommendation-favorites",
+    component: () => import("@/views/RecommendationFavoritesView.vue"),
+  },
 ];
 
 export function requireAuthentication(to) {
