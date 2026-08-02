@@ -7,18 +7,14 @@ import client from './client';
  */
 export default {
   /**
-   * 조건 제출 → 맞춤추천 결과.
-   * @returns { investAmount, remainingCash, safetyLevel, investPeriod, investRatio, products[] }
+   * 조건 제출(투자비율) → 기간 구간별 추천 결과.
+   * 신설계: 안전도/기간은 선택하지 않음(위험도=태그, 기간=결과에서 구간별).
+   * @returns { investAmount, remainingCash, investRatio,
+   *            periods: [{ code, label, hint, products[] }] }
    */
-  submit({ surveyId, fundingAmount, investRatio, safetyLevel, investPeriod }) {
+  submit({ surveyId, fundingAmount, investRatio }) {
     return client
-      .post('/api/finance/recommendations', {
-        surveyId,
-        fundingAmount,
-        investRatio,
-        safetyLevel,
-        investPeriod,
-      })
+      .post('/api/finance/recommendations', { surveyId, fundingAmount, investRatio })
       .then((res) => res.data);
   },
 };

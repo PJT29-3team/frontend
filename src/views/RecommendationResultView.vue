@@ -1,11 +1,18 @@
 <script setup>
-import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
+import recommendationApi from '@/api/recommendation';
 import '@/styles/survey-tokens.css';
 
 const router = useRouter();
 const rec = useRecommendationStore();
+
+const loading = ref(true);
+const error = ref(null);
+// [{ code, label, hint, products:[{ kind, category, name, institution,
+//    safetyLevel, rate, termMonths, recommendReason, popular }] }]
+const periods = ref([]);
 
 // 스크롤 스파이: 상단 구간 버튼 ↔ 현재 보이는 구간 동기화
 const activeCode = ref('SHORT');
@@ -21,8 +28,10 @@ function scrollTo(code) {
 // sticky nav 아래 기준선(px)을 지나친 마지막 구간을 활성으로 판단
 const ACTIVE_LINE = 120;
 function updateActive() {
-  let current = PERIODS[0].code;
-  for (const p of PERIODS) {
+  const list = periods.value;
+  if (!list.length) return;
+  let current = list[0].code;
+  for (const p of list) {
     const el = sectionEls[p.code];
     if (el && el.getBoundingClientRect().top <= ACTIVE_LINE) current = p.code;
   }
@@ -30,58 +39,41 @@ function updateActive() {
   // (마지막 구간은 기준선까지 스크롤이 안 올라와 계산에서 누락되기 때문)
   const atBottom =
     window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-  if (atBottom) current = PERIODS[PERIODS.length - 1].code;
+  if (atBottom) current = list[list.length - 1].code;
   activeCode.value = current;
 }
-onMounted(() => {
-  updateActive();
+
+onMounted(async () => {
   window.addEventListener('scroll', updateActive, { passive: true });
   window.addEventListener('resize', updateActive, { passive: true });
+  try {
+    const res = await recommendationApi.submit({
+      surveyId: null,
+      fundingAmount: rec.fundingAmount,
+      investRatio: rec.ratioPercent,
+    });
+    periods.value = res.periods ?? [];
+    activeCode.value = periods.value[0]?.code ?? 'SHORT';
+    await nextTick();
+    updateActive();
+  } catch (e) {
+    error.value = '추천을 불러오지 못했어요. 백엔드(8080)가 켜져 있는지 확인해주세요.';
+  } finally {
+    loading.value = false;
+  }
 });
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateActive);
   window.removeEventListener('resize', updateActive);
 });
 
-// ⚠️ 목데이터: 새 설계(안전도 필터 제거·기간 구간별·만기 상품만)에 맞춘 화면 우선 구현.
-//   백엔드 추천 API가 "기간 구간별 조회"로 바뀌면 이 배열을 API 응답으로 교체한다.
-//   각 구간의 3번째 상품(popular=true)에 "비슷한 자산 인기" 태그를 단다.
-//   kind: 'deposit' 예금 / 'savings' 적금 / 'bond_etf' 만기매칭 채권ETF
-const PERIODS = reactive([
-  {
-    code: 'SHORT',
-    label: '1년 미만',
-    hint: '예치기간 12개월 미만',
-    products: [
-      { institution: 'NH농협은행', name: 'NH 올원 정기예금', kind: 'deposit', safetyLevel: 'VERY_LOW', rate: 3.5, termMonths: 6, reason: '6개월 만기로 자금이 오래 묶이지 않아 단기 목적에 잘 맞습니다.' },
-      { institution: '케이뱅크', name: '코드K 정기예금', kind: 'deposit', safetyLevel: 'VERY_LOW', rate: 3.55, termMonths: 6, reason: '가입이 간편하고 6개월 단기 예치에 적합합니다.' },
-      { institution: '카카오뱅크', name: '카카오뱅크 정기예금', kind: 'deposit', safetyLevel: 'VERY_LOW', rate: 3.6, termMonths: 6, reason: '안정적인 금리로 단기 자금을 굴리기 좋습니다.', popular: true },
-    ],
-  },
-  {
-    code: 'MEDIUM',
-    label: '1~3년',
-    hint: '예치기간 12~36개월',
-    products: [
-      { institution: 'KB국민은행', name: 'KB 든든 자유적금', kind: 'savings', safetyLevel: 'VERY_LOW', rate: 3.8, termMonths: 12, reason: '매월 자유롭게 납입할 수 있어 정착 자금 관리가 편합니다.' },
-      { institution: '우리은행', name: '우리 첫거래우대 예금', kind: 'deposit', safetyLevel: 'VERY_LOW', rate: 3.45, termMonths: 24, reason: '2년 예치로 단기보다 높은 금리를 안정적으로 받습니다.' },
-      { institution: '토스뱅크', name: '토스뱅크 자유적금', kind: 'savings', safetyLevel: 'VERY_LOW', rate: 4.0, termMonths: 12, reason: '우대조건 충족 시 높은 금리를 받을 수 있는 자유적금입니다.', popular: true },
-    ],
-  },
-  {
-    code: 'LONG',
-    label: '3년 이상',
-    hint: '예치기간 36개월 이상',
-    products: [
-      { institution: '신한은행', name: '신한 쏠편한 정기예금', kind: 'deposit', safetyLevel: 'VERY_LOW', rate: 3.55, termMonths: 36, reason: '3년 이상 여유자금을 안정적으로 묶어두기 좋습니다.' },
-      { institution: '미래에셋자산운용', name: 'TIGER 25-11 국공채만기매칭', kind: 'bond_etf', safetyLevel: 'LOW', rate: 3.9, termMonths: 48, reason: '만기가 정해진 국공채 ETF로 예금처럼 만기까지 보유하기 좋습니다.' },
-      { institution: '삼성자산운용', name: 'KODEX 25-12 은행채만기매칭', kind: 'bond_etf', safetyLevel: 'LOW', rate: 4.1, termMonths: 48, reason: '만기매칭형 채권 ETF로 만기 보유 시 안정적인 이자를 기대합니다.', popular: true },
-    ],
-  },
-]);
-
-const KIND_LABEL = { deposit: '예금', savings: '적금', bond_etf: '만기 채권ETF' };
-
+const CATEGORY_LABEL = {
+  DEPOSIT: '예금', SAVINGS: '적금', CMA: 'CMA',
+  BOND_ETF: '만기 채권ETF', BOND: '채권', BOND_FUND: '펀드',
+};
+function categoryLabel(cat) {
+  return CATEGORY_LABEL[cat] ?? cat;
+}
 function riskBadge(code) {
   return RISK_OPTIONS.find((o) => o.code === code)?.label ?? code;
 }
@@ -91,11 +83,15 @@ function riskTone(code) {
 function logoText(name) {
   return (name || '').replace(/\s/g, '').slice(0, 2);
 }
+function rateText(p) {
+  return p.rate == null ? '-' : Number(p.rate).toFixed(2);
+}
 function maturityText(p) {
-  const y = Math.floor(p.termMonths / 12);
-  const m = p.termMonths % 12;
-  const dur = [y ? `${y}년` : '', m ? `${m}개월` : ''].filter(Boolean).join(' ');
-  return p.kind === 'bond_etf' ? `만기 약 ${dur} 뒤` : `${dur} 뒤 만기`;
+  const t = p.termMonths ?? 0;
+  const y = Math.floor(t / 12);
+  const m = t % 12;
+  const dur = [y ? `${y}년` : '', m ? `${m}개월` : ''].filter(Boolean).join(' ') || `${t}개월`;
+  return p.kind === 'stock' ? `만기 약 ${dur} 뒤` : `${dur} 뒤 만기`;
 }
 
 function goFavorites() {
@@ -131,10 +127,13 @@ function goFavorites() {
         </div>
       </header>
 
+      <p v-if="loading" class="state-msg">추천을 불러오는 중…</p>
+      <p v-else-if="error" class="state-msg error">{{ error }}</p>
+
       <!-- 구간 이동 버튼 (스크롤 스파이) -->
-      <nav class="period-nav" aria-label="기간 구간 이동">
+      <nav v-if="!loading && !error" class="period-nav" aria-label="기간 구간 이동">
         <button
-          v-for="period in PERIODS"
+          v-for="period in periods"
           :key="period.code"
           type="button"
           class="pnav-btn"
@@ -147,7 +146,8 @@ function goFavorites() {
 
       <!-- 기간 구간별 3줄 -->
       <section
-        v-for="period in PERIODS"
+        v-for="period in periods"
+        v-show="!loading && !error"
         :key="period.code"
         :ref="(el) => setSectionRef(period.code, el)"
         :data-code="period.code"
@@ -171,7 +171,7 @@ function goFavorites() {
               <span class="badge badge-risk" :class="'tone-' + riskTone(p.safetyLevel)">
                 {{ riskBadge(p.safetyLevel) }}
               </span>
-              <span class="badge">{{ KIND_LABEL[p.kind] }}</span>
+              <span class="badge">{{ categoryLabel(p.category) }}</span>
               <span v-if="p.popular" class="badge badge-popular">비슷한 자산 인기</span>
             </div>
             <div class="p-head">
@@ -182,12 +182,12 @@ function goFavorites() {
               </div>
             </div>
             <div class="p-rate">
-              금리 연 <b>{{ p.rate.toFixed(2) }}%</b>
+              금리 연 <b>{{ rateText(p) }}%</b>
             </div>
             <div class="p-maturity">
               예치기간 {{ p.termMonths }}개월 · {{ maturityText(p) }}
             </div>
-            <p class="p-reason">💬 {{ p.reason }}</p>
+            <p class="p-reason">💬 {{ p.recommendReason }}</p>
             <div class="p-actions">
               <button class="p-info-btn" type="button">상품 정보 보기</button>
               <button class="p-heart" type="button" aria-label="관심 등록">♡</button>
@@ -196,7 +196,7 @@ function goFavorites() {
         </div>
       </section>
 
-      <div class="next-row">
+      <div v-if="!loading && !error" class="next-row">
         <button class="primary-btn cta" type="button" @click="goFavorites">
           담은 상품으로 비율 정하기 →
         </button>
@@ -258,6 +258,9 @@ function goFavorites() {
 .stat-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 .stat-value { font-size: 22px; }
 .stat-value.invest { color: var(--kb-yellow-deep); }
+
+.state-msg { text-align: center; color: var(--text-muted); padding: 48px 0; }
+.state-msg.error { color: #9b3b3b; }
 
 /* 구간 이동 버튼 (sticky) */
 .period-nav {
