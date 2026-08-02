@@ -40,6 +40,24 @@
 
       <div class="evaluation-sections">
         <!-- 3개 카드 컴포넌트 자리 -->
+         <EvaluationSection
+         title="주거안전"
+         :grade="property.evaluation.safety.grade"
+         :items="property.evaluation.safety.items"
+         :details="property.evaluation.safety.details"
+         />
+         <EvaluationSection
+         title="생활 편의"
+         :grade="property.evaluation.convenience.grade"
+         :items="property.evaluation.convenience.items"
+         :details="property.evaluation.convenience.details"
+         />
+         <EvaluationSection
+         title="자산 안정"
+         :grade="property.evaluation.asset.grade"
+         :items="property.evaluation.asset.items"
+         :details="property.evaluation.asset.details"
+         />
       </div>
     </div>
   </div>
@@ -48,8 +66,9 @@
 <script setup>
 import AppHeader from '@/components/common/AppHeader.vue';
 import { useRoute, useRouter } from 'vue-router';
-import { fetchPropertyDetail } from '../../api/propertyDetailApi';
+import { fetchPropertyDetail } from '@/api/propertyDetailApi';
 import { onMounted, watch, ref } from 'vue';
+import EvaluationSection from '@/components/house/EvaluationSection.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -97,7 +116,7 @@ watch(() => route.params.homeId, (newId) => {
   border: 1px solid #ddd;
   border-radius: 20px;
   color: #888;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   padding: 8px 16px;
   margin-bottom: 20px;
@@ -112,13 +131,13 @@ watch(() => route.params.homeId, (newId) => {
 
 .address-info h2 {
   margin: 0 0 4px;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
 }
 
 .sub-address {
-  color: #888;
-  font-size: 13px;
+  color: #666;
+  font-size: 15px;
   margin: 0 0 12px;
 }
 
@@ -129,7 +148,7 @@ watch(() => route.params.homeId, (newId) => {
 }
 
 .tag {
-  font-size: 12px;
+  font-size: 14px;
   color: #666;
   background: #f0f0f0;
   padding: 4px 10px;
@@ -140,7 +159,7 @@ watch(() => route.params.homeId, (newId) => {
   background: none;
   border: none;
   color: #545045;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -151,6 +170,7 @@ watch(() => route.params.homeId, (newId) => {
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 24px;
+  font-size: 16px;
 }
 
 .evaluation-sections {
