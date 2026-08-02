@@ -112,9 +112,9 @@ const userPersona = 'safety_first';
 // TODO: 나머지 3개 페르소나 이름/비율 확인 필요 (50/10/40, 50/40/10, 40/30/30 추정)
 const personaWeights = {
   safety_first: { name: '안전중시형', safety: 60, convenience: 20, asset: 20 },
-  convenience_first: { name: '???', safety: 50, convenience: 40, asset: 10 },
-  asset_first: { name: '???', safety: 50, convenience: 10, asset: 40 },
-  balanced: { name: '???', safety: 40, convenience: 30, asset: 30 },
+  convenience_first: { name: '편의중시형', safety: 50, convenience: 40, asset: 10 },
+  asset_first: { name: '자산중시형', safety: 50, convenience: 10, asset: 40 },
+  balanced: { name: '균형중시형', safety: 40, convenience: 30, asset: 30 },
 };
  
 const current = computed(() => personaWeights[userPersona]);
