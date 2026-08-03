@@ -1,6 +1,6 @@
 <template>
   <section class="auth-card" :class="{ compact }">
-    <img class="auth-card__mark" src="@/assets/jiphyeonjeon-mark.svg" alt="집현전" />
+    <img class="auth-card__mark" src="../../assets/jiphyeonjeon-mark.svg" alt="집현전" />
     <h1>{{ title }}</h1>
     <slot />
   </section>

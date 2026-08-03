@@ -18,7 +18,7 @@
     </div>
 
     <div class="actions">
-      <button class="detail-btn">
+      <button class="detail-btn" @click.stop="router.push(`/recommend/${home.id}`)">
         <span class="icon-circle">?</span>
         세부정보 보기
       </button>
@@ -36,10 +36,13 @@
 
 <script setup>
 import { favoriteStore } from '@/stores/favoriteStore';
+import { useRouter } from 'vue-router';
 
 const props = defineProps(['home', 'isSelected']);
 const emit = defineEmits(['select']);
 const store = favoriteStore();
+
+const router = useRouter();
 </script>
 
 <style scoped>

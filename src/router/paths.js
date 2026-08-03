@@ -4,6 +4,7 @@ export const PATHS = Object.freeze({
   survey: '/survey',
   surveyResume: '/survey/:surveyId',
   recommendedProperty: '/recommend',
+  propertyDetail: '/recommend/:homeId',
   evaluationMethod: '/evaluation-method',
   login: '/login',
   emailLogin: '/login/email',
