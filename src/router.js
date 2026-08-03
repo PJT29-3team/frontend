@@ -66,6 +66,11 @@ const routes = [
     name: "recommendation-favorites",
     component: () => import("@/views/RecommendationFavoritesView.vue"),
   },
+  {
+    path: "/finance/horizon",
+    name: "horizon-scenario",
+    component: () => import("@/views/finance/HorizonScenarioView.vue"),
+  },
 ];
 
 export function requireAuthentication(to) {
