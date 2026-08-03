@@ -10,8 +10,8 @@
         <p class="step-status">{{ statusText(stepStatus(step.key)) }}</p>
       </div>
 
-      <div 
-        v-if="index < steps.length - 1" 
+      <div
+        v-if="index < steps.length - 1"
         class="step-line"
         :class="{ done: stepStatus(step.key) === 'done' }"
       ></div>

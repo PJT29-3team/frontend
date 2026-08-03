@@ -136,7 +136,7 @@ function calculateBrokerageFee(price) {
     return { rate, limit, rawFee, brokerageFee, vat };
 }
 
-// 2. computed 
+// 2. computed
 const buyPrice = computed(() => props.selectedHome.priceNum * 10000);
 const purchaseCost = computed(() => calculatePurchaseCost(buyPrice.value));
 const acquisitionTax = computed(() => Math.round(purchaseCost.value.totalTax / 10000));
@@ -155,7 +155,7 @@ const brokerageRatePercent = computed(() => (brokerage.value.rate * 100).toFixed
 function formatKoreanMoney(manwon) {
   const eok = Math.floor(manwon / 10000);
   const man = manwon % 10000;
-  
+
   if (eok === 0) return `${man.toLocaleString()}만원`;
   if (man === 0) return `${eok}억원`;
   return `${eok}억 ${man.toLocaleString()}만원`;

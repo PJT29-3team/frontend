@@ -21,7 +21,7 @@
 
         <div class="right-column">
           <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
-          
+
           <div class="map-area">
             <HomeMapView :homes="displayedHomes"/>
           </div>
@@ -170,7 +170,7 @@ function selectHome(homeId) {
 
 /* 오른쪽 패널 */
 .right-column {
-  flex: 1;   
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;

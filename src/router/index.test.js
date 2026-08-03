@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { authStore, resetAuthStoreForTest } from './stores/authStore'
-import router, { requireAuthentication } from './router'
+import { authStore, resetAuthStoreForTest } from '../stores/authStore'
+import router, { requireAuthentication } from './index'
 
 describe('authenticated route guard', () => {
   beforeEach(() => {

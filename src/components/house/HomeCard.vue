@@ -1,5 +1,5 @@
 <template>
-  <div class="home-card" 
+  <div class="home-card"
   :class="{ 'is-selected' : isSelected }"
   @click="emit('select', home.id)"
   >
@@ -22,8 +22,8 @@
         <span class="icon-circle">?</span>
         세부정보 보기
       </button>
-      <button 
-      class="favorite-btn" 
+      <button
+      class="favorite-btn"
       :class="{ active: store.isFavorite(home.id) }"
       @click.stop="store.toggleFavorite(home.id)"
       >
