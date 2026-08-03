@@ -5,6 +5,9 @@ import { Check, Database, FileText, Heart, Search } from '@lucide/vue'
 import logoUrl from './assets/images/logo.png'
 
 const route = useRoute()
+const showServiceShell = computed(() =>
+  route.path.startsWith('/survey') || route.path.startsWith('/recommendation'),
+)
 
 const steps = [
   { label: '설문 조사', icon: Check },
@@ -35,7 +38,7 @@ function stepStatusLabel(index) {
 </script>
 
 <template>
-  <main class="app-shell">
+  <main v-if="showServiceShell" class="app-shell">
     <header class="topbar">
       <RouterLink class="brand" to="/" aria-label="작은 둥지 홈">
         <img :src="logoUrl" alt="" />
@@ -72,6 +75,7 @@ function stepStatusLabel(index) {
 
     <RouterView />
   </main>
+  <RouterView v-else />
 </template>
 
 <style scoped>

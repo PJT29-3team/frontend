@@ -1,191 +1,132 @@
 <template>
-  <div class="login-page">
-    <LoginHeader />
-
-    <main class="login-main">
-      <section class="login-panel" aria-labelledby="login-title">
+  <MemberPageLayout action-label="회원가입" action-to="/signup">
+    <section class="login-content" aria-labelledby="login-title">
+      <div class="login-panel">
         <h1 id="login-title">로그인</h1>
 
-        <div class="section-label"><span>소셜 로그인</span></div>
+        <div class="divider"><span>소셜 로그인</span></div>
         <a
-          class="login-button login-button--kakao"
+          class="kakao-login"
           data-social-provider="kakao"
           :href="`${apiBaseUrl}/api/auth/social/kakao`"
-          aria-label="카카오 로그인"
         >
-          <img
-            class="login-button__kakao-image"
-            src="../assets/kakao-login-large-wide.png"
-            alt=""
-          />
+          <img src="../assets/kakao-login-medium-wide.png" alt="카카오 로그인" />
         </a>
 
-        <div class="section-label section-label--basic"><span>기본 로그인</span></div>
-        <RouterLink class="login-button login-button--email" to="/login/email">
-          이메일로 로그인
-        </RouterLink>
+        <div class="divider basic-divider"><span>기본 로그인</span></div>
+        <a class="email-login" href="/login/email">이메일로 로그인</a>
+        <a class="reset-link" href="/password/reset/request">비밀번호 찾기</a>
 
-        <RouterLink class="password-link" to="/password/reset/request">
-          비밀번호 찾기
-        </RouterLink>
-
-        <p class="signup-prompt">
+        <div class="signup-row">
           <span>계정이 없으신가요?</span>
-          <RouterLink to="/signup">회원가입</RouterLink>
-        </p>
-      </section>
-    </main>
-
-    <LoginFooter />
-  </div>
+          <a href="/signup">회원가입</a>
+        </div>
+      </div>
+    </section>
+  </MemberPageLayout>
 </template>
 
 <script setup>
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
+import MemberPageLayout from '../components/MemberPageLayout.vue'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 </script>
 
 <style scoped>
-.login-page {
-  min-height: 100vh;
+.login-content {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: #fff;
-  color: #545045;
-}
-
-.login-main {
-  display: grid;
-  place-items: start center;
-  padding: clamp(64px, 11vh, 118px) 20px 72px;
+  place-items: center;
+  padding: 64px 24px 100px;
 }
 
 .login-panel {
-  width: min(100%, 420px);
+  width: min(100%, 300px);
   text-align: center;
 }
 
 h1 {
-  margin: 0 0 48px;
-  color: #2f2b25;
-  font-size: 36px;
+  margin: 0 0 44px;
+  font-size: 28px;
   line-height: 1.3;
   font-weight: 800;
 }
 
-.section-label {
+.divider {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 18px;
-  color: #7a746b;
-  font-size: 16px;
-  font-weight: 700;
+  margin: 0 0 18px;
+  color: #b8b3aa;
+  font-size: 12px;
 }
 
-.section-label::before,
-.section-label::after {
+.divider::before,
+.divider::after {
   content: "";
   height: 1px;
   flex: 1;
-  background: #e5e1d9;
+  background: #eeeae3;
 }
 
-.section-label--basic {
-  margin-top: 34px;
-}
-
-.login-button {
-  width: 100%;
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: #403a30;
-  font-size: 18px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.login-button--kakao {
-  min-height: 0;
-  overflow: hidden;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-}
-
-.login-button--kakao:hover,
-.login-button--kakao:focus-visible {
-  background: transparent;
-  filter: brightness(0.97);
-}
-
-.login-button__kakao-image {
+.kakao-login,
+.kakao-login img {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.login-button--email {
-  border-color: #cfc9be;
-  background: #fff;
+.basic-divider {
+  margin-top: 30px;
 }
 
-.login-button--email:hover,
-.login-button--email:focus-visible {
-  border-color: #816843;
-  background: #fffaf0;
+.email-login {
+  width: 100%;
+  min-height: 45px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8d4cc;
+  border-radius: 5px;
+  color: #3e3a34;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.login-button:focus-visible,
-.password-link:focus-visible {
+.reset-link {
+  display: inline-block;
+  margin: 22px 0 24px;
+  color: #79746c;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.signup-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  color: #8a857d;
+  font-size: 13px;
+}
+
+.signup-row a {
+  color: #398bd5;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+a:focus-visible {
   outline: 3px solid rgba(255, 188, 0, 0.45);
   outline-offset: 3px;
 }
 
-.password-link {
-  display: inline-block;
-  margin-top: 26px;
-  color: #60584c;
-  font-size: 16px;
-  font-weight: 700;
-  text-underline-offset: 5px;
-}
-
-.signup-prompt {
-  margin: 28px 0 0;
-  color: #777167;
-  font-size: 16px;
-}
-
-.signup-prompt span {
-  margin-right: 10px;
-}
-
-.signup-prompt a {
-  color: #816843;
-  font-weight: 800;
-  text-underline-offset: 5px;
-}
-
-@media (max-width: 560px) {
-  .login-main {
-    padding: 52px 20px 56px;
+@media (max-width: 600px) {
+  .login-content {
+    align-items: start;
+    padding: 64px 24px;
   }
 
   h1 {
-    margin-bottom: 40px;
-    font-size: 32px;
-  }
-
-  .login-button {
-    min-height: 58px;
+    margin-bottom: 36px;
   }
 }
 </style>

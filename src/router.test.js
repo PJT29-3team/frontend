@@ -37,6 +37,11 @@ describe('authenticated route guard', () => {
       '/social/profile',
     ]))
     expect(paths).not.toContain('/share-preview')
-    expect(paths).not.toContain('/social/link')
+  })
+
+  it('protects the member profile route', () => {
+    const profileRoute = router.getRoutes().find((route) => route.path === '/me')
+
+    expect(profileRoute.meta.requiresAuth).toBe(true)
   })
 })

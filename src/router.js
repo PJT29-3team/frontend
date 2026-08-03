@@ -30,7 +30,11 @@ const routes = [
     path: "/auth/social/callback",
     component: () => import("./views/SocialLoginCallbackView.vue"),
   },
-  { path: "/me", component: () => import("./views/ProfileView.vue") },
+  {
+    path: "/me",
+    component: () => import("./views/ProfileView.vue"),
+    meta: { requiresAuth: true },
+  },
   {
     path: "/social/profile",
     component: () => import("./views/SocialProfileCompletionView.vue"),

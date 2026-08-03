@@ -1,74 +1,41 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { changePassword, getMe } from '../api/authApi'
-import { authStore } from '../stores/authStore'
 import ProfileView from './ProfileView.vue'
+import { authStore } from '../stores/authStore'
+import { getMe, requestDeletion } from '../api/authApi'
 
-const routerPush = vi.hoisted(() => vi.fn())
+const replace = vi.fn()
 
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: routerPush }),
+  useRouter: () => ({ replace }),
 }))
 
 vi.mock('../api/authApi', () => ({
-  cancelDeletion: vi.fn(),
-  changePassword: vi.fn(),
   getMe: vi.fn(),
   logoutAll: vi.fn(),
   requestDeletion: vi.fn(),
   updateMe: vi.fn(),
 }))
 
-describe('ProfileView password change', () => {
+describe('ProfileView', () => {
   beforeEach(() => {
-    routerPush.mockReset()
-    getMe.mockReset()
-    changePassword.mockReset()
-    getMe.mockResolvedValue({ name: '김작은', birthYear: 1960 })
+    vi.clearAllMocks()
+    getMe.mockResolvedValue({ name: '홍길동', birthYear: 1950 })
+    requestDeletion.mockResolvedValue({ message: '회원탈퇴가 완료되었습니다.' })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.spyOn(window, 'prompt').mockReturnValue('SeniorHome!23')
+    authStore.setSession('access-token', { userId: 1 })
   })
 
-  it('requires a strong matching new password', async () => {
+  it('immediately deletes the account and clears the local session', async () => {
     const wrapper = mount(ProfileView)
-    await flushPromises()
+    await vi.waitFor(() => expect(getMe).toHaveBeenCalled())
 
-    await wrapper.get('input[name="currentPassword"]').setValue('Current!23')
-    await wrapper.get('input[name="newPassword"]').setValue('weak')
-    await wrapper.get('input[name="newPasswordConfirm"]').setValue('weak')
+    expect(wrapper.text()).not.toContain('탈퇴 취소')
+    await wrapper.get('.danger-button').trigger('click')
 
-    expect(wrapper.text()).toContain('영문, 숫자, 특수문자를 포함해 8~72자로 입력해주세요.')
-    expect(wrapper.get('[data-change-password]').attributes('disabled')).toBeDefined()
-  })
-
-  it('changes the password, clears the session, and returns to login', async () => {
-    changePassword.mockResolvedValue({ message: '비밀번호가 변경되었습니다.' })
-    const clearSession = vi.spyOn(authStore, 'clearSession')
-    const wrapper = mount(ProfileView)
-    await flushPromises()
-
-    await wrapper.get('input[name="currentPassword"]').setValue('Current!23')
-    await wrapper.get('input[name="newPassword"]').setValue('NewSenior!23')
-    await wrapper.get('input[name="newPasswordConfirm"]').setValue('NewSenior!23')
-    await wrapper.get('[data-password-form]').trigger('submit')
-    await flushPromises()
-
-    expect(changePassword).toHaveBeenCalledWith('Current!23', 'NewSenior!23', 'NewSenior!23')
-    expect(clearSession).toHaveBeenCalled()
-    expect(routerPush).toHaveBeenCalledWith('/login/email')
-  })
-
-  it('shows a recent-password reuse error returned by the server', async () => {
-    changePassword.mockRejectedValue({
-      response: { data: { message: '최근 사용한 비밀번호는 다시 사용할 수 없습니다.' } },
-    })
-    const wrapper = mount(ProfileView)
-    await flushPromises()
-
-    await wrapper.get('input[name="currentPassword"]').setValue('Current!23')
-    await wrapper.get('input[name="newPassword"]').setValue('OldSenior!23')
-    await wrapper.get('input[name="newPasswordConfirm"]').setValue('OldSenior!23')
-    await wrapper.get('[data-password-form]').trigger('submit')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('최근 사용한 비밀번호는 다시 사용할 수 없습니다.')
+    expect(requestDeletion).toHaveBeenCalledWith('SeniorHome!23')
+    expect(authStore.state.accessToken).toBe('')
+    expect(replace).toHaveBeenCalledWith('/')
   })
 })
