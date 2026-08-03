@@ -6,11 +6,8 @@
     </div>
 
     <div class="right-area">
-      <button class="report-btn">
-        보고서 받기 <span class="arrow">▾</span>
-      </button>
       <button class="mypage-btn">마이페이지</button>
-      <span class="user-name">{{ authStore.state.user?.name }} 님, 환영합니다.</span>
+      <span class="user-name">{{ userName }}님 환영합니다.</span>
       <button class="logout-btn" @click="handleLogout">로그아웃</button>
     </div>
   </header>
@@ -20,8 +17,10 @@
 import logo from '@/assets/jiphyeonjeon-header-logo.png';
 import { authStore } from '@/stores/authStore.js';
 import { useRouter } from 'vue-router';
+import { computed } from 'vue';
 
 const router = useRouter();
+const userName = computed(() => authStore.state.user?.name || authStore.state.user?.userName || '회원');
 
 async function handleLogout() {
   await authStore.logout()
@@ -54,12 +53,6 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.report-btn {
-  border-radius: 20px;
-  background-color: #FDF7E6;
-  padding: 8px 16px;
 }
 
 .mypage-btn {

@@ -1,14 +1,20 @@
 <template>
   <div class="step-indicator">
     <template v-for="(step, index) in steps" :key="step.key">
-      <div class="step" :class="stepStatus(step.key)">
+      <component
+        :is="canNavigate(step.key) ? 'RouterLink' : 'button'"
+        class="step"
+        :class="stepStatus(step.key)"
+        :to="step.to"
+        :disabled="!canNavigate(step.key)"
+      >
         <div class="step-circle">
           <span v-if="stepStatus(step.key) === 'done'">✓</span>
           <span v-else>{{ step.icon }}</span>
         </div>
         <p class="step-label">{{ step.label }}</p>
         <p class="step-status">{{ statusText(stepStatus(step.key)) }}</p>
-      </div>
+      </component>
 
       <div
         v-if="index < steps.length - 1"
@@ -23,9 +29,9 @@
 const props = defineProps(['currentStep'])
 
 const steps = [
-  { key: 'survey', label: '설문 조사', icon: '✓' },
-  { key: 'recommend', label: '추천 매물', icon: '🔍' },
-  { key: 'favorite', label: '관심 매물', icon: '♡' },
+  { key: 'survey', label: '설문 조사', icon: '✓', to: '/survey' },
+  { key: 'recommend', label: '추천 매물', icon: '⌕', to: '/recommend' },
+  { key: 'favorite', label: '관심 매물', icon: '♡', to: '/favorite-home' },
   { key: 'finance-recommend', label: '금융상품 추천', icon: '🗄' },
   { key: 'finance-manage', label: '금융상품 관리', icon: '♡' },
   { key: 'result', label: '결과 보기', icon: '📄' },
@@ -44,6 +50,12 @@ function statusText(status) {
   if (status === 'active') return '진행중'
   return '대기'
 }
+
+function canNavigate(key) {
+  const currentIndex = steps.findIndex(s => s.key === props.currentStep)
+  const stepIndex = steps.findIndex(s => s.key === key)
+  return Boolean(steps[stepIndex]?.to) && stepIndex <= currentIndex
+}
 </script>
 
 <style scoped>
@@ -59,7 +71,14 @@ function statusText(status) {
   flex-direction: column;
   align-items: center;
   width: 90px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+  cursor: pointer;
 }
+
+.step:disabled { cursor: not-allowed; }
 
 .step-circle {
   width: 44px;

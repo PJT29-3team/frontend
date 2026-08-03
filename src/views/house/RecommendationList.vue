@@ -1,8 +1,5 @@
 <template>
   <div class="recommendation-list">
-    <AppHeader />
-    <StepIndicator current-step="recommend"/>
-
     <div class="page-content">
       <section class="content">
         <!-- 왼쪽 패널, 매물 목록 5곳 -->
@@ -49,10 +46,8 @@
 </template>
 
 <script setup>
-import AppHeader from '@/components/common/AppHeader.vue';
 import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '@/components/house/HomeMapView.vue';
-import StepIndicator from '@/components/common/StepIndicator.vue';
 import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
 import { computed, reactive, ref } from 'vue';
 import { favoriteStore } from '@/stores/favoriteStore.js';
