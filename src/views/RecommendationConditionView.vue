@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   useRecommendationStore,
+  RISK_OPTIONS,
   RATIO_MIN,
   RATIO_MAX,
   formatKRW,
@@ -94,6 +95,39 @@ function submit() {
           </div>
         </section>
 
+        <hr class="divider" />
+
+        <!-- 위험도 선택 -->
+        <section class="block">
+          <div class="block-head">
+            <h3 class="block-title">위험도 선택하기</h3>
+          </div>
+          <p class="block-desc">
+            감수할 수 있는 위험 수준을 골라주세요. 선택한 위험도 위주로 추천하고,
+            해당 기간에 맞는 상품이 없으면 가까운 등급으로 채워드립니다.
+          </p>
+
+          <div class="risk-cards">
+            <button
+              v-for="opt in RISK_OPTIONS"
+              :key="opt.code"
+              type="button"
+              class="risk-card"
+              :class="[{ on: rec.riskLevel === opt.code }, 'tone-' + opt.tone]"
+              @click="rec.setRisk(opt.code)"
+            >
+              <span class="risk-grade">{{ opt.grade }}등급</span>
+              <strong class="risk-label">{{ opt.label }}</strong>
+              <span class="risk-sub">{{ opt.subtitle }}</span>
+            </button>
+          </div>
+
+          <div v-if="rec.selectedRisk" class="risk-helper" :class="'tone-' + rec.selectedRisk.tone">
+            <strong class="rh-title">{{ rec.selectedRisk.helperTitle }}</strong>
+            <p class="rh-body">{{ rec.selectedRisk.helperBody }}</p>
+          </div>
+        </section>
+
         <!-- 결과 금액 -->
         <div class="result-box">
           <div class="result-cell">
@@ -170,6 +204,22 @@ function submit() {
 .quick-chip { padding: 9px 20px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 14px; color: var(--text-muted); cursor: pointer; }
 .quick-chip.on { background: var(--text-dark); border-color: var(--text-dark); color: #fff; }
 
+.risk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.risk-card { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 14px; border: 1.5px solid var(--card-border); border-radius: 14px; background: #fff; cursor: pointer; text-align: left; transition: border-color .15s, background .15s; }
+.risk-card .risk-grade { font-size: 11.5px; font-weight: 700; color: var(--text-muted); }
+.risk-card .risk-label { font-size: 15.5px; font-weight: 800; }
+.risk-card .risk-sub { font-size: 12px; color: var(--text-muted); }
+.risk-card.on.tone-safe { border-color: #2d7a44; background: #eef8f1; }
+.risk-card.on.tone-caution { border-color: #b5760a; background: #fff6e6; }
+.risk-card.on.tone-warn { border-color: #c0442e; background: #fdeeeb; }
+
+.risk-helper { margin-top: 14px; border-radius: 12px; padding: 14px 16px; border-left: 4px solid; }
+.risk-helper .rh-title { display: block; font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+.risk-helper .rh-body { font-size: 13px; margin: 0; line-height: 1.55; }
+.risk-helper.tone-safe { background: #eef8f1; border-color: #2d7a44; color: #245c36; }
+.risk-helper.tone-caution { background: #fff6e6; border-color: #b5760a; color: #8a5a08; }
+.risk-helper.tone-warn { background: #fdeeeb; border-color: #c0442e; color: #93331f; }
+
 .result-box { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px; }
 .result-cell { background: #fbf6e4; border-radius: 14px; padding: 16px 18px; }
 .rc-label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
@@ -186,6 +236,7 @@ function submit() {
 .footer-col li { font-size: 12.5px; line-height: 1.7; color: #b7b1a6; }
 
 @media (max-width: 600px) {
+  .risk-cards { grid-template-columns: 1fr; }
   .result-box { grid-template-columns: 1fr; }
   .footer-inner { grid-template-columns: 1fr; gap: 18px; }
   .submit-row .primary-btn { width: 100%; }
