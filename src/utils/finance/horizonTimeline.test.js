@@ -1,51 +1,66 @@
 import { describe, expect, it } from "vitest";
-import { buildTimeline } from "./horizonTimeline";
+import { allocate, buildTimeline } from "./horizonTimeline";
 
+const M = 1_000_000; // 월 100만원
+
+// 만기 6/12/36개월 상품 (금액 없음 — allocate가 역산)
 const products = [
-  { name: "CMA", invest: 1200, maturity: 0, rate: 0.03, fixed: true },
-  { name: "적금", invest: 500, maturity: 12, rate: 0.10, fixed: true },
-  { name: "채권ETF", invest: 700, maturity: 36, rate: 0.04, fixed: false },
+  { name: "적금", maturity: 6, rate: 0.03, fixed: true },
+  { name: "만기매칭ETF", maturity: 12, rate: 0.04, fixed: true },
+  { name: "만기매칭채권", maturity: 36, rate: 0.05, fixed: true },
 ];
 
-describe("buildTimeline", () => {
-  it("만기 순서로 이어 붙이고 gap을 감지한다", () => {
-    const { segs, funded, gap } = buildTimeline(products, 100, false);
-    expect(funded).toBe(24);
-    expect(gap).toBe(19);
-    expect(segs.filter((s) => s.type === "gap")).toHaveLength(1);
-    expect(segs[2]).toMatchObject({ type: "gap", months: 19 });
+describe("allocate (만기 사다리, 총액 고정)", () => {
+  it("파킹 버킷 + 중간 상품은 만기갭, 마지막은 나머지 전액", () => {
+    // F = 5000만. 파킹 600(0~6) / 적금 600(6~12) / ETF 2400(12~36) / 펀드 나머지 1400
+    const { segments } = allocate(products, M, 50_000_000);
+    expect(segments[0]).toMatchObject({ cssType: "park", invest: 6_000_000 });
+    expect(segments[1]).toMatchObject({ name: "적금", invest: 6_000_000 });
+    expect(segments[2]).toMatchObject({ name: "만기매칭ETF", invest: 24_000_000 });
+    expect(segments[3]).toMatchObject({ name: "만기매칭채권", invest: 14_000_000 });
   });
 
-  it("앞 상품이 만기 전에 소진되면 gap이 생긴다", () => {
-    const short = [
-      { name: "CMA", invest: 500, maturity: 0, rate: 0, fixed: true },
-      { name: "적금", invest: 600, maturity: 12, rate: 0, fixed: true },
-    ];
-    const { segs, gap } = buildTimeline(short, 100, false);
-    expect(gap).toBe(7);
-    expect(segs[0]).toMatchObject({ type: "short", months: 5 });
-    expect(segs[1]).toMatchObject({ type: "gap", months: 7 });
-    expect(segs[2]).toMatchObject({ type: "short", months: 6 });
+  it("총액을 다 배분한다 (leftover 0)", () => {
+    const { segments, leftover } = allocate(products, M, 50_000_000);
+    const sum = segments.reduce((s, x) => s + x.invest, 0);
+    expect(sum).toBe(50_000_000);
+    expect(leftover).toBe(0);
   });
 
-  it("낙관 모드에서 고정금리 상품만 이자 반영한다", () => {
-    const { segs: base } = buildTimeline(products, 100, false);
-    const { segs: opt } = buildTimeline(products, 100, true);
+  it("F가 부족하면 이른 구간부터 채우고 뒤는 0", () => {
+    // F = 1000만: 파킹 600 다 채우고, 적금 400만 남음(<600 필요) → ETF/펀드 0
+    const { segments } = allocate(products, M, 10_000_000);
+    expect(segments[0].invest).toBe(6_000_000); // 파킹
+    expect(segments[1].invest).toBe(4_000_000); // 적금(부족)
+    expect(segments[2].invest).toBe(0);
+    expect(segments[3].invest).toBe(0);
+  });
+});
 
-    const baseMid = base.find((s) => s.name === "적금");
-    const optMid = opt.find((s) => s.name === "적금");
-    expect(optMid.amount).toBeGreaterThan(baseMid.amount);
-
-    const baseEtf = base.find((s) => s.name === "채권ETF");
-    const optEtf = opt.find((s) => s.name === "채권ETF");
-    expect(optEtf.amount).toBe(baseEtf.amount);
+describe("allocate + buildTimeline", () => {
+  it("충분한 총액이면 gap 없이 이어진다", () => {
+    const { segments } = allocate(products, M, 50_000_000);
+    const { funded, gap } = buildTimeline(segments, M, false);
+    // 파킹6 + 적금6 + ETF24 + 펀드14 = 50개월
+    expect(funded).toBe(50);
+    expect(gap).toBe(0);
   });
 
-  it("상품이 정렬되어 있지 않아도 만기 순으로 처리한다", () => {
-    const reversed = [...products].reverse();
-    const { funded, gap } = buildTimeline(reversed, 100, false);
-    const { funded: f2, gap: g2 } = buildTimeline(products, 100, false);
-    expect(funded).toBe(f2);
-    expect(gap).toBe(g2);
+  it("파킹 버킷이 [0~첫만기]를 채워 초반 gap이 없다", () => {
+    const { segments } = allocate(products, M, 50_000_000);
+    const { segs } = buildTimeline(segments, M, false);
+    expect(segs[0]).toMatchObject({ type: "park", from: 1, to: 6 });
+    expect(segs.some((s) => s.type === "gap")).toBe(false);
+  });
+
+  it("낙관 모드에서 모든 상품(예적금+만기매칭ETF) 이자 반영", () => {
+    const { segments } = allocate(products, M, 50_000_000);
+    const base = buildTimeline(segments, M, false).segs;
+    const opt = buildTimeline(segments, M, true).segs;
+    for (const name of ["적금", "만기매칭ETF"]) {
+      const b = base.find((s) => s.name === name);
+      const o = opt.find((s) => s.name === name);
+      expect(o.amount).toBeGreaterThan(b.amount);
+    }
   });
 });
