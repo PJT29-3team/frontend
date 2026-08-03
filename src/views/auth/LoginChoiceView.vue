@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import MemberPageLayout from '../components/MemberPageLayout.vue'
+import MemberPageLayout from '../../components/MemberPageLayout.vue'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 </script>
