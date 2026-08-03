@@ -51,6 +51,7 @@ onMounted(async () => {
       surveyId: null,
       fundingAmount: rec.fundingAmount,
       investRatio: rec.ratioPercent,
+      safetyLevel: rec.riskLevel,
     });
     periods.value = res.periods ?? [];
     activeCode.value = periods.value[0]?.code ?? 'SHORT';
@@ -112,7 +113,8 @@ function goFavorites() {
             구간마다 마음에 드는 상품을 관심에 담아보세요.
           </p>
           <p class="r-note">
-            위험도는 상품을 거르지 않고 <b>태그로만</b> 알려드려요. 만기가 있는 상품만 보여드립니다.
+            선택하신 위험도 <b>{{ riskBadge(rec.riskLevel) }}</b> 위주로 추천하고, 해당 기간에
+            맞는 상품이 없으면 <b>가까운 등급으로 채워</b> 드려요. 만기가 있는 상품만 보여드립니다.
           </p>
         </div>
         <div class="r-stats">
@@ -158,6 +160,10 @@ function goFavorites() {
             <h2 class="period-title">{{ period.label }}</h2>
             <span class="period-hint">{{ period.hint }}</span>
           </div>
+          <p v-if="period.fallback" class="period-fallback">
+            선택하신 위험도(<b>{{ riskBadge(rec.riskLevel) }}</b>)에 맞는 상품이 이 기간에 없어
+            가까운 등급으로 보여드려요.
+          </p>
         </div>
 
         <div class="card-grid">
@@ -305,6 +311,16 @@ function goFavorites() {
   line-height: 1.15;
 }
 .period-hint { font-size: 13px; color: var(--text-muted); }
+.period-fallback {
+  margin: 8px 0 0;
+  padding: 9px 13px;
+  background: #fff6e6;
+  border-left: 4px solid #b5760a;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: #8a5a08;
+}
+.period-fallback b { color: #6f480a; }
 
 /* 카드 그리드 */
 .card-grid {
