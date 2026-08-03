@@ -29,7 +29,7 @@
             <span class="tag">{{ property.pyeong }}평</span>
           </div>
         </div>
-        <button class="eval-link">평가 방법 상세보기 →</button>
+        <button class="eval-link" type="button" @click="router.push('/evaluation-method')">평가 방법 상세보기 →</button>
       </div>
 
       <div class="ai-summary">

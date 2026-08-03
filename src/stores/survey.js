@@ -16,6 +16,7 @@ export const STEP_ORDER = [
   "DESIRED_REGION",
 ];
 export const PROGRESS_STEPS_TOTAL = 6;
+export const CONDITION_EDIT_STEPS_TOTAL = 3;
 
 const PROGRESS_NUMBER = {
   SALE_PRICE: 1,
@@ -72,6 +73,7 @@ export const useSurveyStore = defineStore("survey", {
     showIntro: true,
     stepIndex: 0,
     done: false,
+    conditionEditMode: false,
     loading: false,
     errorMessage: null,
     calculation: null,
@@ -85,13 +87,26 @@ export const useSurveyStore = defineStore("survey", {
 
   getters: {
     currentStepName: (state) => STEP_ORDER[state.stepIndex],
-    progressStep: (state) =>
-      PROGRESS_NUMBER[STEP_ORDER[state.stepIndex]] ?? null,
+    progressStep: (state) => {
+      if (state.conditionEditMode) {
+        return {
+          5: 1, // 페르소나
+          4: 2, // 이사 후 최소 금액
+          6: 3, // 희망 지역
+        }[state.stepIndex] ?? null;
+      }
+
+      return PROGRESS_NUMBER[STEP_ORDER[state.stepIndex]] ?? null;
+    },
+    progressTotal: (state) =>
+      state.conditionEditMode
+        ? CONDITION_EDIT_STEPS_TOTAL
+        : PROGRESS_STEPS_TOTAL,
     showProgress() {
       return this.progressStep !== null;
     },
     progressPct() {
-      return ((this.progressStep ?? 0) / PROGRESS_STEPS_TOTAL) * 100;
+      return ((this.progressStep ?? 0) / this.progressTotal) * 100;
     },
 
     displayName: (state) =>
@@ -140,6 +155,11 @@ export const useSurveyStore = defineStore("survey", {
 
   actions: {
     init() {
+      if (this.conditionEditMode) {
+        this.showIntro = false;
+        return;
+      }
+
       if (this.done) {
         this.showIntro = false;
         this.stepIndex = STEP_ORDER.length - 1;
@@ -156,15 +176,55 @@ export const useSurveyStore = defineStore("survey", {
       this.showIntro = false;
       this.stepIndex = 0;
       this.done = false;
+      this.conditionEditMode = false;
+    },
+
+    startConditionEdit() {
+      // 기존 주택·세금 정보는 유지하고, 추천 조건만 다시 입력합니다.
+      this.showIntro = false;
+      this.stepIndex = 5;
+      this.done = false;
+      this.conditionEditMode = true;
+      this.errorMessage = null;
+      this.fieldErrors = {};
+      this.calculation = null;
+      this.calculationFailed = false;
     },
 
     next() {
       this.errorMessage = null;
+      if (this.conditionEditMode) {
+        const nextConditionStep = {
+          5: 4,
+          4: 6,
+        }[this.stepIndex];
+
+        if (nextConditionStep !== undefined) {
+          this.stepIndex = nextConditionStep;
+        }
+        return;
+      }
+
       if (this.stepIndex < STEP_ORDER.length - 1) this.stepIndex += 1;
     },
 
     back() {
       this.errorMessage = null;
+      if (this.conditionEditMode) {
+        const previousConditionStep = {
+          4: 5,
+          6: 4,
+        }[this.stepIndex];
+
+        if (previousConditionStep !== undefined) {
+          this.stepIndex = previousConditionStep;
+        } else {
+          this.showIntro = true;
+          this.conditionEditMode = false;
+        }
+        return;
+      }
+
       if (this.stepIndex > 0) this.stepIndex -= 1;
       else this.showIntro = true;
     },
@@ -258,6 +318,7 @@ export const useSurveyStore = defineStore("survey", {
       this.showIntro = true;
       this.stepIndex = 0;
       this.done = false;
+      this.conditionEditMode = false;
       this.calculation = null;
       this.calculationFailed = false;
       this.fieldErrors = {};

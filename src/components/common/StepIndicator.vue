@@ -82,6 +82,8 @@ function canNavigate(key) {
 }
 
 .step:disabled { cursor: not-allowed; }
+.step.active:disabled,
+.step.done:disabled { opacity: 1; }
 
 .step-circle {
   width: 60px;
@@ -114,7 +116,8 @@ function canNavigate(key) {
 .step.done .step-circle {
   background: #f5c518;
   border-color: #f5c518;
-  color: #4a3a00;
+  color: #fff;
+  font-weight: 800;
 }
 
 .step.done .step-status {
@@ -125,7 +128,9 @@ function canNavigate(key) {
 .step.active .step-circle {
   background: #f5c518;
   border-color: #f5c518;
-  color: #4a3a00;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
 }
 
 .step.active .step-label {

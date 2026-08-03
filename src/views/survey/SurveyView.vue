@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useSurveyStore, PROGRESS_STEPS_TOTAL } from "@/stores/survey";
+import { useSurveyStore } from "@/stores/survey";
 import "@/styles/survey-tokens.css";
 
 import SurveyIntro from "@/components/survey/SurveyIntro.vue";
@@ -32,6 +32,7 @@ const STEP_COMPONENTS = [
 ];
 
 const currentStep = computed(() => STEP_COMPONENTS[survey.stepIndex]);
+const isConditionEdit = computed(() => survey.conditionEditMode);
 const isLastStep = computed(
   () => survey.stepIndex === STEP_COMPONENTS.length - 1,
 );
@@ -56,7 +57,7 @@ function goToRecommendations() {
 </script>
 
 <template>
-  <div class="survey-shell">
+  <div class="survey-shell" :class="{ 'condition-edit': isConditionEdit }">
     <div class="survey-card">
       <SurveyIntro
         v-if="survey.showIntro"
@@ -69,7 +70,7 @@ function goToRecommendations() {
         <SurveyProgress
           v-if="survey.showProgress"
           :step="survey.progressStep"
-          :total="PROGRESS_STEPS_TOTAL"
+          :total="survey.progressTotal"
           :percent="survey.progressPct"
           :show-back="isLastStep"
           :disabled="survey.loading"
