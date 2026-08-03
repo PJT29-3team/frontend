@@ -15,7 +15,7 @@
         >
           <img
             class="login-button__kakao-image"
-            src="../assets/kakao-login-large-wide.png"
+            src="@/assets/kakao-login-large-wide.png"
             alt=""
           />
         </a>

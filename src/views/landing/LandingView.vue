@@ -2,7 +2,7 @@
   <main class="landing-page">
     <header class="site-header" aria-label="주요 탐색">
       <a class="brand-link" href="#top" aria-label="집현전 홈">
-        <img src="../assets/senior-downsizing-hero.png" alt="" />
+        <img src="@/assets/senior-downsizing-hero.png" alt="" />
       </a>
 
       <nav class="site-nav" aria-label="랜딩페이지 메뉴">
@@ -28,7 +28,7 @@
       <div class="hero-visual" aria-hidden="true">
         <img
           data-hero-illustration
-          src="../assets/senior-downsizing-hero.png"
+          src="@/assets/senior-downsizing-hero.png"
           alt=""
         />
       </div>
@@ -93,7 +93,7 @@
 
     <footer class="site-footer">
       <div class="footer-brand">
-        <img src="../assets/senior-downsizing-hero.png" alt="집현전" />
+        <img src="@/assets/senior-downsizing-hero.png" alt="집현전" />
         <p>Copyright © 2026 Jiphyeonjeon.</p>
         <p>All rights reserved.</p>
         <div class="footer-social" aria-hidden="true">

@@ -64,7 +64,7 @@ function renderMarkers() {
 onMounted(async () => {
   await loadKakaoMapScript()
   console.log('mapContainer : ', mapContainer.value);
-  
+
 
   if (!mapContainer.value) return;
 

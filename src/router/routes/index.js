@@ -1,0 +1,21 @@
+import { PATHS } from '../paths'
+
+export const routes = [
+  { path: PATHS.landing, component: () => import('@/views/landing/LandingView.vue') },
+  { path: PATHS.favoriteHome, component: () => import('@/views/favorite/MainView.vue'), meta: { requiresAuth: true, process: true } },
+  { path: PATHS.survey, name: 'survey', component: () => import('@/views/survey/SurveyView.vue'), meta: { requiresAuth: true, process: true } },
+  { path: PATHS.surveyResume, name: 'survey-resume', component: () => import('@/views/survey/SurveyView.vue'), props: true, meta: { requiresAuth: true, process: true } },
+  { path: PATHS.recommendedProperty, name: 'recommend-list', component: () => import('@/views/house/RecommendationList.vue'), meta: { requiresAuth: true, process: true } },
+  { path: PATHS.legacyMain, redirect: PATHS.survey },
+  { path: PATHS.legacyRecommendedProperty, redirect: PATHS.recommendedProperty },
+  { path: PATHS.evaluationMethod, component: () => import('@/views/favorite/EvaluationMethodView.vue'), meta: { requiresAuth: true, process: true } },
+  { path: PATHS.login, component: () => import('@/views/auth/LoginChoiceView.vue') },
+  { path: PATHS.emailLogin, component: () => import('@/views/auth/EmailLoginView.vue') },
+  { path: PATHS.signup, component: () => import('@/views/auth/SignupView.vue') },
+  { path: PATHS.emailVerification, component: () => import('@/views/auth/EmailVerificationResultView.vue') },
+  { path: PATHS.passwordResetRequest, component: () => import('@/views/auth/PasswordResetRequestView.vue') },
+  { path: PATHS.passwordReset, component: () => import('@/views/auth/PasswordResetCompleteView.vue') },
+  { path: PATHS.socialCallback, component: () => import('@/views/auth/SocialLoginCallbackView.vue') },
+  { path: PATHS.profile, component: () => import('@/views/account/ProfileView.vue') },
+  { path: PATHS.socialProfile, component: () => import('@/views/auth/SocialProfileCompletionView.vue') },
+]
