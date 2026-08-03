@@ -68,6 +68,17 @@ export function toCalculationRequest(state) {
   };
 }
 
+export function toSubmitRequest(state) {
+  return {
+    answers: toCalculationRequest(state),
+    desiredRegions: state.desiredRegions.map((region) => ({
+      sidoName: region.sidoName,
+      sigunguName: region.sigunguName,
+      eupmyeondongName: region.eupmyeondongName ?? null,
+    })),
+  };
+}
+
 export const useSurveyStore = defineStore("survey", {
   state: () => ({
     showIntro: true,
@@ -79,6 +90,7 @@ export const useSurveyStore = defineStore("survey", {
     calculation: null,
     calculationFailed: false,
     fieldErrors: {},
+    surveyId: null,
 
     userName: "",
 
@@ -151,6 +163,17 @@ export const useSurveyStore = defineStore("survey", {
     },
 
     weights: (state) => state.calculation?.weights ?? null,
+
+    recommendationQuery(state) {
+      return {
+        budget: this.maxPurchaseBudget,
+        type: state.profileCode,
+        regions: state.desiredRegions.map((r) => ({
+          sidoName: r.sidoName,
+          sigunguName: r.sigunguName,
+        })),
+      };
+    },
   },
 
   actions: {
@@ -270,9 +293,16 @@ export const useSurveyStore = defineStore("survey", {
     async fetchCalculation() {
       this.loading = true;
       try {
-        this.calculation = await surveyApi.calculate(
-          toCalculationRequest(this),
-        );
+        if (authStore.state.accessToken && this.desiredRegions.length > 0) {
+          const saved = await surveyApi.submit(toSubmitRequest(this));
+          this.surveyId = saved.surveyId;
+          this.calculation = saved.calculation;
+        } else {
+          this.surveyId = null;
+          this.calculation = await surveyApi.calculate(
+            toCalculationRequest(this),
+          );
+        }
         this.calculationFailed = false;
       } catch (err) {
         this.calculation = null;
@@ -281,7 +311,12 @@ export const useSurveyStore = defineStore("survey", {
         if (err?.response?.status === 400) {
           this.errorMessage =
             err.response.data?.message || "입력값을 다시 확인해주세요";
-          this.fieldErrors = fieldErrors || {};
+          this.fieldErrors = Object.fromEntries(
+            Object.entries(fieldErrors || {}).map(([key, message]) => [
+              key.replace(/^answers\./, ""),
+              message,
+            ]),
+          );
         }
       } finally {
         this.loading = false;
@@ -322,6 +357,7 @@ export const useSurveyStore = defineStore("survey", {
       this.calculation = null;
       this.calculationFailed = false;
       this.fieldErrors = {};
+      this.surveyId = null;
     },
   },
 });
