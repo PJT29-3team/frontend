@@ -29,11 +29,11 @@
       <div class="divider"></div>
 
       <div class="bottom-actions">
-        <button class="retry-btn">← 설문조사 다시하기</button>
-        <button class="condition-btn">마음에 드는 집이 없나요? <br>조건을 바꿔볼게요.</button>
+        <button class="retry-btn" type="button" @click="restartSurvey">← 설문조사 다시하기</button>
+        <button class="condition-btn" type="button" @click="changeConditions">마음에 드는 집이 없나요? <br>조건을 바꿔볼게요.</button>
         <div class="compare-area">
           <span class="picked-count">담은 매물 {{ favStore.count }}/3</span>
-          <button class="compare-btn">현재 담은 매물 비교하러 가기 →</button>
+          <button class="compare-btn" type="button" @click="router.push('/favorite-home')">현재 담은 매물 비교하러 가기 →</button>
         </div>
       </div>
 
@@ -50,7 +50,9 @@ import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '@/components/house/HomeMapView.vue';
 import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
 import { computed, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { favoriteStore } from '@/stores/favoriteStore.js';
+import { useSurveyStore } from '@/stores/survey';
 
 const dummyHomes = reactive ([
     { id: 1, rank: 1, price : '3억 4,500만원', priceNum: 34500, address : '야탑동 탑마을(선경) · 24평', score : 88, isFavorite : true },
@@ -61,6 +63,8 @@ const dummyHomes = reactive ([
 ]);
 
 const favStore = favoriteStore();
+const router = useRouter();
+const survey = useSurveyStore();
 
 const selectedId = ref(dummyHomes[0].id); // 기본값 : 1번 (적합도 1위)
 
@@ -72,6 +76,16 @@ const displayedHomes = computed(() => dummyHomes.slice(0, 5));
 
 function selectHome(homeId) {
   selectedId.value = homeId;
+}
+
+async function restartSurvey() {
+  await survey.reset();
+  router.push('/survey');
+}
+
+function changeConditions() {
+  survey.startConditionEdit();
+  router.push('/survey');
 }
 </script>
 

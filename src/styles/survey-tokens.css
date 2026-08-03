@@ -36,6 +36,26 @@
   padding: 32px 28px 28px;
 }
 
+/* 추천 조건만 다시 설정할 때는 카드에 시선이 모이도록 화면 중앙에 배치합니다. */
+.survey-shell.condition-edit {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.survey-shell.condition-edit .survey-card {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .survey-shell.condition-edit {
+    min-height: auto;
+    align-items: flex-start;
+  }
+}
+
 .top-row {
   display: flex;
   align-items: center;

@@ -9,6 +9,11 @@ import { useSurveyStore } from './stores/survey'
 const route = useRoute()
 const survey = useSurveyStore()
 const showProcessShell = computed(() => Boolean(route.meta.process))
+const showServiceProgress = computed(
+  () =>
+    showProcessShell.value &&
+    !(route.path.startsWith('/survey') && survey.conditionEditMode),
+)
 
 const currentStep = computed(() => {
   if (route.path.startsWith('/survey')) return 'survey'
@@ -27,7 +32,11 @@ const unlockedStep = computed(() => {
   <div class="app-shell">
     <template v-if="showProcessShell">
       <AppHeader />
-      <StepIndicator :current-step="currentStep" :unlocked-step="unlockedStep" />
+      <StepIndicator
+        v-if="showServiceProgress"
+        :current-step="currentStep"
+        :unlocked-step="unlockedStep"
+      />
     </template>
     <RouterView />
   </div>
