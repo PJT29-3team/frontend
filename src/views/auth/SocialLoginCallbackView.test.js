@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { authStore } from '@/stores/authStore'
+import { authStore } from '../../stores/authStore'
 import SocialLoginCallbackView from './SocialLoginCallbackView.vue'
 
 const routerReplace = vi.hoisted(() => vi.fn())

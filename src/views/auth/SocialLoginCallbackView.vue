@@ -13,8 +13,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { authStore } from '@/stores/authStore'
-import { PATHS } from '@/router/paths'
+import { authStore } from '../../stores/authStore'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,7 +61,7 @@ onMounted(async () => {
 
   try {
     await authStore.refresh()
-    await router.replace(PATHS.survey)
+    await router.replace('/main')
   } catch (e) {
     error.value = {
       title: '로그인을 완료하지 못했습니다',

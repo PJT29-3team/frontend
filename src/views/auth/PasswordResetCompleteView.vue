@@ -118,10 +118,10 @@
 import { ArrowLeft, Check, CircleAlert, Eye, EyeOff, LoaderCircle } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { completePasswordReset, verifyPasswordReset } from '@/api/authApi'
-import LoginFooter from '@/components/auth/LoginFooter.vue'
-import LoginHeader from '@/components/auth/LoginHeader.vue'
-import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '@/utils/passwordPolicy'
+import { completePasswordReset, verifyPasswordReset } from '../../api/authApi'
+import LoginFooter from '../../components/auth/LoginFooter.vue'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
+import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../../utils/passwordPolicy'
 
 const route = useRoute()
 const password = ref('')

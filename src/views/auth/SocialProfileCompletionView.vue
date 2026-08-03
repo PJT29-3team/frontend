@@ -51,9 +51,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import LoginHeader from '@/components/auth/LoginHeader.vue'
-import { authStore } from '@/stores/authStore'
-import { PATHS } from '@/router/paths'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
+import { authStore } from '../../stores/authStore'
 
 const router = useRouter()
 const name = ref('')
@@ -81,7 +80,7 @@ async function submit() {
   submitting.value = true
   try {
     await authStore.completeSocialProfile(name.value, birthYear)
-    await router.replace(PATHS.survey)
+    await router.replace('/main')
   } catch (e) {
     error.value = e.response?.data?.message || '추가 정보를 저장하지 못했습니다. 다시 시도해주세요.'
   } finally {

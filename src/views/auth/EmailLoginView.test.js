@@ -1,12 +1,12 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { resendVerification } from '@/api/authApi'
-import { authStore } from '@/stores/authStore'
+import { resendVerification } from '../../api/authApi'
+import { authStore } from '../../stores/authStore'
 import EmailLoginView from './EmailLoginView.vue'
 
 const routerPush = vi.hoisted(() => vi.fn())
 
-vi.mock('@/api/authApi', async (importOriginal) => {
+vi.mock('../../api/authApi', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,

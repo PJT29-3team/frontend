@@ -1,6 +1,6 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { authStore } from '@/stores/authStore'
+import { authStore } from '../../stores/authStore'
 import SocialProfileCompletionView from './SocialProfileCompletionView.vue'
 
 const routerReplace = vi.hoisted(() => vi.fn())

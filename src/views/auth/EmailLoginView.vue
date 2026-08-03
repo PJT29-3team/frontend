@@ -93,11 +93,10 @@
 import { Eye, EyeOff } from '@lucide/vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { resendVerification } from '@/api/authApi'
-import LoginFooter from '@/components/auth/LoginFooter.vue'
-import LoginHeader from '@/components/auth/LoginHeader.vue'
-import { authStore } from '@/stores/authStore'
-import { PATHS } from '@/router/paths'
+import { resendVerification } from '../../api/authApi'
+import LoginFooter from '../../components/auth/LoginFooter.vue'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
+import { authStore } from '../../stores/authStore'
 
 const SAVED_EMAIL_KEY = 'jh_saved_email'
 const VERIFICATION_REQUIRED_MESSAGE = '회원가입 후 최초 1회 이메일 인증이 필요합니다.'
@@ -131,7 +130,7 @@ async function submit() {
         localStorage.removeItem(SAVED_EMAIL_KEY)
       }
     }
-    router.push(PATHS.survey)
+    router.push('/main')
   } catch (e) {
     error.value = e.response?.data?.message || '로그인 정보를 확인해주세요.'
     verificationRequired.value = error.value === VERIFICATION_REQUIRED_MESSAGE

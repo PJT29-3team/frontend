@@ -1,6 +1,6 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { completePasswordReset, verifyPasswordReset } from '@/api/authApi'
+import { completePasswordReset, verifyPasswordReset } from '../../api/authApi'
 import PasswordResetCompleteView from './PasswordResetCompleteView.vue'
 
 const routeQuery = vi.hoisted(() => ({ token: 'valid-token' }))
@@ -13,7 +13,7 @@ vi.mock('vue-router', async (importOriginal) => {
   }
 })
 
-vi.mock('@/api/authApi', () => ({
+vi.mock('../../api/authApi', () => ({
   completePasswordReset: vi.fn(),
   verifyPasswordReset: vi.fn(),
 }))

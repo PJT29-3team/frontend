@@ -1,9 +1,9 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { requestPasswordReset } from '@/api/authApi'
+import { requestPasswordReset } from '../../api/authApi'
 import PasswordResetRequestView from './PasswordResetRequestView.vue'
 
-vi.mock('@/api/authApi', () => ({
+vi.mock('../../api/authApi', () => ({
   requestPasswordReset: vi.fn(),
 }))
 

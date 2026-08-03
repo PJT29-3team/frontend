@@ -1,8 +1,9 @@
 export const PATHS = Object.freeze({
   landing: '/',
   favoriteHome: '/favorite-home',
-  surveyProcess: '/process/survey',
-  recommendedProperty: '/process/recommended',
+  survey: '/survey',
+  surveyResume: '/survey/:surveyId',
+  recommendedProperty: '/recommend',
   evaluationMethod: '/evaluation-method',
   login: '/login',
   emailLogin: '/login/email',
@@ -13,5 +14,6 @@ export const PATHS = Object.freeze({
   socialCallback: '/auth/social/callback',
   profile: '/me',
   socialProfile: '/social/profile',
-  survey: '/main',
+  legacyMain: '/main',
+  legacyRecommendedProperty: '/process/recommended',
 })
