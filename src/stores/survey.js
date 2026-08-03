@@ -140,6 +140,11 @@ export const useSurveyStore = defineStore("survey", {
 
   actions: {
     init() {
+      if (this.done) {
+        this.showIntro = false;
+        this.stepIndex = STEP_ORDER.length - 1;
+        return;
+      }
       this.stepIndex = 0;
     },
 

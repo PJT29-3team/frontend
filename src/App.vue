@@ -18,7 +18,7 @@ const currentStep = computed(() => {
 
 const unlockedStep = computed(() => {
   if (route.path === PATHS.favoriteHome || route.path === PATHS.evaluationMethod) return 'favorite'
-  if (survey.done || route.path === PATHS.recommendedProperty) return 'recommend'
+  if (survey.done) return 'recommend'
   return 'survey'
 })
 </script>
