@@ -26,7 +26,10 @@
 </template>
 
 <script setup>
-const props = defineProps(['currentStep'])
+const props = defineProps({
+  currentStep: { type: String, required: true },
+  unlockedStep: { type: String, default: null },
+})
 
 const steps = [
   { key: 'survey', label: '설문 조사', icon: '✓', to: '/survey' },
@@ -52,7 +55,7 @@ function statusText(status) {
 }
 
 function canNavigate(key) {
-  const currentIndex = steps.findIndex(s => s.key === props.currentStep)
+  const currentIndex = steps.findIndex(s => s.key === (props.unlockedStep || props.currentStep))
   const stepIndex = steps.findIndex(s => s.key === key)
   return Boolean(steps[stepIndex]?.to) && stepIndex <= currentIndex
 }
@@ -63,14 +66,14 @@ function canNavigate(key) {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 32px 40px;
+  padding: 42px 56px 36px;
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 90px;
+  width: 116px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -81,29 +84,29 @@ function canNavigate(key) {
 .step:disabled { cursor: not-allowed; }
 
 .step-circle {
-  width: 44px;
-  height: 44px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  border: 2px solid #ddd;
+  font-size: 22px;
+  border: 3px solid #ddd;
   color: #bbb;
   background: white;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .step-label {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   margin: 0;
   color: #333;
 }
 
 .step-status {
-  font-size: 11px;
-  margin: 2px 0 0;
+  font-size: 13px;
+  margin: 4px 0 0;
   color: #bbb;
 }
 
@@ -136,14 +139,28 @@ function canNavigate(key) {
 
 /* 연결선 */
 .step-line {
-  height: 2px;
+  height: 3px;
   background: #eee;
   flex: 1;
-  margin-top: 22px;
-  max-width: 80px;
+  margin-top: 29px;
+  max-width: 112px;
 }
 
 .step-line.done {
   background: #f5c518;
+}
+
+@media (max-width: 820px) {
+  .step-indicator {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 28px 22px 24px;
+  }
+
+  .step { flex: 0 0 88px; width: 88px; }
+  .step-circle { width: 50px; height: 50px; font-size: 18px; }
+  .step-label { font-size: 13px; white-space: nowrap; }
+  .step-status { font-size: 11px; }
+  .step-line { flex: 0 0 54px; margin-top: 24px; }
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useSurveyStore, PROGRESS_STEPS_TOTAL } from "@/stores/survey";
 import "@/styles/survey-tokens.css";
 
@@ -18,6 +19,7 @@ const props = defineProps({
 });
 
 const survey = useSurveyStore();
+const router = useRouter();
 
 const STEP_COMPONENTS = [
   SurveyStep1,
@@ -47,6 +49,10 @@ function confirmReset() {
   showResetConfirm.value = false;
   survey.reset();
 }
+
+function goToRecommendations() {
+  router.push('/recommend');
+}
 </script>
 
 <template>
@@ -71,7 +77,7 @@ function confirmReset() {
           @reset="showResetConfirm = true"
         />
 
-        <component :is="currentStep" @prev="survey.back" />
+        <component :is="currentStep" @prev="survey.back" @complete="goToRecommendations" />
 
         <p v-if="survey.errorMessage" class="field-help text-center mt-3">
           {{ survey.errorMessage }}

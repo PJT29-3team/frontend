@@ -5,7 +5,7 @@ import { validateDesiredRegions } from "@/utils/surveyValidation";
 import { SIDO_LIST, SIGUNGU_BY_SIDO } from "@/constants/regions";
 
 const survey = useSurveyStore();
-const emit = defineEmits(["next", "prev"]);
+const emit = defineEmits(["next", "prev", "complete"]);
 
 const sido = ref(SIDO_LIST[0]);
 const submitted = ref(false);
@@ -33,8 +33,8 @@ const selectionText = computed(() => {
 function submit() {
   submitted.value = true;
   if (!isValid.value) return;
-  survey.submitSurvey(survey.desiredRegions);
   emit("next");
+  survey.submitSurvey(survey.desiredRegions).then(() => emit("complete"));
 }
 </script>
 
