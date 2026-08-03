@@ -43,12 +43,14 @@ const routes = [
     path: "/survey",
     name: "survey",
     component: () => import("@/views/SurveyView.vue"),
+    meta: { requiresAuth: true },
   },
   {
     path: "/survey/:surveyId",
     name: "survey-resume",
     component: () => import("@/views/SurveyView.vue"),
     props: true,
+    meta: { requiresAuth: true },
   },
   {
     // FPR-001 금융상품 추천 조건입력. (survey처럼 현재는 auth 가드 없이 접근)

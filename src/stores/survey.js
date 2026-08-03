@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import surveyApi from "@/api/survey";
+import * as authApi from "@/api/authApi";
 import { authStore } from "@/stores/authStore";
 import {
   calculateBrokerageFee,
@@ -168,6 +169,38 @@ export const useSurveyStore = defineStore("survey", {
 
     loadById() {
       this.init();
+    },
+
+    /**
+     * 인트로 인사말에 쓸 이름을 채운다.
+     * authStore는 토큰만 sessionStorage에 남기므로 새로고침하면 user가 비어 있다.
+     */
+    async loadUserName() {
+      if (this.userName) return this.userName;
+      if (!authStore.state.accessToken) {
+        console.warn("[survey] 토큰이 없어 이름을 조회하지 않는다");
+        return "";
+      }
+
+      const cached = authStore.state.user?.name;
+      if (cached) {
+        this.userName = cached;
+        return cached;
+      }
+
+      try {
+        const me = await authApi.getMe();
+        this.userName = me?.name ?? "";
+        authStore.setSession(authStore.state.accessToken, me);
+      } catch (err) {
+        // 이름을 못 받아도 설문은 진행돼야 한다. displayName이 "고객"으로 떨어진다.
+        console.warn(
+          "[survey] 이름 조회 실패",
+          err?.response?.status ?? "(응답 없음 - CORS/네트워크)",
+          err?.response?.data ?? err?.message,
+        );
+      }
+      return this.userName;
     },
 
     startSurvey() {

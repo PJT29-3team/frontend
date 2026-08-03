@@ -40,6 +40,7 @@ onMounted(() => {
   } else {
     survey.init();
   }
+  survey.loadUserName();
 });
 
 const showResetConfirm = ref(false);
