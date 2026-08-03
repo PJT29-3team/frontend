@@ -46,6 +46,22 @@ const routes = [
     component: () => import("@/views/SurveyView.vue"),
     props: true,
   },
+  {
+    // FPR-001 금융상품 추천 조건입력. (survey처럼 현재는 auth 가드 없이 접근)
+    path: "/recommendation",
+    name: "recommendation",
+    component: () => import("@/views/RecommendationConditionView.vue"),
+  },
+  {
+    path: "/recommendation/result",
+    name: "recommendation-result",
+    component: () => import("@/views/RecommendationResultView.vue"),
+  },
+  {
+    path: "/recommendation/favorites",
+    name: "recommendation-favorites",
+    component: () => import("@/views/RecommendationFavoritesView.vue"),
+  },
 ];
 
 export function requireAuthentication(to) {
