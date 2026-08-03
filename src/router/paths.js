@@ -1,6 +1,6 @@
 export const PATHS = Object.freeze({
   landing: '/',
-  favoriteHome: '/main',
+  favoriteHome: '/favorite-home',
   surveyProcess: '/process/survey',
   recommendedProperty: '/process/recommended',
   evaluationMethod: '/evaluation-method',
@@ -13,5 +13,5 @@ export const PATHS = Object.freeze({
   socialCallback: '/auth/social/callback',
   profile: '/me',
   socialProfile: '/social/profile',
-  survey: '/survey',
+  survey: '/main',
 })

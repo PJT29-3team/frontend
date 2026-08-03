@@ -65,7 +65,7 @@ describe('SocialProfileCompletionView', () => {
     await flushPromises()
 
     expect(authStore.completeSocialProfile).toHaveBeenCalledWith('김집현', 1955)
-    expect(routerReplace).toHaveBeenCalledWith('/survey')
+    expect(routerReplace).toHaveBeenCalledWith('/main')
   })
 
   it('shows the server error and stays on the profile screen when saving fails', async () => {

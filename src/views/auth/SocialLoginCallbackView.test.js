@@ -29,7 +29,7 @@ describe('SocialLoginCallbackView', () => {
     await flushPromises()
 
     expect(authStore.refresh).toHaveBeenCalled()
-    expect(routerReplace).toHaveBeenCalledWith('/survey')
+    expect(routerReplace).toHaveBeenCalledWith('/main')
   })
 
   it('routes first-time social users to the profile completion screen', async () => {

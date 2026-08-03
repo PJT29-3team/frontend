@@ -87,7 +87,7 @@ describe('EmailLoginView', () => {
     expect(authStore.login).toHaveBeenCalledWith('senior@example.com', 'Secret!23')
     expect(localStorage.getItem('jh_saved_email')).toBe('senior@example.com')
     expect(localStorage.getItem('password')).toBeNull()
-    expect(routerPush).toHaveBeenCalledWith('/survey')
+    expect(routerPush).toHaveBeenCalledWith('/main')
   })
 
   it('loads the saved email and keeps login errors on the page', async () => {

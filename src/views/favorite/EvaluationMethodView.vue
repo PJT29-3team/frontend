@@ -17,5 +17,5 @@ onMounted(async () => {
 </script>
 
 <template>
-  <EvaluationMethodModal page :weights="weights" @close="router.push('/main')" />
+  <EvaluationMethodModal page :weights="weights" @close="router.push('/favorite-home')" />
 </template>
