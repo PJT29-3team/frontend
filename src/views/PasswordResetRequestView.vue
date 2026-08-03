@@ -1,56 +1,54 @@
 <template>
-  <div class="password-reset-page">
-    <LoginHeader />
-
-    <main class="password-reset-main">
-      <section class="reset-panel" aria-labelledby="reset-request-title">
-        <RouterLink class="back-link" to="/login/email">
-          <ArrowLeft :size="15" aria-hidden="true" />
-          이메일 로그인
+  <MemberPageLayout action-label="로그인" action-to="/login">
+    <section class="reset-content">
+      <div class="reset-flow">
+        <RouterLink class="back-link" to="/">
+          <ArrowLeft :size="17" aria-hidden="true" />
+          메인페이지로
         </RouterLink>
 
         <div class="step-progress" aria-label="비밀번호 재설정 1단계">
-          <span class="step-progress__active"></span>
-          <span></span>
-          <p>STEP 1 · 이메일 인증</p>
+          <div><span></span><i></i></div>
+          <p>STEP 1 · 본인 인증</p>
         </div>
 
-        <h1 id="reset-request-title">비밀번호 재설정</h1>
-        <p class="reset-description">가입한 이메일 주소를 입력해주세요.</p>
+        <section aria-labelledby="reset-request-title">
+          <h1 id="reset-request-title">비밀번호 재설정</h1>
+          <form novalidate @submit.prevent="submit">
+            <label for="reset-email">이메일</label>
+            <input
+              id="reset-email"
+              v-model.trim="email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              placeholder="example@gmail.com"
+              :disabled="submitting"
+            />
+            <p class="input-help">비밀번호 재설정 이메일을 입력해주세요.</p>
 
-        <form class="reset-form" novalidate @submit.prevent="submit">
-          <label for="reset-email">이메일</label>
-          <input
-            id="reset-email"
-            v-model.trim="email"
-            name="email"
-            type="email"
-            autocomplete="username"
-            placeholder="example@gmail.com"
-            :disabled="submitting"
-          />
+            <div class="feedback" aria-live="polite">
+              <p v-if="message" :class="sent ? 'success' : 'danger'">
+                <CircleAlert v-if="!sent" :size="17" aria-hidden="true" />
+                <span>{{ message }}</span>
+              </p>
+            </div>
 
-          <div class="feedback" aria-live="polite">
-            <p v-if="message" :class="sent ? 'success' : 'danger'">{{ message }}</p>
-          </div>
-
-          <button type="submit" :disabled="submitting">
-            {{ submitting ? '전송 중' : sent ? '링크 다시 보내기' : '링크 보내기' }}
-          </button>
-        </form>
-      </section>
-    </main>
-
-    <LoginFooter />
-  </div>
+            <button type="submit" :disabled="submitting">
+              {{ submitting ? '전송 중' : sent ? '링크 다시 보내기' : '링크 보내기' }}
+            </button>
+          </form>
+        </section>
+      </div>
+    </section>
+  </MemberPageLayout>
 </template>
 
 <script setup>
-import { ArrowLeft } from '@lucide/vue'
+import { ArrowLeft, CircleAlert } from '@lucide/vue'
 import { ref } from 'vue'
+import MemberPageLayout from '../components/MemberPageLayout.vue'
 import { requestPasswordReset } from '../api/authApi'
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
 
 const email = ref('')
 const message = ref('')
@@ -65,7 +63,7 @@ async function submit() {
   message.value = ''
   sent.value = false
   if (!emailPattern.test(email.value)) {
-    message.value = '올바른 이메일 주소를 입력해주세요.'
+    message.value = '이메일이 일치하지 않습니다. 다시 확인해주세요.'
     return
   }
 
@@ -73,7 +71,7 @@ async function submit() {
   try {
     const response = await requestPasswordReset(email.value)
     sent.value = true
-    message.value = response.message || '비밀번호 재설정 메일을 보냈습니다.'
+    message.value = response.message || '가입 여부와 관계없이 입력한 주소로 재설정 안내를 보냈습니다.'
   } catch (error) {
     message.value = error.response?.data?.message || '링크를 보내지 못했습니다. 잠시 후 다시 시도해주세요.'
   } finally {
@@ -83,154 +81,148 @@ async function submit() {
 </script>
 
 <style scoped>
-.password-reset-page {
-  min-height: 100vh;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: #fff;
-  color: #4d4942;
-}
-
-.password-reset-main {
+.reset-content {
   display: grid;
   place-items: start center;
-  padding: clamp(54px, 10vh, 104px) 20px 72px;
+  padding: 70px 24px 100px;
 }
 
-.reset-panel {
-  width: min(100%, 420px);
+.reset-flow {
+  width: min(100%, 370px);
 }
 
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin: 0 0 34px -24px;
-  color: #5f5a52;
+  margin-bottom: 48px;
+  color: #4d4942;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.back-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .step-progress {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 18px;
+  margin-bottom: 34px;
+}
+
+.step-progress > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.step-progress span,
+.step-progress i {
+  height: 3px;
 }
 
 .step-progress span {
-  height: 2px;
-  background: #dedbd4;
+  background: #ffbf00;
 }
 
-.step-progress__active {
-  background: #ffbc00 !important;
+.step-progress i {
+  background: #e7e3dc;
 }
 
 .step-progress p {
-  grid-column: 2;
-  margin: -2px 0 0;
-  color: #99958d;
-  text-align: right;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.reset-panel h1 {
   margin: 0;
-  color: #2f2b25;
-  font-size: 25px;
-  line-height: 1.35;
+  color: #aaa59d;
+  font-size: 10px;
+}
+
+h1 {
+  margin: 0 0 28px;
+  font-size: 24px;
+  line-height: 1.3;
   font-weight: 800;
-  letter-spacing: 0;
 }
 
-.reset-description {
-  margin: 9px 0 30px;
-  color: #817c73;
-  font-size: 14px;
-}
-
-.reset-form {
+form {
   display: grid;
 }
 
-.reset-form label {
-  margin-bottom: 9px;
-  color: #45413a;
-  font-size: 14px;
-  font-weight: 700;
+label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.reset-form input {
+input {
   width: 100%;
-  height: 52px;
-  padding: 0 15px;
-  border: 1px solid #d8d5cf;
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid #d8d4cc;
   border-radius: 5px;
   background: #fff;
-  color: #2f2b25;
   outline: none;
-  font-size: 15px;
+  font-size: 12px;
 }
 
-.reset-form input::placeholder {
-  color: #b5b1aa;
-}
-
-.reset-form input:focus {
-  border-color: #b98600;
+input:focus {
+  border-color: #d69e00;
   box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.16);
 }
 
+.input-help {
+  margin: 7px 0 0;
+  color: #9a958d;
+  font-size: 10px;
+}
+
 .feedback {
-  min-height: 64px;
+  min-height: 74px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .feedback p {
   width: 100%;
-  margin: 10px 0 0;
-  padding: 10px 12px;
-  border-radius: 5px;
-  font-size: 13px;
-  line-height: 1.45;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
 }
 
 .feedback .danger {
-  background: #ffe8e8;
-  color: #e44447;
+  background: #fde7e4;
+  color: #e4433b;
 }
 
 .feedback .success {
-  background: #e8f8ef;
-  color: #188f54;
+  background: #e7f7ee;
+  color: #16894e;
 }
 
-.reset-form button {
+form > button {
   width: 100%;
-  height: 50px;
+  height: 44px;
   border-radius: 5px;
-  background: #ffc400;
-  color: #302c26;
+  background: #ffbf00;
+  color: #312b22;
+  font-size: 13px;
   font-weight: 800;
 }
 
 @media (max-width: 560px) {
-  .password-reset-main {
-    padding-top: 42px;
+  .reset-content {
+    padding: 48px 22px 72px;
   }
 
   .back-link {
-    margin: 0 0 28px -12px;
+    margin-bottom: 38px;
   }
 }
 </style>

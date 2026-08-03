@@ -1,57 +1,47 @@
 <template>
-  <div class="social-profile-page">
-    <LoginHeader :show-navigation="false" />
+  <main class="social-profile-page">
+    <section class="social-profile-card" aria-labelledby="social-profile-title">
+      <img class="profile-logo" src="../assets/senior-downsizing-hero.png" alt="" />
+      <h1 id="social-profile-title">몇 가지만 더 확인할게요</h1>
 
-    <main class="social-profile-main">
-      <section class="social-profile-panel" aria-labelledby="social-profile-title">
-        <h1 id="social-profile-title">몇 가지만 더 확인할게요</h1>
+      <form class="social-profile-form" @submit.prevent="submit">
+        <label for="social-name">이름</label>
+        <input
+          id="social-name"
+          v-model.trim="name"
+          name="name"
+          type="text"
+          autocomplete="name"
+          maxlength="100"
+          placeholder="이름을 입력해주세요"
+          required
+        />
 
-        <form class="social-profile-form" @submit.prevent="submit">
-          <div class="profile-field">
-            <label for="social-name">이름</label>
-            <input
-              id="social-name"
-              v-model.trim="name"
-              name="name"
-              type="text"
-              autocomplete="name"
-              maxlength="100"
-              placeholder="이름을 입력해주세요."
-              required
-            />
-          </div>
+        <label for="social-birth-date">태어난년도</label>
+        <input
+          id="social-birth-date"
+          v-model="birthDate"
+          name="birthDate"
+          type="date"
+          autocomplete="bday"
+          min="1900-01-01"
+          :max="maxBirthDate"
+          required
+        />
 
-          <div class="profile-field">
-            <label for="social-birth-date">나이</label>
-            <input
-              id="social-birth-date"
-              v-model="birthDate"
-              name="birthDate"
-              type="date"
-              autocomplete="bday"
-              min="1900-01-01"
-              :max="maxBirthDate"
-              aria-label="태어난 연도를 입력하세요."
-              required
-              @focus="setDefaultBirthDate"
-            />
-          </div>
+        <p v-if="error" class="profile-error" role="alert">{{ error }}</p>
 
-          <p v-if="error" class="profile-error" role="alert">{{ error }}</p>
-
-          <button class="profile-submit" type="submit" :disabled="submitting">
-            {{ submitting ? '저장 중' : '다음' }}
-          </button>
-        </form>
-      </section>
-    </main>
-  </div>
+        <button class="profile-submit" type="submit" :disabled="submitting">
+          {{ submitting ? '저장 중' : '다음' }}
+        </button>
+      </form>
+    </section>
+  </main>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import LoginHeader from '../components/LoginHeader.vue'
 import { authStore } from '../stores/authStore'
 
 const router = useRouter()
@@ -60,12 +50,6 @@ const birthDate = ref('')
 const error = ref('')
 const submitting = ref(false)
 const maxBirthDate = new Date().toISOString().slice(0, 10)
-
-function setDefaultBirthDate() {
-  if (!birthDate.value) {
-    birthDate.value = '1960-01-01'
-  }
-}
 
 async function submit() {
   if (submitting.value) return
@@ -92,26 +76,37 @@ async function submit() {
 <style scoped>
 .social-profile-page {
   min-height: 100vh;
-  background: #fff;
-}
-
-.social-profile-main {
-  min-height: calc(100vh - 96px);
   display: grid;
   place-items: center;
-  padding: 38px 20px 120px;
+  padding: 38px 20px;
+  background: #f8f7f4;
 }
 
-.social-profile-panel {
-  width: min(100%, 420px);
+.social-profile-card {
+  width: min(100%, 560px);
+  min-height: 610px;
+  padding: 40px 58px 52px;
+  border: 1px solid #aaa69f;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(48, 43, 35, 0.08);
+}
+
+.profile-logo {
+  display: block;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 30px;
+  object-fit: contain;
 }
 
 h1 {
-  margin: 0 0 38px;
-  color: #171717;
-  font-size: 28px;
-  line-height: 1.3;
+  margin: 0 0 54px;
+  color: #090909;
+  font-size: 34px;
+  line-height: 1.25;
   font-weight: 900;
+  text-align: center;
   letter-spacing: 0;
 }
 
@@ -119,46 +114,42 @@ h1 {
   display: grid;
 }
 
-.profile-field {
-  display: grid;
-  gap: 8px;
-}
-
-.profile-field + .profile-field {
-  margin-top: 20px;
-}
-
 label {
-  color: #26231f;
-  font-size: 14px;
-  line-height: 1.4;
-  font-weight: 800;
+  margin-bottom: 8px;
+  color: #111;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+label:not(:first-child) {
+  margin-top: 34px;
 }
 
 input {
   width: 100%;
-  height: 52px;
-  padding: 0 14px;
-  border: 1px solid #d7d4cf;
-  border-radius: 7px;
+  height: 54px;
+  padding: 0 6px;
+  border: 0;
+  border-bottom: 1px solid #c3c0ba;
+  border-radius: 0;
   background: #fff;
   color: #24211d;
   outline: none;
-  font-size: 15px;
+  font-size: 21px;
 }
 
 input::placeholder {
-  color: #92908c;
+  color: #8b8a87;
   opacity: 1;
 }
 
 input:focus {
-  border-color: #ad8000;
-  box-shadow: 0 0 0 3px rgba(255, 202, 0, 0.2);
+  border-bottom-color: #9a7100;
+  box-shadow: 0 2px 0 #ffca00;
 }
 
 input[type="date"] {
-  color: #92908c;
+  color: #8b8a87;
 }
 
 input[type="date"]:valid {
@@ -177,15 +168,13 @@ input[type="date"]:valid {
 
 .profile-submit {
   width: 100%;
-  height: 54px;
-  margin-top: 52px;
-  border: 0;
-  border-radius: 6px;
+  height: 52px;
+  margin-top: 24px;
+  border-radius: 8px;
   background: #ffca00;
-  color: #3c362d;
-  font-size: 16px;
+  color: #4a4439;
+  font-size: 21px;
   font-weight: 900;
-  cursor: pointer;
 }
 
 .profile-submit:hover:not(:disabled) {
@@ -194,25 +183,35 @@ input[type="date"]:valid {
 
 .profile-submit:focus-visible,
 input:focus-visible {
-  outline: 3px solid rgba(45, 125, 90, 0.55);
-  outline-offset: 2px;
-}
-
-.profile-submit:disabled {
-  cursor: wait;
-  opacity: 0.72;
+  outline: 3px solid #2d7d5a;
+  outline-offset: 3px;
 }
 
 @media (max-width: 620px) {
-  .social-profile-main {
-    min-height: calc(100vh - 80px);
+  .social-profile-page {
     place-items: start center;
-    padding: 64px 20px 48px;
+    padding: 18px 14px;
+  }
+
+  .social-profile-card {
+    min-height: calc(100vh - 36px);
+    padding: 32px 26px 40px;
+    border-radius: 20px;
+  }
+
+  .profile-logo {
+    width: 86px;
+    height: 86px;
+    margin-bottom: 24px;
   }
 
   h1 {
-    margin-bottom: 34px;
-    font-size: 25px;
+    margin-bottom: 44px;
+    font-size: 28px;
+  }
+
+  input {
+    font-size: 18px;
   }
 }
 

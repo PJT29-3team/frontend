@@ -1,10 +1,10 @@
 <template>
-  <div class="email-login-page">
-    <LoginHeader />
-
-    <main class="email-login-main">
-      <section class="email-login-panel" aria-labelledby="email-login-title">
-        <h1 id="email-login-title">로그인</h1>
+  <MemberPageLayout action-label="회원가입" action-to="/signup">
+    <section class="email-login-content" aria-labelledby="email-login-title">
+      <div class="email-login-panel">
+        <div class="login-heading">
+          <h1 id="email-login-title">로그인</h1>
+        </div>
 
         <form class="login-form" @submit.prevent="submit">
           <label class="sr-only" for="login-email">이메일</label>
@@ -36,8 +36,8 @@
               :title="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
               @click="showPassword = !showPassword"
             >
-              <EyeOff v-if="showPassword" :size="19" aria-hidden="true" />
-              <Eye v-else :size="19" aria-hidden="true" />
+              <EyeOff v-if="showPassword" :size="17" aria-hidden="true" />
+              <Eye v-else :size="17" aria-hidden="true" />
             </button>
           </div>
 
@@ -52,11 +52,7 @@
             </label>
           </div>
 
-          <div
-            v-if="error || verificationRequired || verificationMessage"
-            class="login-error"
-            aria-live="polite"
-          >
+          <div class="login-error" aria-live="polite">
             <p v-if="error" class="form-message danger">{{ error }}</p>
             <button
               v-if="verificationRequired"
@@ -71,31 +67,29 @@
             <p v-if="verificationMessage" class="form-message success">{{ verificationMessage }}</p>
           </div>
 
-          <RouterLink class="password-reset-link" to="/password/reset/request">비밀번호 찾기</RouterLink>
-
-          <p class="signup-prompt">
-            <span>계정이 없으신가요?</span>
-            <RouterLink to="/signup">회원가입</RouterLink>
-          </p>
+          <div class="login-links">
+            <RouterLink class="password-reset-link" to="/password/reset/request">비밀번호 찾기</RouterLink>
+            <p class="signup-prompt">
+              <span>계정이 없으신가요?</span>
+              <RouterLink to="/signup">회원가입</RouterLink>
+            </p>
+          </div>
 
           <button class="login-submit" type="submit" :disabled="submitting">
             {{ submitting ? '로그인 중' : '로그인' }}
           </button>
         </form>
-      </section>
-    </main>
-
-    <LoginFooter />
-  </div>
+      </div>
+    </section>
+  </MemberPageLayout>
 </template>
 
 <script setup>
 import { Eye, EyeOff } from '@lucide/vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import MemberPageLayout from '../components/MemberPageLayout.vue'
 import { resendVerification } from '../api/authApi'
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
 import { authStore } from '../stores/authStore'
 
 const SAVED_EMAIL_KEY = 'jh_saved_email'
@@ -131,8 +125,8 @@ async function submit() {
       }
     }
     router.push('/main')
-  } catch (e) {
-    error.value = e.response?.data?.message || '로그인 정보를 확인해주세요.'
+  } catch (loginError) {
+    error.value = loginError.response?.data?.message || '로그인 정보를 확인해주세요.'
     verificationRequired.value = error.value === VERIFICATION_REQUIRED_MESSAGE
   } finally {
     submitting.value = false
@@ -147,8 +141,8 @@ async function resendEmailVerification() {
   try {
     const response = await resendVerification(email.value)
     verificationMessage.value = response.message || '인증 메일을 다시 보냈습니다.'
-  } catch (e) {
-    verificationMessage.value = e.response?.data?.message || '인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해주세요.'
+  } catch (resendError) {
+    verificationMessage.value = resendError.response?.data?.message || '인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해주세요.'
   } finally {
     resendingVerification.value = false
   }
@@ -156,50 +150,45 @@ async function resendEmailVerification() {
 </script>
 
 <style scoped>
-.email-login-page {
-  min-height: 100vh;
+.email-login-content {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: #fff;
-  color: #545045;
-}
-
-.email-login-main {
-  display: grid;
-  place-items: start center;
-  padding: clamp(64px, 11vh, 118px) 20px 72px;
+  place-items: center;
+  padding: 64px 24px 100px;
 }
 
 .email-login-panel {
-  width: min(100%, 420px);
+  width: min(100%, 300px);
 }
 
-.email-login-panel h1 {
-  margin: 0 0 48px;
-  color: #2f2b25;
-  font-size: 32px;
+.login-heading {
+  margin-bottom: 48px;
+  text-align: center;
+}
+
+.login-heading h1 {
+  margin: 0;
+  color: #111;
+  font-size: 28px;
   line-height: 1.3;
   font-weight: 800;
-  letter-spacing: 0;
-  text-align: center;
 }
 
 .login-form {
   display: grid;
-  gap: 15px;
+  gap: 16px;
 }
 
 .login-form > input,
 .password-input input {
   width: 100%;
-  height: 56px;
-  padding: 0 16px;
-  border: 1px solid #d5d2cc;
+  height: 45px;
+  padding: 0 13px;
+  border: 1px solid #d8d4cc;
   border-radius: 6px;
   background: #fff;
   color: #282622;
   outline: none;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .login-form > input::placeholder,
@@ -210,7 +199,7 @@ async function resendEmailVerification() {
 .login-form > input:focus,
 .password-input input:focus {
   border-color: #b98600;
-  box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.18);
+  box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.16);
 }
 
 .password-input {
@@ -218,25 +207,18 @@ async function resendEmailVerification() {
 }
 
 .password-input input {
-  padding-right: 52px;
+  padding-right: 44px;
 }
 
 .password-toggle {
   position: absolute;
-  top: 0;
-  right: 2px;
-  width: 48px;
-  height: 56px;
+  inset: 0 3px 0 auto;
+  width: 40px;
   display: grid;
   place-items: center;
   padding: 0;
   background: transparent;
-  color: #9b9891;
-}
-
-.password-toggle:focus-visible {
-  outline: 2px solid #2d7d5a;
-  outline-offset: -4px;
+  color: #8b867e;
 }
 
 .login-options {
@@ -249,17 +231,17 @@ async function resendEmailVerification() {
 .login-options label {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   color: #77736c;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
 .login-options input {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   margin: 0;
-  accent-color: var(--jh-yellow);
+  accent-color: #ffbf00;
 }
 
 .login-error {
@@ -271,29 +253,29 @@ async function resendEmailVerification() {
 .login-error .form-message {
   margin: 0;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .verification-resend {
   justify-self: center;
-  padding: 5px 2px;
+  padding: 4px;
   background: transparent;
   color: #8a6700;
   text-decoration: underline;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
-.verification-resend:focus-visible {
-  outline: 2px solid #8a6700;
-  outline-offset: 2px;
+.login-links {
+  display: grid;
+  gap: 15px;
 }
 
 .password-reset-link {
   justify-self: center;
   color: #77736c;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .signup-prompt {
@@ -302,7 +284,7 @@ async function resendEmailVerification() {
   gap: 5px;
   margin: 0;
   color: #77736c;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .signup-prompt a {
@@ -311,31 +293,14 @@ async function resendEmailVerification() {
   font-weight: 800;
 }
 
-.password-reset-link:hover,
-.signup-prompt a:hover {
-  text-decoration: underline;
-}
-
 .login-submit {
   width: 100%;
-  height: 56px;
-  margin-top: 2px;
+  height: 47px;
   border-radius: 6px;
-  background: var(--jh-yellow-strong);
+  background: #ffbf00;
   color: #302a20;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
-}
-
-.login-submit:hover:not(:disabled) {
-  background: #f2b800;
-}
-
-.login-submit:focus-visible,
-.password-reset-link:focus-visible,
-.signup-prompt a:focus-visible {
-  outline: 3px solid #2d7d5a;
-  outline-offset: 3px;
 }
 
 .sr-only {
@@ -351,21 +316,9 @@ async function resendEmailVerification() {
 }
 
 @media (max-width: 430px) {
-  .email-login-main {
-    padding: 48px 20px 56px;
-  }
-
-  .email-login-panel h1 {
-    margin-bottom: 40px;
-    font-size: 30px;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .login-submit,
-  .login-form > input,
-  .password-input input {
-    transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  .email-login-content {
+    align-items: start;
+    padding: 64px 24px;
   }
 }
 </style>

@@ -1,40 +1,35 @@
 <template>
-  <div class="password-reset-page">
-    <LoginHeader :show-navigation="state !== 'done'" />
-
-    <main class="password-reset-main">
+  <MemberPageLayout action-label="로그인" action-to="/login">
+    <section class="reset-content">
       <section v-if="state === 'checking'" class="status-panel" aria-live="polite">
-        <LoaderCircle class="spin" :size="40" aria-hidden="true" />
+        <LoaderCircle class="spin" :size="38" aria-hidden="true" />
         <h1>링크를 확인하고 있습니다.</h1>
         <p>잠시만 기다려주세요.</p>
       </section>
 
       <section v-else-if="state === 'invalid'" class="status-panel" aria-live="polite">
-        <CircleAlert class="invalid-icon" :size="44" aria-hidden="true" />
+        <CircleAlert class="invalid-icon" :size="42" aria-hidden="true" />
         <h1>재설정 링크를 사용할 수 없습니다</h1>
         <p>{{ message }}</p>
         <RouterLink class="primary-link" to="/password/reset/request">새 링크 받기</RouterLink>
       </section>
 
-      <section v-else-if="state === 'ready'" class="reset-panel" aria-labelledby="reset-complete-title">
-        <RouterLink class="back-link" to="/login/email">
-          <ArrowLeft :size="15" aria-hidden="true" />
-          이메일 로그인으로
+      <div v-else-if="state === 'ready'" class="reset-flow">
+        <RouterLink class="back-link" to="/">
+          <ArrowLeft :size="17" aria-hidden="true" />
+          메인페이지로
         </RouterLink>
 
         <div class="step-progress" aria-label="비밀번호 재설정 2단계">
-          <span class="step-progress__complete"></span>
-          <span class="step-progress__active"></span>
+          <div><i></i><span></span></div>
           <p>STEP 2 · 새 비밀번호 설정</p>
         </div>
 
-        <h1 id="reset-complete-title">새 비밀번호 설정</h1>
-        <p class="reset-description">새 비밀번호를 입력해주세요.</p>
-
-        <form class="reset-form" novalidate @submit.prevent="submit">
-          <div class="form-group">
+        <section aria-labelledby="reset-complete-title">
+          <h1 id="reset-complete-title">새 비밀번호 설정</h1>
+          <form novalidate @submit.prevent="submit">
             <label for="new-password">새 비밀번호</label>
-            <div class="password-field">
+            <div class="password-input">
               <input
                 id="new-password"
                 v-model="password"
@@ -45,83 +40,73 @@
                 :disabled="submitting"
               />
               <button
-                class="password-toggle"
                 type="button"
-                :aria-label="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
-                :title="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
+                :aria-label="showPassword ? '새 비밀번호 숨기기' : '새 비밀번호 표시'"
                 @click="showPassword = !showPassword"
               >
-                <EyeOff v-if="showPassword" :size="18" aria-hidden="true" />
-                <Eye v-else :size="18" aria-hidden="true" />
+                <EyeOff v-if="showPassword" :size="16" aria-hidden="true" />
+                <Eye v-else :size="16" aria-hidden="true" />
               </button>
             </div>
-            <p v-if="password" class="field-message" :class="isPasswordValid ? 'success' : 'danger'">
-              {{ isPasswordValid ? '사용 가능한 비밀번호입니다.' : PASSWORD_RULE_MESSAGE }}
-            </p>
-          </div>
 
-          <div class="form-group">
-            <label for="new-password-confirm">새 비밀번호 확인</label>
-            <div class="password-field">
+            <label for="new-password-confirm">새 비밀번호 다시 입력</label>
+            <div class="password-input">
               <input
                 id="new-password-confirm"
                 v-model="passwordConfirm"
                 name="passwordConfirm"
                 :type="showPasswordConfirm ? 'text' : 'password'"
                 autocomplete="new-password"
-                placeholder="새 비밀번호를 다시 입력해주세요"
+                placeholder="새 비밀번호를 다시 한번 입력해주세요"
                 :disabled="submitting"
               />
               <button
-                class="password-toggle"
                 type="button"
                 :aria-label="showPasswordConfirm ? '비밀번호 확인 숨기기' : '비밀번호 확인 표시'"
-                :title="showPasswordConfirm ? '비밀번호 확인 숨기기' : '비밀번호 확인 표시'"
                 @click="showPasswordConfirm = !showPasswordConfirm"
               >
-                <EyeOff v-if="showPasswordConfirm" :size="18" aria-hidden="true" />
-                <Eye v-else :size="18" aria-hidden="true" />
+                <EyeOff v-if="showPasswordConfirm" :size="16" aria-hidden="true" />
+                <Eye v-else :size="16" aria-hidden="true" />
               </button>
             </div>
-            <p
-              v-if="passwordConfirm"
-              class="field-message"
-              :class="isPasswordMatched ? 'success' : 'danger'"
-            >
-              {{ isPasswordMatched ? '비밀번호가 일치합니다.' : '비밀번호가 서로 일치하지 않습니다.' }}
-            </p>
-          </div>
 
-          <p v-if="message" class="form-summary danger" aria-live="polite">{{ message }}</p>
+            <div class="password-rules" aria-label="비밀번호 조건">
+              <span :class="{ active: password.length >= 8 }">✓ 8자 이상</span>
+              <span :class="{ active: /[A-Za-z]/.test(password) }">✓ 영문 포함</span>
+              <span :class="{ active: /\d/.test(password) }">✓ 숫자 포함</span>
+              <span :class="{ active: /[^A-Za-z\d\s]/.test(password) }">✓ 특수문자 포함</span>
+            </div>
 
-          <button class="reset-submit" type="submit" :disabled="!isFormValid || submitting">
-            {{ submitting ? '변경 중' : '변경 완료' }}
-          </button>
-        </form>
-      </section>
+            <div class="feedback" aria-live="polite">
+              <p v-if="message">
+                <CircleAlert :size="17" aria-hidden="true" />
+                <span>{{ message }}</span>
+              </p>
+            </div>
+
+            <button class="submit-button" type="submit" :disabled="submitting">
+              {{ submitting ? '변경 중' : '변경 완료' }}
+            </button>
+          </form>
+        </section>
+      </div>
 
       <section v-else class="status-panel done-panel" aria-live="polite">
-        <span class="success-icon">
-          <Check :size="24" stroke-width="3" aria-hidden="true" />
-        </span>
+        <span class="success-icon"><Check :size="26" stroke-width="3" aria-hidden="true" /></span>
         <h1>비밀번호가 변경되었습니다</h1>
-        <p>새 비밀번호로 로그인해주세요.</p>
+        <p>새 비밀번호로 안전하게 로그인해주세요.</p>
         <RouterLink class="primary-link" to="/login/email">로그인으로 돌아가기</RouterLink>
       </section>
-    </main>
-
-    <LoginFooter />
-  </div>
+    </section>
+  </MemberPageLayout>
 </template>
 
 <script setup>
 import { ArrowLeft, Check, CircleAlert, Eye, EyeOff, LoaderCircle } from '@lucide/vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import MemberPageLayout from '../components/MemberPageLayout.vue'
 import { completePasswordReset, verifyPasswordReset } from '../api/authApi'
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
-import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../utils/passwordPolicy'
 
 const route = useRoute()
 const password = ref('')
@@ -132,17 +117,7 @@ const message = ref('')
 const state = ref('checking')
 const submitting = ref(false)
 
-const isPasswordValid = computed(() => isStrongPassword(password.value))
-const isPasswordMatched = computed(() =>
-  Boolean(password.value) && password.value === passwordConfirm.value
-)
-const isFormValid = computed(() => isPasswordValid.value && isPasswordMatched.value)
-
-watch([password, passwordConfirm], () => {
-  if (!submitting.value) {
-    message.value = ''
-  }
-})
+const strongPasswordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d\s])\S{8,}$/
 
 onMounted(verifyToken)
 
@@ -164,9 +139,18 @@ async function verifyToken() {
 }
 
 async function submit() {
-  if (!isFormValid.value || submitting.value) return
+  if (submitting.value) return
 
   message.value = ''
+  if (!strongPasswordPattern.test(password.value)) {
+    message.value = '영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.'
+    return
+  }
+  if (password.value !== passwordConfirm.value) {
+    message.value = '비밀번호가 일치하지 않습니다. 다시 확인해주세요.'
+    return
+  }
+
   submitting.value = true
   try {
     await completePasswordReset(route.query.token, password.value, passwordConfirm.value)
@@ -180,188 +164,159 @@ async function submit() {
 </script>
 
 <style scoped>
-.password-reset-page {
-  min-height: 100vh;
+.reset-content {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: #fff;
-  color: #4d4942;
+  place-items: center;
+  padding: 70px 24px 100px;
 }
 
-.password-reset-main {
-  display: grid;
-  place-items: start center;
-  padding: clamp(48px, 9vh, 94px) 20px 72px;
-}
-
-.reset-panel {
-  width: min(100%, 420px);
+.reset-flow {
+  width: min(100%, 390px);
 }
 
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 34px;
-  color: #5f5a52;
+  margin-bottom: 48px;
+  color: #4d4942;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.back-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .step-progress {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  margin-bottom: 12px;
-}
-
-.step-progress span {
-  height: 2px;
-  background: #dedbd4;
-}
-
-.step-progress__complete {
-  background: #7e7a72 !important;
-}
-
-.step-progress__active {
-  background: #ffbc00 !important;
-}
-
-.step-progress p {
-  grid-column: 2;
-  margin: -2px 0 0;
-  color: #99958d;
-  text-align: right;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.reset-panel h1,
-.status-panel h1 {
-  margin: 0;
-  color: #2f2b25;
-  font-size: 25px;
-  line-height: 1.35;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.reset-description {
-  margin: 9px 0 28px;
-  color: #817c73;
-  font-size: 14px;
-}
-
-.reset-form {
-  display: grid;
   gap: 18px;
+  margin-bottom: 34px;
 }
 
-.form-group {
+.step-progress > div {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.form-group label {
-  color: #45413a;
-  font-size: 14px;
-  font-weight: 700;
+.step-progress span,
+.step-progress i {
+  height: 3px;
 }
 
-.password-field {
+.step-progress i,
+.step-progress span {
+  background: #ffbf00;
+}
+
+.step-progress p {
+  margin: 0;
+  color: #aaa59d;
+  font-size: 10px;
+}
+
+h1 {
+  margin: 0 0 28px;
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+form {
+  display: grid;
+}
+
+label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.password-input {
   position: relative;
+  margin-bottom: 16px;
 }
 
-.password-field input {
+.password-input input {
   width: 100%;
-  height: 52px;
-  padding: 0 50px 0 15px;
-  border: 1px solid #d8d5cf;
+  height: 44px;
+  padding: 0 43px 0 13px;
+  border: 1px solid #d8d4cc;
   border-radius: 5px;
   background: #fff;
-  color: #2f2b25;
   outline: none;
-  font-size: 15px;
+  font-size: 12px;
 }
 
-.password-field input::placeholder {
-  color: #b5b1aa;
-}
-
-.password-field input:focus {
-  border-color: #b98600;
+.password-input input:focus {
+  border-color: #d69e00;
   box-shadow: 0 0 0 3px rgba(255, 188, 0, 0.16);
 }
 
-.password-toggle {
+.password-input button {
   position: absolute;
-  top: 0;
-  right: 2px;
-  width: 48px;
-  height: 52px;
+  inset: 0 3px 0 auto;
+  width: 38px;
   display: grid;
   place-items: center;
   padding: 0;
   background: transparent;
-  color: #9b9891;
+  color: #918c84;
 }
 
-.password-toggle:focus-visible {
-  outline: 2px solid #2d7d5a;
-  outline-offset: -4px;
+.password-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 15px;
+  margin-top: -6px;
+  color: #aaa59d;
+  font-size: 10px;
 }
 
-.field-message {
-  margin: 0 2px;
-  font-size: 12px;
-  line-height: 1.45;
+.password-rules .active {
+  color: #18a35e;
 }
 
-.field-message.success {
-  color: #188f54;
+.feedback {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
 }
 
-.field-message.danger {
-  color: #e44447;
-}
-
-.form-summary {
+.feedback p {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 5px;
-  font-size: 13px;
-  line-height: 1.45;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #fde7e4;
+  color: #e4433b;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
 }
 
-.form-summary.danger {
-  background: #ffe8e8;
-  color: #e44447;
-}
-
-.reset-submit,
+.submit-button,
 .primary-link {
   width: 100%;
-  height: 50px;
+  min-height: 44px;
   display: grid;
   place-items: center;
   border-radius: 5px;
-  background: #ffc400;
-  color: #302c26;
+  background: #ffbf00;
+  color: #312b22;
   text-decoration: none;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .status-panel {
-  width: min(100%, 400px);
-  min-height: 330px;
+  width: min(100%, 390px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -371,29 +326,38 @@ async function submit() {
 
 .status-panel > svg {
   margin-bottom: 20px;
-  color: #77736c;
+  color: #6a655d;
 }
 
 .status-panel .invalid-icon {
-  color: #e44447;
+  color: #e4433b;
+}
+
+.status-panel h1 {
+  margin-bottom: 0;
+  font-size: 20px;
 }
 
 .status-panel p {
-  margin: 10px 0 28px;
-  color: #817c73;
-  font-size: 14px;
+  margin: 10px 0 24px;
+  color: #77736c;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .success-icon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   margin-bottom: 20px;
   border-radius: 50%;
-  background: #19b766;
+  background: #19bf67;
   color: #fff;
+}
+
+.done-panel .primary-link {
+  max-width: 300px;
 }
 
 .spin {
@@ -401,18 +365,21 @@ async function submit() {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 560px) {
-  .password-reset-main {
-    padding-top: 42px;
+  .reset-content {
+    align-items: start;
+    padding: 48px 22px 72px;
   }
 
   .back-link {
-    margin-bottom: 28px;
+    margin-bottom: 38px;
+  }
+
+  .status-panel {
+    margin-top: 90px;
   }
 }
 </style>
