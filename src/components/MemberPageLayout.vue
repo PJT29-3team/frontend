@@ -4,7 +4,9 @@
       <div class="page-container header-inner">
         <a class="brand" href="/" aria-label="작은둥지 홈">
           <img src="../assets/small-nest-mark.png" alt="" />
-          <span>작은둥지</span>
+          <span class="brand-wordmark">
+            <span>작은</span><span class="brand-accent">둥지</span>
+          </span>
         </a>
         <nav aria-label="회원 메뉴">
           <a href="#support">고객센터</a>
@@ -74,10 +76,20 @@ defineProps({
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #d48a00;
+  color: #222;
   font-size: 15px;
   font-weight: 800;
   text-decoration: none;
+}
+
+.brand-wordmark {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.brand-accent {
+  color: #ffcc00;
 }
 
 .brand img {
