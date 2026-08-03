@@ -1,7 +1,7 @@
 <template>
   <main class="social-callback-page">
     <section class="social-callback-card" aria-live="polite">
-      <img src="@/assets/senior-downsizing-hero.png" alt="" />
+      <img src="../../assets/senior-downsizing-hero.png" alt="" />
       <h1>{{ error ? '로그인하지 못했습니다' : '로그인 중입니다' }}</h1>
       <h2 v-if="error">{{ error.title }}</h2>
       <p>{{ error ? error.message : '카카오 계정 정보를 확인하고 있습니다.' }}</p>
