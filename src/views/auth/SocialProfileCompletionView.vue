@@ -51,8 +51,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import LoginHeader from '../components/LoginHeader.vue'
-import { authStore } from '../stores/authStore'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
+import { authStore } from '../../stores/authStore'
 
 const router = useRouter()
 const name = ref('')

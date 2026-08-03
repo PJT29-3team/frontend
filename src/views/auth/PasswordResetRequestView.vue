@@ -48,9 +48,9 @@
 <script setup>
 import { ArrowLeft } from '@lucide/vue'
 import { ref } from 'vue'
-import { requestPasswordReset } from '../api/authApi'
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
+import { requestPasswordReset } from '../../api/authApi'
+import LoginFooter from '../../components/auth/LoginFooter.vue'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
 
 const email = ref('')
 const message = ref('')

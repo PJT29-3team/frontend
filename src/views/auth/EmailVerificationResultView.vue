@@ -12,8 +12,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import AuthCard from '../components/AuthCard.vue'
-import { verifyEmail } from '../api/authApi'
+import AuthCard from '../../components/auth/AuthCard.vue'
+import { verifyEmail } from '../../api/authApi'
 
 const route = useRoute()
 const ok = ref(false)

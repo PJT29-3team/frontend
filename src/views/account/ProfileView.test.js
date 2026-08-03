@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { changePassword, getMe } from '../api/authApi'
-import { authStore } from '../stores/authStore'
+import { changePassword, getMe } from '../../api/authApi'
+import { authStore } from '../../stores/authStore'
 import ProfileView from './ProfileView.vue'
 
 const routerPush = vi.hoisted(() => vi.fn())
@@ -10,7 +10,7 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({ push: routerPush }),
 }))
 
-vi.mock('../api/authApi', () => ({
+vi.mock('../../api/authApi', () => ({
   cancelDeletion: vi.fn(),
   changePassword: vi.fn(),
   getMe: vi.fn(),

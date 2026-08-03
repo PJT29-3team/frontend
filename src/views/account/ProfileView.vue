@@ -75,9 +75,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import AuthCard from '../components/AuthCard.vue'
-import FormField from '../components/FormField.vue'
-import { authStore } from '../stores/authStore'
+import AuthCard from '../../components/auth/AuthCard.vue'
+import FormField from '../../components/auth/FormField.vue'
+import { authStore } from '../../stores/authStore'
 import {
   cancelDeletion,
   changePassword,
@@ -85,8 +85,8 @@ import {
   logoutAll as logoutAllApi,
   requestDeletion,
   updateMe,
-} from '../api/authApi'
-import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../utils/passwordPolicy'
+} from '../../api/authApi'
+import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../../utils/passwordPolicy'
 
 const router = useRouter()
 const name = ref('')

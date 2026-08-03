@@ -151,10 +151,10 @@
 import { Eye, EyeOff } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { checkEmailAvailability, signup } from '../api/authApi'
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
-import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../utils/passwordPolicy'
+import { checkEmailAvailability, signup } from '../../api/authApi.js'
+import LoginFooter from '../../components/auth/LoginFooter.vue'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
+import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../../utils/passwordPolicy.js'
 
 const router = useRouter()
 const emailLocal = ref('')
