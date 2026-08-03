@@ -6,7 +6,7 @@
     <RouterLink class="login-header__brand" to="/" aria-label="작은둥지 홈">
       <img
         class="login-header__logo"
-        src="../assets/jiphyeonjeon-header-logo.png"
+        src="../../assets/jiphyeonjeon-header-logo.png"
         alt=""
       />
       <span class="login-header__wordmark">

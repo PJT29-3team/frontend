@@ -15,7 +15,7 @@
         >
           <img
             class="login-button__kakao-image"
-            src="../assets/kakao-login-large-wide.png"
+            src="../../assets/kakao-login-large-wide.png"
             alt=""
           />
         </a>
@@ -41,8 +41,8 @@
 </template>
 
 <script setup>
-import LoginFooter from '../components/LoginFooter.vue'
-import LoginHeader from '../components/LoginHeader.vue'
+import LoginFooter from '../../components/auth/LoginFooter.vue'
+import LoginHeader from '../../components/auth/LoginHeader.vue'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 </script>
