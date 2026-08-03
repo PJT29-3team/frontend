@@ -18,7 +18,22 @@ const route = useRoute()
 const router = useRouter()
 const error = ref('')
 
+const errorMessages = {
+  access_denied: '카카오 로그인이 취소되었습니다.',
+  invalid_state: '로그인 요청이 만료되었습니다. 다시 시도해주세요.',
+  email_required: '카카오계정 이메일 제공 동의가 필요합니다.',
+  account_conflict: '이미 가입된 이메일입니다. 이메일로 로그인해주세요.',
+  provider_error: '카카오 로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
+  configuration_error: '카카오 로그인 설정을 확인해주세요.',
+}
+
 onMounted(async () => {
+  const errorCode = Array.isArray(route.query.error) ? route.query.error[0] : route.query.error
+  if (errorCode) {
+    error.value = errorMessages[errorCode] || errorMessages.provider_error
+    return
+  }
+
   if (route.query.profileRequired === 'true') {
     await router.replace('/social/profile')
     return

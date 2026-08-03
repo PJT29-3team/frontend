@@ -17,17 +17,84 @@
           required
         />
 
-        <label for="social-birth-date">태어난년도</label>
-        <input
-          id="social-birth-date"
-          v-model="birthDate"
-          name="birthDate"
-          type="date"
-          autocomplete="bday"
-          min="1900-01-01"
-          :max="maxBirthDate"
-          required
-        />
+        <label for="social-birth-year">출생연도</label>
+        <div class="birth-year-picker" @focusout="handleYearPickerFocusOut" @keydown.esc="closeYearPicker">
+          <div class="birth-year-control">
+            <input
+              id="social-birth-year"
+              :value="birthYearDisplay"
+              name="birthYear"
+              type="text"
+              autocomplete="bday-year"
+              placeholder="출생연도를 선택해주세요"
+              aria-label="출생연도"
+              readonly
+              required
+              @click="toggleYearPicker"
+            />
+            <button
+              class="birth-year-toggle"
+              type="button"
+              data-birth-year-toggle
+              aria-label="출생연도 선택기 열기"
+              title="출생연도 선택"
+              aria-controls="social-year-picker"
+              :aria-expanded="yearPickerOpen"
+              @click="toggleYearPicker"
+            >
+              <CalendarDays :size="22" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div
+            v-if="yearPickerOpen"
+            id="social-year-picker"
+            class="year-picker-panel"
+            data-year-picker
+            role="dialog"
+            aria-label="출생연도 선택"
+          >
+            <div class="year-picker-header">
+              <button
+                type="button"
+                data-previous-decade
+                aria-label="이전 10년 보기"
+                title="이전 10년"
+                :disabled="visibleDecade <= minimumDecade"
+                @click="moveDecade(-10)"
+              >
+                <ChevronLeft :size="18" aria-hidden="true" />
+              </button>
+              <strong>{{ visibleDecade }}년대</strong>
+              <button
+                type="button"
+                data-next-decade
+                aria-label="다음 10년 보기"
+                title="다음 10년"
+                :disabled="visibleDecade >= currentDecade"
+                @click="moveDecade(10)"
+              >
+                <ChevronRight :size="18" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div class="year-grid">
+              <button
+                v-for="year in visibleYears"
+                :key="year"
+                type="button"
+                class="year-option"
+                :class="{ selected: birthYear === String(year) }"
+                :data-birth-year="year"
+                :disabled="year > currentYear"
+                :aria-pressed="birthYear === String(year)"
+                @click="selectBirthYear(year)"
+              >
+                {{ year }}
+              </button>
+            </div>
+          </div>
+        </div>
 
         <p v-if="error" class="profile-error" role="alert">{{ error }}</p>
 
@@ -40,30 +107,69 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { CalendarDays, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/authStore'
 
 const router = useRouter()
 const name = ref('')
-const birthDate = ref('')
+const birthYear = ref('')
+const visibleDecade = ref(1960)
+const yearPickerOpen = ref(false)
 const error = ref('')
 const submitting = ref(false)
-const maxBirthDate = new Date().toISOString().slice(0, 10)
+const currentYear = new Date().getFullYear()
+const currentDecade = Math.floor(currentYear / 10) * 10
+const minimumDecade = 1900
+const birthYearDisplay = computed(() => birthYear.value ? `${birthYear.value}년` : '')
+const visibleYears = computed(() => Array.from({ length: 10 }, (_, index) => visibleDecade.value + index))
+
+function toggleYearPicker() {
+  if (!yearPickerOpen.value) {
+    visibleDecade.value = birthYear.value
+      ? Math.floor(Number(birthYear.value) / 10) * 10
+      : 1960
+  }
+  yearPickerOpen.value = !yearPickerOpen.value
+}
+
+function closeYearPicker() {
+  yearPickerOpen.value = false
+}
+
+function handleYearPickerFocusOut(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    closeYearPicker()
+  }
+}
+
+function moveDecade(amount) {
+  visibleDecade.value = Math.min(
+    currentDecade,
+    Math.max(minimumDecade, visibleDecade.value + amount),
+  )
+}
+
+function selectBirthYear(year) {
+  if (year < minimumDecade || year > currentYear) return
+  birthYear.value = String(year)
+  closeYearPicker()
+}
 
 async function submit() {
   if (submitting.value) return
 
-  const birthYear = Number(birthDate.value.slice(0, 4))
-  if (!name.value || !birthYear) {
-    error.value = '이름과 태어난 날짜를 입력해주세요.'
+  const selectedBirthYear = Number(birthYear.value)
+  if (!name.value || !selectedBirthYear) {
+    error.value = '이름과 출생연도를 선택해주세요.'
     return
   }
 
   error.value = ''
   submitting.value = true
   try {
-    await authStore.completeSocialProfile(name.value, birthYear)
+    await authStore.completeSocialProfile(name.value, selectedBirthYear)
     await router.replace('/main')
   } catch (e) {
     error.value = e.response?.data?.message || '추가 정보를 저장하지 못했습니다. 다시 시도해주세요.'
@@ -148,12 +254,102 @@ input:focus {
   box-shadow: 0 2px 0 #ffca00;
 }
 
-input[type="date"] {
-  color: #8b8a87;
+.birth-year-picker,
+.birth-year-control {
+  position: relative;
 }
 
-input[type="date"]:valid {
+.birth-year-control input {
+  padding-right: 52px;
+  cursor: pointer;
+}
+
+.birth-year-toggle {
+  position: absolute;
+  inset: 0 2px 0 auto;
+  width: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #24211d;
+  cursor: pointer;
+}
+
+.year-picker-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d8d4cc;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(50, 44, 34, 0.16);
+}
+
+.year-picker-header {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.year-picker-header strong {
+  text-align: center;
+  font-size: 15px;
+}
+
+.year-picker-header button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e3ded5;
+  border-radius: 6px;
+  background: #fff;
+  color: #575149;
+  cursor: pointer;
+}
+
+.year-picker-header button:disabled,
+.year-option:disabled {
+  color: #bbb6ad;
+  background: #f5f3ef;
+  cursor: not-allowed;
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.year-option {
+  height: 38px;
+  padding: 0;
+  border: 1px solid #e3ded5;
+  border-radius: 6px;
+  background: #fff;
+  color: #302d28;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.year-option:hover:not(:disabled),
+.year-option:focus-visible {
+  border-color: #d69e00;
+  background: #fff8df;
+}
+
+.year-option.selected {
+  border-color: #d69e00;
+  background: #ffcc00;
+  color: #241f17;
 }
 
 .profile-error {
@@ -182,7 +378,10 @@ input[type="date"]:valid {
 }
 
 .profile-submit:focus-visible,
-input:focus-visible {
+input:focus-visible,
+.birth-year-toggle:focus-visible,
+.year-picker-header button:focus-visible,
+.year-option:focus-visible {
   outline: 3px solid #2d7d5a;
   outline-offset: 3px;
 }

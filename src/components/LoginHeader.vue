@@ -55,7 +55,7 @@ defineProps({
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #3e392f;
+  color: #222;
   text-decoration: none;
 }
 
@@ -77,7 +77,7 @@ defineProps({
 }
 
 .login-header__wordmark-accent {
-  color: #f3b900;
+  color: #ffcc00;
 }
 
 .login-header__nav {
