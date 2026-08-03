@@ -1,6 +1,6 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as authApi from '../api/authApi'
+import * as authApi from '../../api/authApi'
 import SignupView from './SignupView.vue'
 
 const routerPush = vi.hoisted(() => vi.fn())

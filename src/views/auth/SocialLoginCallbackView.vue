@@ -13,7 +13,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { authStore } from '../stores/authStore'
+import { authStore } from '../../stores/authStore'
 
 const route = useRoute()
 const router = useRouter()
