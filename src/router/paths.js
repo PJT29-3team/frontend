@@ -1,0 +1,17 @@
+export const PATHS = Object.freeze({
+  landing: '/',
+  favoriteHome: '/main',
+  surveyProcess: '/process/survey',
+  recommendedProperty: '/process/recommended',
+  evaluationMethod: '/evaluation-method',
+  login: '/login',
+  emailLogin: '/login/email',
+  signup: '/signup',
+  emailVerification: '/auth/email/verify',
+  passwordResetRequest: '/password/reset/request',
+  passwordReset: '/auth/password/reset',
+  socialCallback: '/auth/social/callback',
+  profile: '/me',
+  socialProfile: '/social/profile',
+  survey: '/survey',
+})
