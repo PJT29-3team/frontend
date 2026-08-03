@@ -3,8 +3,7 @@
     <section class="social-callback-card" aria-live="polite">
       <img src="../../assets/senior-downsizing-hero.png" alt="" />
       <h1>{{ error ? '로그인하지 못했습니다' : '로그인 중입니다' }}</h1>
-      <h2 v-if="error">{{ error.title }}</h2>
-      <p>{{ error ? error.message : '카카오 계정 정보를 확인하고 있습니다.' }}</p>
+      <p>{{ error || '소셜 계정 정보를 확인하고 있습니다.' }}</p>
       <RouterLink v-if="error" to="/login">로그인 화면으로 돌아가기</RouterLink>
     </section>
   </main>
@@ -17,40 +16,21 @@ import { authStore } from '../../stores/authStore'
 
 const route = useRoute()
 const router = useRouter()
-const error = ref(null)
+const error = ref('')
 
 const errorMessages = {
-  access_denied: {
-    title: '카카오 로그인이 취소되었습니다',
-    message: '카카오 로그인을 다시 선택하거나 이메일로 로그인해 주세요.',
-  },
-  invalid_state: {
-    title: '로그인 시간이 지났습니다',
-    message: '안전을 위해 로그인을 중단했습니다. 처음부터 다시 로그인해 주세요.',
-  },
-  email_required: {
-    title: '카카오 이메일 확인이 필요합니다',
-    message: '카카오 계정의 이메일 제공에 동의한 뒤 다시 로그인해 주세요.',
-  },
-  configuration_error: {
-    title: '카카오 로그인을 준비하고 있습니다',
-    message: '잠시 후 다시 시도하거나 이메일로 로그인해 주세요.',
-  },
-  provider_error: {
-    title: '카카오 연결이 원활하지 않습니다',
-    message: '잠시 후 처음부터 다시 로그인해 주세요.',
-  },
+  access_denied: '카카오 로그인이 취소되었습니다.',
+  invalid_state: '로그인 요청이 만료되었습니다. 다시 시도해주세요.',
+  email_required: '카카오계정 이메일 제공 동의가 필요합니다.',
+  account_conflict: '이미 가입된 이메일입니다. 이메일로 로그인해주세요.',
+  provider_error: '카카오 로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
+  configuration_error: '카카오 로그인 설정을 확인해주세요.',
 }
 
 onMounted(async () => {
-  if (route.query.error === 'account_conflict') {
-    window.alert('이미 이메일로 가입한 회원입니다.')
-    await router.replace('/login/email')
-    return
-  }
-
-  if (route.query.error) {
-    error.value = errorMessages[route.query.error] || errorMessages.provider_error
+  const errorCode = Array.isArray(route.query.error) ? route.query.error[0] : route.query.error
+  if (errorCode) {
+    error.value = errorMessages[errorCode] || errorMessages.provider_error
     return
   }
 
@@ -63,10 +43,7 @@ onMounted(async () => {
     await authStore.refresh()
     await router.replace('/main')
   } catch (e) {
-    error.value = {
-      title: '로그인을 완료하지 못했습니다',
-      message: e.response?.data?.message || '잠시 후 처음부터 다시 로그인해 주세요.',
-    }
+    error.value = e.response?.data?.message || '소셜 로그인 정보를 확인하지 못했습니다.'
   }
 })
 </script>
@@ -99,34 +76,19 @@ img {
 h1 {
   margin: 18px 0 8px;
   color: #171613;
-  font-size: 28px;
-}
-
-h2 {
-  margin: 20px 0 8px;
-  color: #2f2b25;
-  font-size: 22px;
-  line-height: 1.4;
+  font-size: 24px;
 }
 
 p {
   margin: 0;
   color: #77736c;
-  font-size: 17px;
-  line-height: 1.65;
+  font-size: 14px;
 }
 
 a {
-  min-height: 52px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   margin-top: 20px;
-  padding: 0 22px;
-  border-radius: 6px;
-  background: #ffcc00;
-  color: #544f45;
+  color: #8a6700;
   font-weight: 800;
-  text-decoration: none;
 }
 </style>

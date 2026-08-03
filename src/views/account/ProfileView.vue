@@ -149,6 +149,10 @@ async function logoutAll() {
 }
 
 async function requestDelete() {
+  const confirmed = window.confirm('회원탈퇴 시 계정이 즉시 삭제되며 복구할 수 없습니다. 계속하시겠습니까?')
+  if (!confirmed) return
+
+
   const password = window.prompt('현재 비밀번호를 입력해주세요.')
   if (!password) return
   await requestDeletion(password)
