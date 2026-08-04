@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
+import { authStore } from '@/stores/authStore';
 import recommendationApi from '@/api/recommendation';
 import '@/styles/survey-tokens.css';
 
@@ -97,11 +98,10 @@ function maturityText(p) {
 }
 
 async function goFavorites() {
-  // 서버에 사용자가 찜한 항목을 기록(비파괴적, 로그 저장). 실패해도 이동은 보장.
   try {
     const payload = {
       surveyId: null,
-      userId: null,
+      userId: authStore.state.user?.userId ?? null,
       favorites: Object.entries(rec.favorites)
         .filter(([, v]) => Boolean(v))
         .map(([periodCode, v]) => ({
@@ -112,11 +112,10 @@ async function goFavorites() {
     };
     await recommendationApi.logFavorites(payload);
   } catch (e) {
-    // 기록 실패는 치명적이지 않음 — 콘솔에 남기고 계속 이동.
     // eslint-disable-next-line no-console
-    console.warn('Favorites logging failed', e);
+    console.warn('Favorites save failed', e);
   }
-  router.push('/recommendation/favorites');
+  router.push('/finance/horizon');
 }
 
 // 상세정보 페이지로 이동
