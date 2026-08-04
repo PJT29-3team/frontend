@@ -16,6 +16,7 @@ export const PATHS = Object.freeze({
   profile: '/me',
   socialProfile: '/social/profile',
   financeHorizon: '/finance/horizon',
+  summary: '/summary',
   legacyMain: '/main',
   legacyRecommendedProperty: '/process/recommended',
 })

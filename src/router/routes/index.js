@@ -20,4 +20,5 @@ export const routes = [
   { path: PATHS.profile, component: () => import('@/views/account/ProfileView.vue') },
   { path: PATHS.socialProfile, component: () => import('@/views/auth/SocialProfileCompletionView.vue') },
   { path: PATHS.financeHorizon, name: 'finance-horizon', component: () => import('@/views/finance/HorizonScenarioView.vue'), meta: { requiresAuth: true, process: true } },
+  { path: PATHS.summary, name: 'summary', component: () => import('@/views/summary/SummaryView.vue'), meta: { requiresAuth: true, process: true } },
 ]
