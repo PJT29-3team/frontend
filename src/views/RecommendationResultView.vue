@@ -50,7 +50,8 @@ onMounted(async () => {
     const res = await recommendationApi.submit({
       surveyId: null,
       fundingAmount: rec.fundingAmount,
-      investRatio: rec.ratioPercent,
+      immediateExpense: rec.immediateExpense,
+      monthlyNeed: rec.monthlyNeed,
       safetyLevel: rec.riskLevel,
     });
     periods.value = res.periods ?? [];
@@ -125,6 +126,10 @@ function goFavorites() {
           <div class="stat">
             <span class="stat-label">남길 현금</span>
             <strong class="stat-value">{{ formatKRW(rec.remainingCash) }}</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">매달 쓸 돈</span>
+            <strong class="stat-value">{{ formatKRW(rec.monthlyNeed) }}</strong>
           </div>
         </div>
       </header>

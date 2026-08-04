@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { formatKRW } from '@/stores/survey';
 
+// 금액 단위 규칙: store·API·DB는 전부 원(KRW). "만원"은 입력 UI에서만 쓰고 ×10000으로 원 변환(ConditionView).
+
 // FPR-001 금융상품 추천 조건입력 상태.
 // 여유자금(이사후 차액)은 본래 PRF-008/COM-004(관심매물 비교, 조진혁 담당)에서
 // 파라미터로 넘어온다. 그 화면이 아직 없어 지금은 mock 상수를 사용하며,
@@ -47,24 +49,23 @@ export const PERIOD_OPTIONS = [
   { code: 'LONG', label: '장기', desc: '3년 뒤에도 여유 있는 돈' },
 ];
 
-export const RATIO_MIN = 2;
-export const RATIO_MAX = 30;
-
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
     fundingAmount: MOCK_FUNDING_AMOUNT,
-    // 명세 디폴트: 안전도=매우낮은위험, 기간=단기. 비율은 2~30% 중 15%(목업).
-    ratioPercent: 15,
+    // 목업 흐름: 즉시지출(당장 쓸 돈)을 빼면 나머지가 투자금액.
+    // 매달쓸돈은 인출 속도 — 찜/배분 페이지에서 "몇 달 쓸 수 있나" 계산의 입력값.
+    immediateExpense: 0,
+    monthlyNeed: 1_000_000, // 원. 목업 기본 100만원.
     riskLevel: 'VERY_LOW',
     periodCode: 'SHORT',
   }),
 
   getters: {
-    // 투자금액 = 여유자금 × 비율(%). 결과화면 "추천 투자금"과 동일 계산.
-    investAmount: (s) => Math.round((s.fundingAmount * s.ratioPercent) / 100),
-    remainingCash(s) {
-      return s.fundingAmount - Math.round((s.fundingAmount * s.ratioPercent) / 100);
-    },
+    // 투자금액 = 여유자금 − 즉시지출(앞으로 굴릴 계획금액).
+    // ponytail: 찜 페이지에서 상품별 배분 합으로 정밀화 가능. 지금은 계획 pool로 충분.
+    investAmount: (s) => Math.max(0, s.fundingAmount - s.immediateExpense),
+    // 남길현금 = 여유자금 − 투자금액 (= 즉시지출).
+    remainingCash: (s) => s.fundingAmount - Math.max(0, s.fundingAmount - s.immediateExpense),
     selectedRisk: (s) => RISK_OPTIONS.find((o) => o.code === s.riskLevel) ?? null,
     selectedPeriod: (s) => PERIOD_OPTIONS.find((o) => o.code === s.periodCode) ?? null,
   },
@@ -73,9 +74,12 @@ export const useRecommendationStore = defineStore('recommendation', {
     setFundingAmount(amount) {
       this.fundingAmount = Number(amount) || 0;
     },
-    setRatio(percent) {
-      const n = Math.round(Number(percent));
-      this.ratioPercent = Math.min(RATIO_MAX, Math.max(RATIO_MIN, Number.isNaN(n) ? RATIO_MIN : n));
+    setImmediateExpense(amount) {
+      // 여유자금을 넘길 수 없음.
+      this.immediateExpense = Math.min(this.fundingAmount, Math.max(0, Number(amount) || 0));
+    },
+    setMonthlyNeed(amount) {
+      this.monthlyNeed = Math.max(0, Number(amount) || 0);
     },
     setRisk(code) {
       if (RISK_OPTIONS.some((o) => o.code === code)) this.riskLevel = code;
@@ -83,12 +87,13 @@ export const useRecommendationStore = defineStore('recommendation', {
     setPeriod(code) {
       if (PERIOD_OPTIONS.some((o) => o.code === code)) this.periodCode = code;
     },
-    // financial_investment_profiles로 upsert될 조건 페이로드.
+    // financial_product_preference로 저장될 조건 페이로드.
     conditionPayload() {
       return {
-        ratioPercent: this.ratioPercent,
+        investAmount: this.investAmount,
+        immediateExpense: this.immediateExpense,
+        monthlyNeed: this.monthlyNeed,
         riskLevel: this.riskLevel,
-        periodCode: this.periodCode,
       };
     },
   },
