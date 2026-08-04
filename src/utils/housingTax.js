@@ -1,7 +1,14 @@
+// 백엔드 HousingTaxCalculator.java 와 같은 식이어야 한다.
+// 설문 입력 도중 API를 매번 치지 않으려고 화면에서 미리 계산하는 용도라
+// 두 벌로 존재한다. 한쪽만 고치면 화면 숫자와 저장되는 숫자가 어긋난다.
+// 명세: docs 양도세.md — 예시 두 개를 housingTax.test.js 에 넣어두었다.
+
 export const HIGH_VALUE_HOME_THRESHOLD = 1_200_000_000;
 /** 양도소득 기본공제 */
 export const BASIC_DEDUCTION = 2_500_000;
 export const VAT_RATE = 0.1;
+/** 지방소득세율. 양도소득세 산출세액의 10%를 함께 납부한다. */
+export const LOCAL_INCOME_TAX_RATE = 0.1;
 
 const BROKERAGE_BRACKETS = [
   { under: 50_000_000, rate: 0.006, cap: 250_000 },
@@ -132,22 +139,23 @@ export function calculateCapitalGainsTax({
   if (!meetsHolding) {
     const rate = shortTermRate(held);
     const taxBase = Math.max(gain - BASIC_DEDUCTION, 0);
-    const amount = Math.floor(taxBase * rate);
+    const incomeTax = Math.floor(taxBase * rate);
     steps.push(
       `양도차익 = 매도가격(${won(sell)}) - 취득가격(${won(buy)}) = ${won(gain)}`,
       `과세표준 = 양도차익 - 기본공제(${won(BASIC_DEDUCTION)}) = ${won(taxBase)}`,
-      `보유 2년 미만 단기세율 ${percent(rate)} 적용 = ${won(amount)}`,
+      `보유 2년 미만 단기세율 ${percent(rate)} 적용 = ${won(incomeTax)}`,
     );
-    return { amount, exempt: false, steps };
+    return { amount: withLocalTax(incomeTax, steps), exempt: false, steps };
   }
 
   steps.push(
     `양도차익 = 매도가격(${won(sell)}) - 취득가격(${won(buy)}) = ${won(gain)}`,
   );
 
-  // 12억 초과 고가주택은 초과분에 해당하는 양도차익만 과세한다.
+  // 안분은 1세대 1주택 비과세 요건을 충족한 고가주택에만 주어지는 혜택이다.
+  // 요건을 못 채우면 일반 양도라서 양도차익 전액이 과세 대상이다.
   let taxableGain = gain;
-  if (sell > HIGH_VALUE_HOME_THRESHOLD) {
+  if (meetsResidence && sell > HIGH_VALUE_HOME_THRESHOLD) {
     taxableGain = Math.floor(
       (gain * (sell - HIGH_VALUE_HOME_THRESHOLD)) / sell,
     );
@@ -156,7 +164,7 @@ export function calculateCapitalGainsTax({
     );
   } else if (!meetsResidence) {
     steps.push(
-      "조정대상지역 2년 이상 거주 요건 미충족으로 비과세가 적용되지 않습니다.",
+      "조정대상지역 2년 이상 거주 요건 미충족으로 비과세와 12억 초과 안분이 적용되지 않습니다.",
     );
   }
 
@@ -179,5 +187,16 @@ export function calculateCapitalGainsTax({
     `산출세액 = ${won(taxBase)} x ${percent(rate)} - 누진공제(${won(deduction)}) = ${won(tax)}`,
   );
 
-  return { amount: tax, exempt: false, steps };
+  return { amount: withLocalTax(tax, steps), exempt: false, steps };
+}
+
+/** 지방소득세를 더해 실제 납부액으로 만든다. 계산 근거도 함께 남긴다. */
+function withLocalTax(incomeTax, steps) {
+  const localTax = Math.floor(incomeTax * LOCAL_INCOME_TAX_RATE);
+  const total = incomeTax + localTax;
+  steps.push(
+    `지방소득세 = ${won(incomeTax)} x ${percent(LOCAL_INCOME_TAX_RATE)} = ${won(localTax)}`,
+    `총 양도세 = ${won(incomeTax)} + ${won(localTax)} = ${won(total)}`,
+  );
+  return total;
 }
