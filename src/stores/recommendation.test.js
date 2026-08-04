@@ -30,4 +30,20 @@ describe('recommendation store 금액 계산', () => {
     expect(rec.immediateExpense).toBe(0);
     expect(rec.monthlyNeed).toBe(0);
   });
+
+  it('커버 개월로 구간 잠금을 판단한다 (단기0/중기12/장기36)', () => {
+    rec.setImmediateExpense(0); // 투자금액 1억
+    rec.setMonthlyNeed(2_000_000); // 커버 50개월 → 전 구간 활성
+    expect(rec.coveredMonths).toBe(50);
+    expect(rec.periodActive('SHORT')).toBe(true);
+    expect(rec.periodActive('MEDIUM')).toBe(true);
+    expect(rec.periodActive('LONG')).toBe(true);
+
+    rec.setMonthlyNeed(4_000_000); // 커버 25개월 → 장기 잠금
+    expect(rec.periodActive('MEDIUM')).toBe(true);
+    expect(rec.periodActive('LONG')).toBe(false);
+
+    rec.setMonthlyNeed(0); // 미입력이면 제한 없음
+    expect(rec.periodActive('LONG')).toBe(true);
+  });
 });

@@ -49,6 +49,9 @@ export const PERIOD_OPTIONS = [
   { code: 'LONG', label: '장기', desc: '3년 뒤에도 여유 있는 돈' },
 ];
 
+// 구간 시작 개월: 단기 0~ / 중기 12~ / 장기 36~. 투자금액이 시작월에 못 미치면 그 구간은 잠금.
+const PERIOD_START_MONTH = { SHORT: 0, MEDIUM: 12, LONG: 36 };
+
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
     fundingAmount: MOCK_FUNDING_AMOUNT,
@@ -66,6 +69,10 @@ export const useRecommendationStore = defineStore('recommendation', {
     investAmount: (s) => Math.max(0, s.fundingAmount - s.immediateExpense),
     // 남길현금 = 여유자금 − 투자금액 (= 즉시지출).
     remainingCash: (s) => s.fundingAmount - Math.max(0, s.fundingAmount - s.immediateExpense),
+    // 매달쓸돈으로 투자금액을 나눈 커버 개월수. 미입력(0)이면 제한 없음(Infinity).
+    coveredMonths() {
+      return this.monthlyNeed > 0 ? Math.floor(this.investAmount / this.monthlyNeed) : Infinity;
+    },
     selectedRisk: (s) => RISK_OPTIONS.find((o) => o.code === s.riskLevel) ?? null,
     selectedPeriod: (s) => PERIOD_OPTIONS.find((o) => o.code === s.periodCode) ?? null,
   },
@@ -86,6 +93,10 @@ export const useRecommendationStore = defineStore('recommendation', {
     },
     setPeriod(code) {
       if (PERIOD_OPTIONS.some((o) => o.code === code)) this.periodCode = code;
+    },
+    // 이 구간에 자금이 닿아 찜(담기) 가능한지. 커버 개월이 구간 시작월을 넘으면 활성.
+    periodActive(code) {
+      return this.coveredMonths > (PERIOD_START_MONTH[code] ?? 0);
     },
     // financial_product_preference로 저장될 조건 페이로드.
     conditionPayload() {
