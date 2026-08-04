@@ -6,20 +6,36 @@ import client from './client';
  * 인증: 공용 client가 X-User-Id 자동 첨부(개발 스텁).
  */
 export default {
-  /**
-   * 조건 제출(투자비율 + 위험도) → 기간 구간별 추천 결과.
-   * 소프트 필터: 선택 위험도 위주로 추천하되, 구간이 비면 전 등급으로 폴백.
-   * @returns { investAmount, remainingCash, investRatio, safetyLevel,
-   *            periods: [{ code, label, hint, fallback, products[] }] }
-   */
-  submit({ surveyId, fundingAmount, investRatio, safetyLevel }) {
+/**
+  * 조건 제출(즉시지출 + 매달쓸돈 + 위험도) → 기간 구간별 추천 결과.
+  * 투자금액 = 여유자금 − 즉시지출. 소프트 필터: 선택 위험도 위주로 추천하되 구간이 비면 전 등급 폴백.
+  * @returns { investAmount, remainingCash, immediateExpense, monthlyNeed, safetyLevel,
+  *            periods: [{ code, label, hint, fallback, products[] }] }
+  */
+  submit({ surveyId, fundingAmount, immediateExpense, monthlyNeed, safetyLevel }) {
     return client
       .post('/api/finance/recommendations', {
         surveyId,
         fundingAmount,
-        investRatio,
+        immediateExpense,
+        monthlyNeed,
         safetyLevel,
       })
       .then((res) => res.data);
+  },
+  logFavorites(payload) {
+    return client.post('/api/finance/favorites', payload).then((res) => res.data);
+  },
+  /**
+   * 상품 상세정보 조회 (모달/상세페이지용).
+   * @param productType 상품코드
+   * @param kind stock | account
+   */
+  getProductDetail(productType, kind) {
+   return client
+     .get('/api/finance/product-detail', {
+       params: { productType, kind },
+     })
+     .then((res) => res.data);
   },
 };
