@@ -59,6 +59,8 @@ export const useRecommendationStore = defineStore('recommendation', {
     monthlyNeed: 1_000_000, // 원. 목업 기본 100만원.
     riskLevel: 'VERY_LOW',
     periodCode: 'SHORT',
+    // 찜: 기간(SHORT/MEDIUM/LONG)당 상품 1개 슬롯 → 슬롯 구조라 최대 3개 자동 보장.
+    favorites: { SHORT: null, MEDIUM: null, LONG: null },
   }),
 
   getters: {
@@ -73,6 +75,9 @@ export const useRecommendationStore = defineStore('recommendation', {
     },
     selectedRisk: (s) => RISK_OPTIONS.find((o) => o.code === s.riskLevel) ?? null,
     selectedPeriod: (s) => PERIOD_OPTIONS.find((o) => o.code === s.periodCode) ?? null,
+    // 찜한 상품 목록(빈 슬롯 제외) + 개수.
+    favoriteList: (s) => Object.values(s.favorites).filter(Boolean),
+    favoriteCount: (s) => Object.values(s.favorites).filter(Boolean).length,
   },
 
   actions: {
@@ -96,6 +101,15 @@ export const useRecommendationStore = defineStore('recommendation', {
     // 같은 구간이어도 예치기간이 다르면 상품별로 판정된다.
     productActive(termMonths) {
       return this.coveredMonths >= (Number(termMonths) || 0);
+    },
+    // 찜 토글: 같은 구간에서 다른 상품을 누르면 교체, 같은 상품을 다시 누르면 해제.
+    toggleFavorite(periodCode, product) {
+      const cur = this.favorites[periodCode];
+      this.favorites[periodCode] =
+        cur && cur.productType === product.productType ? null : product;
+    },
+    isFavorited(periodCode, productType) {
+      return this.favorites[periodCode]?.productType === productType;
     },
     // financial_product_preference로 저장될 조건 페이로드.
     conditionPayload() {

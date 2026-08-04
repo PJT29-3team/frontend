@@ -176,7 +176,11 @@ function goFavorites() {
             v-for="(p, i) in period.products"
             :key="i"
             class="p-card"
-            :class="{ 'is-popular': p.popular, 'is-locked': !rec.productActive(p.termMonths) }"
+            :class="{
+              'is-popular': p.popular,
+              'is-locked': !rec.productActive(p.termMonths),
+              'is-selected': rec.isFavorited(period.code, p.productType),
+            }"
           >
             <div class="p-badges">
               <span class="badge badge-risk" :class="'tone-' + riskTone(p.safetyLevel)">
@@ -207,9 +211,12 @@ function goFavorites() {
               <button
                 class="p-heart"
                 type="button"
+                :class="{ on: rec.isFavorited(period.code, p.productType) }"
                 :disabled="!rec.productActive(p.termMonths)"
+                :aria-pressed="rec.isFavorited(period.code, p.productType)"
                 :aria-label="rec.productActive(p.termMonths) ? '관심 등록' : '예치기간이 길어 담을 수 없어요'"
-              >♡</button>
+                @click="rec.toggleFavorite(period.code, p)"
+              >{{ rec.isFavorited(period.code, p.productType) ? '♥' : '♡' }}</button>
             </div>
           </article>
         </div>
@@ -398,6 +405,8 @@ function goFavorites() {
   cursor: pointer;
 }
 .p-heart:disabled { opacity: .35; cursor: not-allowed; }
+.p-heart.on { color: #e0483a; border-color: #e0483a; background: #fdecea; }
+.p-card.is-selected { border-color: #e0483a; box-shadow: 0 8px 22px rgba(224, 72, 58, 0.16); }
 .p-card.is-locked { border-color: #e7cfc9; background: #fdf8f7; }
 .p-locked-note { margin: 0 0 12px; font-size: 12px; font-weight: 700; color: #c0442e; line-height: 1.45; }
 

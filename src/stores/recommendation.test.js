@@ -43,4 +43,22 @@ describe('recommendation store 금액 계산', () => {
     rec.setMonthlyNeed(0); // 미입력이면 제한 없음
     expect(rec.productActive(36)).toBe(true);
   });
+
+  it('찜은 기간별 1개 슬롯 — 교체/해제/최대 3개', () => {
+    const a = { productType: 'A', termMonths: 6 };
+    const b = { productType: 'B', termMonths: 6 };
+    rec.toggleFavorite('SHORT', a);
+    expect(rec.isFavorited('SHORT', 'A')).toBe(true);
+    rec.toggleFavorite('SHORT', b); // 같은 구간 → 교체
+    expect(rec.isFavorited('SHORT', 'A')).toBe(false);
+    expect(rec.isFavorited('SHORT', 'B')).toBe(true);
+    rec.toggleFavorite('SHORT', b); // 같은 상품 다시 → 해제
+    expect(rec.isFavorited('SHORT', 'B')).toBe(false);
+
+    rec.toggleFavorite('SHORT', a);
+    rec.toggleFavorite('MEDIUM', b);
+    rec.toggleFavorite('LONG', { productType: 'C', termMonths: 36 });
+    expect(rec.favoriteCount).toBe(3);
+    expect(rec.favoriteList.map((p) => p.productType)).toEqual(['A', 'B', 'C']);
+  });
 });
