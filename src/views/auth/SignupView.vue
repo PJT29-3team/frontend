@@ -211,7 +211,8 @@ import { CalendarDays, ChevronLeft, ChevronRight, Eye, EyeOff } from '@lucide/vu
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { checkEmailAvailability, signup } from '../../api/authApi.js'
-import MemberPageLayout from '../components/MemberPageLayout.vue'
+import MemberPageLayout from '../../components/MemberPageLayout.vue'
+import { getSignupVerification } from '../../stores/signupVerificationStore'
 
 const router = useRouter()
 const storedVerification = getSignupVerification()
