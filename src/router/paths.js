@@ -15,6 +15,7 @@ export const PATHS = Object.freeze({
   socialCallback: '/auth/social/callback',
   profile: '/me',
   socialProfile: '/social/profile',
+  financeHorizon: '/finance/horizon',
   legacyMain: '/main',
   legacyRecommendedProperty: '/process/recommended',
 })
