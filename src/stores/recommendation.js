@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { formatKRW } from '@/stores/survey';
 
+// 금액 단위 규칙: store·API·DB는 전부 원(KRW). "만원"은 입력 UI에서만 쓰고 ×10000으로 원 변환(ConditionView).
+
 // FPR-001 금융상품 추천 조건입력 상태.
 // 여유자금(이사후 차액)은 본래 PRF-008/COM-004(관심매물 비교, 조진혁 담당)에서
 // 파라미터로 넘어온다. 그 화면이 아직 없어 지금은 mock 상수를 사용하며,
@@ -47,35 +49,49 @@ export const PERIOD_OPTIONS = [
   { code: 'LONG', label: '장기', desc: '3년 뒤에도 여유 있는 돈' },
 ];
 
-export const RATIO_MIN = 2;
-export const RATIO_MAX = 30;
 
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
     fundingAmount: MOCK_FUNDING_AMOUNT,
-    // 명세 디폴트: 안전도=매우낮은위험, 기간=단기. 비율은 2~30% 중 15%(목업).
-    ratioPercent: 15,
+    // 목업 흐름: 즉시지출(당장 쓸 돈)을 빼면 나머지가 투자금액.
+    // 매달쓸돈은 인출 속도 — 찜/배분 페이지에서 "몇 달 쓸 수 있나" 계산의 입력값.
+    immediateExpense: 0,
+    monthlyNeed: 1_000_000, // 원. 목업 기본 100만원.
     riskLevel: 'VERY_LOW',
     periodCode: 'SHORT',
+    // 찜: 기간(SHORT/MEDIUM/LONG)당 상품 1개 슬롯 → 슬롯 구조라 최대 3개 자동 보장.
+    favorites: { SHORT: null, MEDIUM: null, LONG: null },
+    // 상품 상세정보 캐시: key = `${kind}:${productType}`, value = ProductDetailResponse
+    productDetailCache: {},
   }),
 
   getters: {
-    // 투자금액 = 여유자금 × 비율(%). 결과화면 "추천 투자금"과 동일 계산.
-    investAmount: (s) => Math.round((s.fundingAmount * s.ratioPercent) / 100),
-    remainingCash(s) {
-      return s.fundingAmount - Math.round((s.fundingAmount * s.ratioPercent) / 100);
+    // 투자금액 = 여유자금 − 즉시지출(앞으로 굴릴 계획금액).
+    // ponytail: 찜 페이지에서 상품별 배분 합으로 정밀화 가능. 지금은 계획 pool로 충분.
+    investAmount: (s) => Math.max(0, s.fundingAmount - s.immediateExpense),
+    // 남길현금 = 여유자금 − 투자금액 (= 즉시지출).
+    remainingCash: (s) => s.fundingAmount - Math.max(0, s.fundingAmount - s.immediateExpense),
+    // 매달쓸돈으로 투자금액을 나눈 커버 개월수. 미입력(0)이면 제한 없음(Infinity).
+    coveredMonths() {
+      return this.monthlyNeed > 0 ? Math.floor(this.investAmount / this.monthlyNeed) : Infinity;
     },
     selectedRisk: (s) => RISK_OPTIONS.find((o) => o.code === s.riskLevel) ?? null,
     selectedPeriod: (s) => PERIOD_OPTIONS.find((o) => o.code === s.periodCode) ?? null,
+    // 찜한 상품 목록(빈 슬롯 제외) + 개수.
+    favoriteList: (s) => Object.values(s.favorites).filter(Boolean),
+    favoriteCount: (s) => Object.values(s.favorites).filter(Boolean).length,
   },
 
   actions: {
     setFundingAmount(amount) {
       this.fundingAmount = Number(amount) || 0;
     },
-    setRatio(percent) {
-      const n = Math.round(Number(percent));
-      this.ratioPercent = Math.min(RATIO_MAX, Math.max(RATIO_MIN, Number.isNaN(n) ? RATIO_MIN : n));
+    setImmediateExpense(amount) {
+      // 여유자금을 넘길 수 없음.
+      this.immediateExpense = Math.min(this.fundingAmount, Math.max(0, Number(amount) || 0));
+    },
+    setMonthlyNeed(amount) {
+      this.monthlyNeed = Math.max(0, Number(amount) || 0);
     },
     setRisk(code) {
       if (RISK_OPTIONS.some((o) => o.code === code)) this.riskLevel = code;
@@ -83,13 +99,37 @@ export const useRecommendationStore = defineStore('recommendation', {
     setPeriod(code) {
       if (PERIOD_OPTIONS.some((o) => o.code === code)) this.periodCode = code;
     },
-    // financial_investment_profiles로 upsert될 조건 페이로드.
+    // 이 상품을 담을 수 있는지. 커버 개월이 상품 예치기간 이상이면(만기까지 돈이 버팀) 활성.
+    // 같은 구간이어도 예치기간이 다르면 상품별로 판정된다.
+    productActive(termMonths) {
+      return this.coveredMonths >= (Number(termMonths) || 0);
+    },
+    // 찜 토글: 같은 구간에서 다른 상품을 누르면 교체, 같은 상품을 다시 누르면 해제.
+    toggleFavorite(periodCode, product) {
+      const cur = this.favorites[periodCode];
+      this.favorites[periodCode] =
+        cur && cur.productType === product.productType ? null : product;
+    },
+    isFavorited(periodCode, productType) {
+      return this.favorites[periodCode]?.productType === productType;
+    },
+    // financial_product_preference로 저장될 조건 페이로드.
     conditionPayload() {
       return {
-        ratioPercent: this.ratioPercent,
+        investAmount: this.investAmount,
+        immediateExpense: this.immediateExpense,
+        monthlyNeed: this.monthlyNeed,
         riskLevel: this.riskLevel,
-        periodCode: this.periodCode,
       };
+    },
+    // 상세정보 캐시 조회 및 저장.
+    getCachedDetail(kind, productType) {
+      const key = `${kind}:${productType}`;
+      return this.productDetailCache[key] || null;
+    },
+    setCachedDetail(kind, productType, detail) {
+      const key = `${kind}:${productType}`;
+      this.productDetailCache[key] = detail;
     },
   },
 });

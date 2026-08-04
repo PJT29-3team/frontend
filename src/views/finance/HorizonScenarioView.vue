@@ -6,6 +6,7 @@ import { allocate, buildTimeline } from "@/utils/finance/horizonTimeline";
 import { termGroupOf } from "@/utils/finance/portfolioAllocation";
 import { formatKRW } from "@/stores/survey";
 import { useRecommendationStore } from "@/stores/recommendation";
+import { authStore } from "@/stores/authStore";
 import "@/styles/survey-tokens.css";
 
 const router = useRouter();
@@ -18,15 +19,15 @@ const products = ref([]);
 const loadError = ref("");
 // ponytail: 총 투자금액은 앞 페이지(DB)에서 넘어올 예정. 지금은 스토어 목업.
 const totalFund = computed(() => rec.investAmount || 50_000_000);
-const monthlyNeedMan = ref(100);
+const monthlyNeedMan = ref(rec.monthlyNeed ? rec.monthlyNeed / 10_000 : 100);
 const optimistic = ref(false);
 
 const monthlyNeed = computed(() => (monthlyNeedMan.value || 0) * 10_000);
 
 onMounted(async () => {
   try {
-    // TODO: 하드코딩된 surveyId 수정 필요. 설문 저장 API/스토어 구현 후 실제 값으로 교체.
-    const surveyId = 1;
+    // survey_id 컬럼에 userId를 임시로 사용 중
+    const surveyId = authStore.state.user?.userId ?? 0;
     const items = await fetchFavoriteProducts(surveyId);
     products.value = items
       .map((item) => ({
@@ -145,13 +146,10 @@ async function handleContinue() {
             <span>총 투자금액</span>
             <span class="fund-display">{{ formatKRW(totalFund) }}</span>
           </div>
-          <label class="input-row">
-            <span>매달 더 필요한 돈</span>
-            <span class="input-wrap">
-              <input v-model.number="monthlyNeedMan" type="number" min="10" step="10" />
-              <em>만원</em>
-            </span>
-          </label>
+          <div class="input-row">
+            <span>매달 쓸 돈</span>
+            <span class="fund-display">{{ monthlyNeedMan }}만원</span>
+          </div>
         </div>
       </div>
 
