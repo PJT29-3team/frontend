@@ -96,8 +96,36 @@ function maturityText(p) {
   return p.kind === 'stock' ? `만기 약 ${dur} 뒤` : `${dur} 뒤 만기`;
 }
 
-function goFavorites() {
+async function goFavorites() {
+  // 서버에 사용자가 찜한 항목을 기록(비파괴적, 로그 저장). 실패해도 이동은 보장.
+  try {
+    const payload = {
+      surveyId: null,
+      userId: null,
+      favorites: Object.entries(rec.favorites)
+        .filter(([, v]) => Boolean(v))
+        .map(([periodCode, v]) => ({
+          periodCode,
+          productType: v.productType,
+          termMonths: v.termMonths,
+        })),
+    };
+    await recommendationApi.logFavorites(payload);
+  } catch (e) {
+    // 기록 실패는 치명적이지 않음 — 콘솔에 남기고 계속 이동.
+    // eslint-disable-next-line no-console
+    console.warn('Favorites logging failed', e);
+  }
   router.push('/recommendation/favorites');
+}
+
+// 상세정보 페이지로 이동
+function showProductDetail(product) {
+  router.push({
+    name: 'product-detail',
+    params: { productType: product.productType },
+    query: { kind: product.kind },
+  });
 }
 </script>
 
@@ -137,19 +165,27 @@ function goFavorites() {
       <p v-if="loading" class="state-msg">추천을 불러오는 중…</p>
       <p v-else-if="error" class="state-msg error">{{ error }}</p>
 
-      <!-- 구간 이동 버튼 (스크롤 스파이) -->
+      <!-- 구간 이동 버튼 (스크롤 스파이) + 담기 카운터 -->
       <nav v-if="!loading && !error" class="period-nav" aria-label="기간 구간 이동">
-        <button
-          v-for="period in periods"
-          :key="period.code"
-          type="button"
-          class="pnav-btn"
-          :class="{ on: activeCode === period.code }"
-          @click="scrollTo(period.code)"
-        >
-          {{ period.label }}
-        </button>
+        <div class="pnav-buttons">
+          <button
+            v-for="period in periods"
+            :key="period.code"
+            type="button"
+            class="pnav-btn"
+            :class="{ on: activeCode === period.code }"
+            @click="scrollTo(period.code)"
+          >
+            {{ period.label }}
+          </button>
+        </div>
+        <div class="pnav-counter">담기 {{ rec.favoriteCount }}/3</div>
       </nav>
+
+      <!-- 빈 상태 (첫 찜 전) -->
+      <p v-if="!loading && !error && rec.favoriteCount === 0" class="empty-hint">
+        기간별 하나씩, 최대 3개 담아보세요
+      </p>
 
       <!-- 기간 구간별 3줄 -->
       <section
@@ -207,7 +243,7 @@ function goFavorites() {
               🔒 예치기간 {{ p.termMonths }}개월이 매달 쓸 돈으로 버틸 수 있는 기간보다 길어 담을 수 없어요
             </p>
             <div class="p-actions">
-              <button class="p-info-btn" type="button">상품 정보 보기</button>
+              <button class="p-info-btn" type="button" @click="showProductDetail(p)">상품 정보 보기</button>
               <button
                 class="p-heart"
                 type="button"
@@ -288,18 +324,40 @@ function goFavorites() {
 .state-msg { text-align: center; color: var(--text-muted); padding: 48px 0; }
 .state-msg.error { color: #9b3b3b; }
 
+/* 빈 상태 안내 (첫 찜 전) */
+.empty-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 12px;
+  padding: 12px;
+  background: #f9f7f3;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease-in;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* 구간 이동 버튼 (sticky) */
 .period-nav {
   position: sticky;
   top: 0;
   z-index: 30;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
   padding: 12px 0;
   margin-bottom: 6px;
   background: #fff;
   border-bottom: 1px solid var(--card-border);
   box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.18);
+}
+.pnav-buttons {
+  display: flex;
+  gap: 8px;
 }
 .pnav-btn {
   padding: 9px 22px;
@@ -316,6 +374,13 @@ function goFavorites() {
   background: var(--text-dark);
   border-color: var(--text-dark);
   color: #fff;
+}
+.pnav-counter {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* 기간 구간 */

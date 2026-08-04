@@ -61,6 +61,8 @@ export const useRecommendationStore = defineStore('recommendation', {
     periodCode: 'SHORT',
     // 찜: 기간(SHORT/MEDIUM/LONG)당 상품 1개 슬롯 → 슬롯 구조라 최대 3개 자동 보장.
     favorites: { SHORT: null, MEDIUM: null, LONG: null },
+    // 상품 상세정보 캐시: key = `${kind}:${productType}`, value = ProductDetailResponse
+    productDetailCache: {},
   }),
 
   getters: {
@@ -119,6 +121,15 @@ export const useRecommendationStore = defineStore('recommendation', {
         monthlyNeed: this.monthlyNeed,
         riskLevel: this.riskLevel,
       };
+    },
+    // 상세정보 캐시 조회 및 저장.
+    getCachedDetail(kind, productType) {
+      const key = `${kind}:${productType}`;
+      return this.productDetailCache[key] || null;
+    },
+    setCachedDetail(kind, productType, detail) {
+      const key = `${kind}:${productType}`;
+      this.productDetailCache[key] = detail;
     },
   },
 });
