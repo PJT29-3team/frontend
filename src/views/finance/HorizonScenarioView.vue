@@ -12,6 +12,7 @@ const router = useRouter();
 const rec = useRecommendationStore();
 
 const TERM_LABELS = { UNDER_1Y: "단기", Y1_TO_3: "중기", OVER_3Y: "장기" };
+const RISK_LABELS = { VERY_LOW: "매우 낮은 위험", LOW: "낮은 위험", MEDIUM: "보통 위험", HIGH: "높은 위험" };
 
 const products = ref([]);
 const loadError = ref("");
@@ -24,8 +25,9 @@ const monthlyNeed = computed(() => (monthlyNeedMan.value || 0) * 10_000);
 
 onMounted(async () => {
   try {
-    // ponytail: surveyId는 나중에 스토어/DB에서. 목업은 무시함.
-    const items = await fetchFavoriteProducts(null);
+    // TODO: 하드코딩된 surveyId 수정 필요. 설문 저장 API/스토어 구현 후 실제 값으로 교체.
+    const surveyId = 1;
+    const items = await fetchFavoriteProducts(surveyId);
     products.value = items
       .map((item) => ({
         favoriteId: item.favoriteId,
@@ -37,7 +39,7 @@ onMounted(async () => {
         tag:
           TERM_LABELS[termGroupOf(item.termMonths || 0)] +
           " · " +
-          (item.productRiskGrade || ""),
+          (RISK_LABELS[item.productRiskGrade] || item.productRiskGrade || ""),
       }))
       .sort((a, b) => a.maturity - b.maturity);
   } catch {
@@ -88,7 +90,12 @@ function segPct(seg) {
 const saving = ref(false);
 const saveMsg = ref("");
 
-async function handleSave() {
+// TODO: 금융상품 추천페이지로 연결 필요
+function handleBack() {
+  router.push("/recommendation/result");
+}
+
+async function handleContinue() {
   if (!allocation.value) return;
   saving.value = true;
   saveMsg.value = "";
@@ -102,6 +109,7 @@ async function handleSave() {
       }));
     await saveAllocations(null, items);
     saveMsg.value = "저장되었습니다.";
+    // TODO: 최종 페이지로 연결 필요
   } catch {
     saveMsg.value = "저장에 실패했습니다.";
   } finally {
@@ -112,10 +120,6 @@ async function handleSave() {
 
 <template>
   <div class="hz-shell">
-    <button class="link-back" type="button" @click="router.push('/recommendation/result')">
-      ← 추천 결과로 돌아가기
-    </button>
-
     <p v-if="loadError" class="notice error">{{ loadError }}</p>
 
     <template v-if="products.length">
@@ -237,13 +241,16 @@ async function handleSave() {
         </p>
       </div>
 
-      <!-- 저장 -->
-      <div class="save-row">
-        <button class="btn-save" :disabled="saving || !allocation" @click="handleSave">
-          {{ saving ? "저장 중..." : "배분 결과 저장" }}
+      <!-- 이동 -->
+      <div class="nav-row">
+        <button class="btn-nav btn-nav-back" type="button" @click="handleBack">
+          ← 뒤로가기
         </button>
-        <span v-if="saveMsg" class="save-msg">{{ saveMsg }}</span>
+        <button class="btn-nav btn-nav-continue" :disabled="saving || !allocation" @click="handleContinue">
+          {{ saving ? "저장 중..." : "이대로 계속하기" }}
+        </button>
       </div>
+      <p v-if="saveMsg" class="save-msg">{{ saveMsg }}</p>
     </template>
   </div>
 </template>
@@ -255,16 +262,6 @@ async function handleSave() {
   padding: 28px 20px 60px;
   font-family: "Pretendard", "Noto Sans KR", -apple-system, sans-serif;
   color: var(--text-dark);
-}
-
-.link-back {
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  cursor: pointer;
 }
 
 /* 상품 요약 */
@@ -573,26 +570,34 @@ async function handleSave() {
   background: #ffe9e0;
 }
 
-.save-row {
+.nav-row {
   display: flex;
-  align-items: center;
   gap: 12px;
   margin-top: 20px;
 }
 
-.btn-save {
-  background: var(--kb-yellow);
-  color: var(--btn-text);
+.btn-nav {
+  flex: 1;
   border: none;
   font-size: 16px;
   font-weight: 800;
-  padding: 14px 32px;
+  padding: 14px 0;
   border-radius: 14px;
   cursor: pointer;
-  width: 100%;
 }
 
-.btn-save:disabled {
+.btn-nav-back {
+  background: transparent;
+  color: var(--text-dark);
+  border: 1.5px solid var(--card-border);
+}
+
+.btn-nav-continue {
+  background: var(--kb-yellow);
+  color: var(--btn-text);
+}
+
+.btn-nav-continue:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -601,7 +606,8 @@ async function handleSave() {
   font-size: 14px;
   font-weight: 700;
   color: var(--kb-yellow-deep);
-  white-space: nowrap;
+  text-align: center;
+  margin-top: 10px;
 }
 
 @media (max-width: 560px) {
