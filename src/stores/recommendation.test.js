@@ -31,19 +31,16 @@ describe('recommendation store 금액 계산', () => {
     expect(rec.monthlyNeed).toBe(0);
   });
 
-  it('커버 개월로 구간 잠금을 판단한다 (단기0/중기12/장기36)', () => {
+  it('상품 예치기간으로 담기 가능 여부를 판단한다 (같은 구간이어도 개별)', () => {
     rec.setImmediateExpense(0); // 투자금액 1억
-    rec.setMonthlyNeed(2_000_000); // 커버 50개월 → 전 구간 활성
-    expect(rec.coveredMonths).toBe(50);
-    expect(rec.periodActive('SHORT')).toBe(true);
-    expect(rec.periodActive('MEDIUM')).toBe(true);
-    expect(rec.periodActive('LONG')).toBe(true);
-
-    rec.setMonthlyNeed(4_000_000); // 커버 25개월 → 장기 잠금
-    expect(rec.periodActive('MEDIUM')).toBe(true);
-    expect(rec.periodActive('LONG')).toBe(false);
+    rec.setMonthlyNeed(5_000_000); // 커버 20개월
+    expect(rec.coveredMonths).toBe(20);
+    // 같은 중기(1~3년) 구간이라도 예치기간 따라 갈림
+    expect(rec.productActive(13)).toBe(true); // 13 ≤ 20 담기 가능
+    expect(rec.productActive(20)).toBe(true); // 경계 포함
+    expect(rec.productActive(24)).toBe(false); // 24 > 20 잠금
 
     rec.setMonthlyNeed(0); // 미입력이면 제한 없음
-    expect(rec.periodActive('LONG')).toBe(true);
+    expect(rec.productActive(36)).toBe(true);
   });
 });

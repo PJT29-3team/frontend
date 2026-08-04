@@ -164,9 +164,6 @@ function goFavorites() {
           <div class="period-title-wrap">
             <h2 class="period-title">{{ period.label }}</h2>
             <span class="period-hint">{{ period.hint }}</span>
-            <span v-if="!rec.periodActive(period.code)" class="period-locked-note">
-              매달 쓸 돈 기준으로는 이 기간까지 자금이 닿지 않아 담을 수 없어요
-            </span>
           </div>
           <p v-if="period.fallback" class="period-fallback">
             선택하신 위험도(<b>{{ riskBadge(rec.riskLevel) }}</b>)에 맞는 상품이 이 기간에 없어
@@ -179,7 +176,7 @@ function goFavorites() {
             v-for="(p, i) in period.products"
             :key="i"
             class="p-card"
-            :class="{ 'is-popular': p.popular }"
+            :class="{ 'is-popular': p.popular, 'is-locked': !rec.productActive(p.termMonths) }"
           >
             <div class="p-badges">
               <span class="badge badge-risk" :class="'tone-' + riskTone(p.safetyLevel)">
@@ -202,13 +199,16 @@ function goFavorites() {
               예치기간 {{ p.termMonths }}개월 · {{ maturityText(p) }}
             </div>
             <p class="p-reason">💬 {{ p.recommendReason }}</p>
+            <p v-if="!rec.productActive(p.termMonths)" class="p-locked-note">
+              🔒 예치기간 {{ p.termMonths }}개월이 매달 쓸 돈으로 버틸 수 있는 기간보다 길어 담을 수 없어요
+            </p>
             <div class="p-actions">
               <button class="p-info-btn" type="button">상품 정보 보기</button>
               <button
                 class="p-heart"
                 type="button"
-                :disabled="!rec.periodActive(period.code)"
-                :aria-label="rec.periodActive(period.code) ? '관심 등록' : '이 기간은 담을 수 없어요'"
+                :disabled="!rec.productActive(p.termMonths)"
+                :aria-label="rec.productActive(p.termMonths) ? '관심 등록' : '예치기간이 길어 담을 수 없어요'"
               >♡</button>
             </div>
           </article>
@@ -315,7 +315,6 @@ function goFavorites() {
 .period-block { margin-bottom: 30px; scroll-margin-top: 74px; }
 .period-head { margin-bottom: 14px; }
 .period-title-wrap { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.period-locked-note { font-size: 12.5px; font-weight: 700; color: #c0442e; }
 .period-title {
   font-weight: 800;
   font-size: 20px;
@@ -399,6 +398,8 @@ function goFavorites() {
   cursor: pointer;
 }
 .p-heart:disabled { opacity: .35; cursor: not-allowed; }
+.p-card.is-locked { border-color: #e7cfc9; background: #fdf8f7; }
+.p-locked-note { margin: 0 0 12px; font-size: 12px; font-weight: 700; color: #c0442e; line-height: 1.45; }
 
 .next-row { display: flex; justify-content: flex-end; margin-top: 10px; }
 .cta { width: auto; min-width: 260px; margin: 0; padding: 15px 30px; }
