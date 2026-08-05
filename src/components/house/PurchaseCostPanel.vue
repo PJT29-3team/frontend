@@ -5,7 +5,7 @@
             <p class="summary-title">{{ selectedHome.address }}로 옮기시면</p>
             <div class="summary-row">
               <span>내집 팔고 대출 갚고 남는 돈</span>
-              <span>5억 683만원</span>
+              <span>{{ formatKoreanMoney(afterMortgageManwon) }}</span>
             </div>
             <div class="summary-row">
               <span>이 집 가격</span>
@@ -31,10 +31,14 @@
 
             <div class="result-box">
               <span>남는 돈</span>
-              <strong>약 1억 5650만원</strong>
+              <strong>약 {{ formatKoreanMoney(remainingManwon) }}</strong>
             </div>
             <p class="goal-compare">
-                목표 1억 5,000만원 대비 <span class="diff">+650만원 여유</span>
+                목표 {{ formatKoreanMoney(reserveManwon) }} 대비
+                <span class="diff" :class="{ short: diffManwon < 0 }">
+                  {{ diffManwon >= 0 ? '+' : '-' }}{{ formatKoreanMoney(Math.abs(diffManwon)) }}
+                  {{ diffManwon >= 0 ? '여유' : '부족' }}
+                </span>
             </p>
 
             <p class="summary-note">
@@ -46,6 +50,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useSurveyStore } from '@/stores/survey';
 
 const props = defineProps({
     selectedHome : {
@@ -53,6 +58,12 @@ const props = defineProps({
         required : true
     }
 })
+
+const survey = useSurveyStore();
+
+// survey.afterMortgage / reserveAmount는 원 단위, 이 컴포넌트 내부 계산은 만원 단위라 변환한다.
+const afterMortgageManwon = computed(() => Math.round((survey.afterMortgage || 0) / 10000));
+const reserveManwon = computed(() => Math.round((survey.reserveAmount || 0) / 10000));
 
 // 1. 계산 함수들
 // 취득세율 로직
@@ -143,6 +154,11 @@ const acquisitionTax = computed(() => Math.round(purchaseCost.value.totalTax / 1
 const brokerage = computed(() => calculateBrokerageFee(buyPrice.value));
 const brokerFee = computed(() => Math.round((brokerage.value.brokerageFee + brokerage.value.vat) / 10000));
 const totalCost = computed(() => Math.round((buyPrice.value + purchaseCost.value.totalTax + brokerage.value.brokerageFee + brokerage.value.vat) / 10000));
+
+// 대출 갚고 남은 돈에서 이 집 사는 데 드는 총비용을 뺀, 실제로 손에 남는 돈.
+const remainingManwon = computed(() => afterMortgageManwon.value - totalCost.value);
+// 남는 돈이 설문에서 정한 유보금(목표) 대비 얼마나 여유/부족한지.
+const diffManwon = computed(() => remainingManwon.value - reserveManwon.value);
 
 const acquisitionRatePercent = computed(() => {
     const totalRate = (purchaseCost.value.acquisitionTax + purchaseCost.value.educationTax) / buyPrice.value;
@@ -245,5 +261,9 @@ function formatKoreanMoney(manwon) {
 .diff {
   color: #7ec850;
   font-weight: 700;
+}
+
+.diff.short {
+  color: #e05a5a;
 }
 </style>

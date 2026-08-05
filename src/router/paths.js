@@ -20,6 +20,7 @@ export const PATHS = Object.freeze({
   financeRecommendationResult: '/recommendation/result',
   financeRecommendationFavorites: '/recommendation/favorites',
   financeProductDetail: '/recommendation/product/:productType',
+  summary: '/summary',
   legacyMain: '/main',
   legacyRecommendedProperty: '/process/recommended',
 })
