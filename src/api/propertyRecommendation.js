@@ -18,7 +18,7 @@ export default {
 
   /**
    * 지역별 추천 가능한 단지 수.
-   * 희망지역 선택 화면이 실제 적재량을 보여주는 데 쓴다. 로그인 불필요.
+   * 희망지역 선택 화면이 실제 적재량을 보여주는 데 쓴다.
    *
    * @returns {Promise<Array<{sidoName: string, sigunguName: string, count: number}>>}
    */
