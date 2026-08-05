@@ -210,7 +210,7 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Eye, EyeOff } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { checkEmailAvailability, signup } from '../../api/authApi.js'
+import { checkEmailAvailability, requestSignupEmailVerification, signup } from '../../api/authApi.js'
 import MemberPageLayout from '@/components/MemberPageLayout.vue'
 import { getSignupVerification } from '@/stores/signupVerificationStore'
 
