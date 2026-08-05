@@ -108,7 +108,7 @@ import { ArrowLeft, Check, CircleAlert, Eye, EyeOff, LoaderCircle } from '@lucid
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { completePasswordReset, verifyPasswordReset } from '../../api/authApi'
-import MemberPageLayout from '../components/MemberPageLayout.vue'
+import MemberPageLayout from '@/components/MemberPageLayout.vue'
 
 const route = useRoute()
 const password = ref('')

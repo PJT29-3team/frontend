@@ -1,7 +1,7 @@
 <template>
   <main class="social-profile-page">
     <section class="social-profile-card" aria-labelledby="social-profile-title">
-      <img class="profile-logo" src="../assets/senior-downsizing-hero.png" alt="" />
+      <img class="profile-logo" src="@/assets/senior-downsizing-hero.png" alt="" />
       <h1 id="social-profile-title">몇 가지만 더 확인할게요</h1>
 
       <form class="social-profile-form" @submit.prevent="submit">
