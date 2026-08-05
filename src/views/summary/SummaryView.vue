@@ -11,10 +11,11 @@
       바꿀 게 있으면 '완료한 단계' 및 '해당 단계로 돌아가기'로 다시 설정할 수 있어요.
     </p>
 
-    <!-- ━━━ 카드1: 매물 정리 결과 ━━━ -->
+    <!-- ━━━ 선택결과 한눈에 보기 (매물 정리 결과 + 자금 운용 계획) ━━━ -->
     <section class="result-card">
-      <h2 class="card-heading">매물 정리 결과</h2>
+      <h2 class="card-heading">선택결과 한눈에 보기</h2>
 
+      <h3 class="card-subheading">매물 정리 결과</h3>
       <div class="row-between">
         <span class="row-label">새 집</span>
         <div class="row-value-group">
@@ -49,12 +50,9 @@
           <strong class="negative">-{{ formatKRW(cost.amount) }}</strong>
         </div>
       </div>
-    </section>
+      <hr class="divider" />
 
-    <!-- ━━━ 카드2: 자금 운용 계획 ━━━ -->
-    <section class="result-card">
-      <h2 class="card-heading">자금 운용 계획</h2>
-
+      <h3 class="card-subheading">자금 운용 계획</h3>
       <div class="net-fund-box">
         <span>투자 가능 금액</span>
         <strong>{{ formatKRW(fp.investable) }}</strong>
@@ -82,16 +80,16 @@
         <!-- 헤더: 매달 인출 기준 -->
         <div class="pf-meta-row">
           <span class="pf-meta-label">포트폴리오 배분</span>
-          <span class="pf-meta-monthly">매달 <b>{{ formatKRW(fp.monthlyNeed) }}</b> 인출 기준</span>
+          <span class="pf-meta-monthly">매달 <b>{{ formatKRW(portfolioMonthlyNeed) }}</b> 인출 기준</span>
         </div>
 
         <!-- 배분 비율 바 -->
         <div class="pf-alloc-bar">
           <div
-            v-for="(item, i) in fp.items"
+            v-for="(item, i) in portfolioItems"
             :key="i"
             class="pf-alloc-seg"
-            :class="'seg-' + dotColor(i)"
+            :class="'seg-' + dotColor(item)"
             :style="{ flex: item.percent }"
             :title="item.name + ' ' + item.percent + '%'"
           ></div>
@@ -99,9 +97,9 @@
 
         <!-- 상품 목록 -->
         <div class="pf-items">
-          <div v-for="(item, i) in fp.items" :key="i" class="pf-item">
+          <div v-for="(item, i) in portfolioItems" :key="i" class="pf-item">
             <div class="pf-item-left">
-              <span class="pf-color-dot" :class="'dot-' + dotColor(i)"></span>
+              <span class="pf-color-dot" :class="'dot-' + dotColor(item)"></span>
               <div class="pf-item-info">
                 <div class="pf-item-name">{{ item.name }}</div>
                 <span class="pf-item-tag">{{ item.tag }}</span>
@@ -109,7 +107,7 @@
             </div>
             <div class="pf-item-right">
               <div class="pf-item-bar-wrap">
-                <div class="pf-item-bar" :class="'seg-' + dotColor(i)" :style="{ width: item.percent + '%' }"></div>
+                <div class="pf-item-bar" :class="'seg-' + dotColor(item)" :style="{ width: item.percent + '%' }"></div>
               </div>
               <div class="pf-item-nums">
                 <span class="pf-item-amount">{{ formatKRW(item.invest) }}</span>
@@ -172,13 +170,21 @@
 </template>
 
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import PdfReport from './PdfReport.vue'
 import { preparePdfCapture } from '@/utils/pdfCapture'
 import { fitCanvasToA4 } from '@/utils/pdfLayout'
-import { generateRecommendationSummary } from '@/utils/openaiSummary'
-// TODO: 목업 import — 실제 API 연동 후 삭제
+import { generateActionPlan } from '@/utils/openaiSummary'
+import { fetchFavoriteProducts } from '@/api/financeApi'
+import { useRecommendationStore } from '@/stores/recommendation'
+import { authStore } from '@/stores/authStore'
+import { termGroupOf } from '@/utils/finance/portfolioAllocation'
+// TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
 import { dummySummary as data } from '@/mock/dummySummary'
+
+const rec = useRecommendationStore()
+const TERM_LABELS = { UNDER_1Y: '단기', Y1_TO_3: '중기', OVER_3Y: '장기' }
+const RISK_LABELS = { VERY_LOW: '매우 낮은 위험', LOW: '낮은 위험', MEDIUM: '보통 위험', HIGH: '높은 위험' }
 
 const pr = data.propertyResult
 const fp = data.financePlan
@@ -186,8 +192,47 @@ const showPropertyDetail = ref(false)
 const showExpenseDetail = ref(false)
 const isPdfLoading = ref(false)
 const pdfReportRef = ref(null)
-const aiSummary = ref('')
+const aiSummary = ref(null)
 const aiLoading = ref(false)
+
+// 포트폴리오 배분: DB에 저장된 관심상품 배분(금액/비율)을 조회해서 구성
+const portfolioItems = ref([])
+const portfolioMonthlyNeed = ref(fp.monthlyNeed)
+
+onMounted(async () => {
+  try {
+    const surveyId = authStore.state.user?.userId ?? 0
+    const favorites = await fetchFavoriteProducts(surveyId)
+    const totalFund = rec.investAmount || fp.investable
+    if (rec.monthlyNeed) portfolioMonthlyNeed.value = rec.monthlyNeed
+
+    const allocated = favorites
+      .filter((f) => f.amount != null)
+      .map((f) => ({
+        name: f.productName,
+        tag: `${TERM_LABELS[termGroupOf(f.termMonths || 0)]} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
+        description: `${f.termMonths}개월 · 기본금리 연 ${Number(f.annualRate).toFixed(1)}%`,
+        maturityMonths: f.termMonths || 0,
+        invest: Number(f.amount),
+        percent: Math.round(Number(f.percent)),
+      }))
+      .sort((a, b) => a.maturityMonths - b.maturityMonths)
+
+    const parking = totalFund - allocated.reduce((s, it) => s + it.invest, 0)
+    portfolioItems.value = parking > 0
+      ? [{
+          name: '파킹통장·CMA',
+          tag: '즉시 인출',
+          description: '첫 상품 만기 전 생활비 커버',
+          maturityMonths: 0,
+          invest: parking,
+          percent: Math.round((parking / totalFund) * 100),
+        }, ...allocated]
+      : allocated
+  } catch (e) {
+    console.warn('포트폴리오 배분 조회 실패', e)
+  }
+})
 
 function formatKRW(value) {
   const eok = Math.floor(value / 1_0000_0000)
@@ -197,8 +242,11 @@ function formatKRW(value) {
   return `${man.toLocaleString()}만원`
 }
 
-const DOT_COLORS = ['park', 'short', 'mid', 'long']
-function dotColor(i) { return DOT_COLORS[i] || 'long' }
+const GROUP_COLOR = { UNDER_1Y: 'short', Y1_TO_3: 'mid', OVER_3Y: 'long' }
+function dotColor(item) {
+  if (!item || item.maturityMonths === 0) return 'park'
+  return GROUP_COLOR[termGroupOf(item.maturityMonths)] || 'long'
+}
 
 // 타임라인 바 각 세그먼트의 상대 너비 계산
 function tlWidth(item, i) {
@@ -224,31 +272,16 @@ async function downloadPdf() {
 
   isPdfLoading.value = true
   aiLoading.value = true
-  aiSummary.value = ''
+  aiSummary.value = null
   let restoreCaptureStyle = () => {}
   try {
-    // 1단계: OpenAI로 요약 생성
-    const items = fp.items.map(item => ({
-      name: item.name,
-      tag: item.tag,
-      invest: item.invest,
-      percent: item.percent,
-      maturityMonths: item.maturityMonths,
-    }))
-    aiSummary.value = await generateRecommendationSummary({
-      investAmount: fp.investable,
-      remainingCash: pr.netFund - fp.investable,
+    // 1단계: OpenAI로 행동 지침 JSON 생성
+    aiSummary.value = await generateActionPlan({
+      investable: fp.investable,
       monthlyNeed: fp.monthlyNeed,
-      riskLabel: '안정형',
-      // openaiSummary는 periods 형태를 기대하므로 financePlan을 변환
-      periods: [{ label: '전체 포트폴리오', hint: '', products: items.map(i => ({
-        category: i.tag,
-        institution: '',
-        name: i.name,
-        rate: null,
-        termMonths: i.maturityMonths,
-        safetyLevel: i.tag,
-      })) }],
+      fundedMonths: fp.fundedMonths,
+      items: fp.items,
+      propertyResult: pr,
     })
     aiLoading.value = false
 
@@ -348,6 +381,13 @@ async function downloadPdf() {
   font-size: 18px;
   font-weight: 800;
   margin: 0 0 20px;
+}
+
+.card-subheading {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6b7280;
+  margin: 0 0 12px;
 }
 
 .row-between {

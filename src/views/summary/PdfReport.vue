@@ -122,14 +122,47 @@
       </div>
     </div>
 
-    <!-- ④ AI 요약 -->
+    <!-- ④ AI 행동 지침 -->
     <div v-if="aiSummary" class="pdf-section pdf-ai-section">
-      <div class="pdf-section-num">④ AI 추천 요약</div>
-      <div class="pdf-ai-body">{{ aiSummary }}</div>
+      <div class="pdf-section-num">④ AI 행동 지침</div>
+
+      <!-- 헤드라인 -->
+      <div class="pdf-ai-headline">{{ aiSummary.headline }}</div>
+
+      <!-- 종합 평가 -->
+      <div class="pdf-ai-overview">{{ aiSummary.overview }}</div>
+
+      <!-- 타임라인 -->
+      <div class="pdf-ai-tl-label">시기별 행동 계획</div>
+      <div class="pdf-ai-timeline">
+        <div
+          v-for="(step, i) in aiSummary.timeline"
+          :key="i"
+          class="pdf-ai-tl-item"
+        >
+          <div class="pdf-ai-tl-when">{{ step.when }}</div>
+          <div class="pdf-ai-tl-body">
+            <div class="pdf-ai-tl-action">{{ step.action }}</div>
+            <div class="pdf-ai-tl-reason">{{ step.reason }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 주의사항 -->
+      <div class="pdf-ai-tl-label" style="margin-top:12px;">주의해야 할 상황</div>
+      <ul class="pdf-ai-watchout">
+        <li v-for="(w, i) in aiSummary.watchout" :key="i">{{ w }}</li>
+      </ul>
+
+      <!-- 지금 당장 할 일 -->
+      <div class="pdf-ai-next">
+        <span class="pdf-ai-next-label">지금 당장</span>
+        {{ aiSummary.next_action }}
+      </div>
     </div>
     <div v-else-if="aiLoading" class="pdf-section pdf-ai-section">
-      <div class="pdf-section-num">④ AI 추천 요약</div>
-      <div class="pdf-ai-placeholder">요약을 생성하고 있습니다…</div>
+      <div class="pdf-section-num">④ AI 행동 지침</div>
+      <div class="pdf-ai-placeholder">AI가 행동 지침을 분석하고 있습니다…</div>
     </div>
 
   </div>
@@ -144,8 +177,8 @@ const props = defineProps({
     required: true,
   },
   aiSummary: {
-    type: String,
-    default: '',
+    type: Object,
+    default: null,
   },
   aiLoading: {
     type: Boolean,
@@ -271,17 +304,92 @@ defineExpose({ pdfRoot })
 .pdf-seg-mid, .pdf-dot-mid { background: #4f46e5; }
 .pdf-seg-long, .pdf-dot-long { background: #1e1b4b; }
 
-/* ④ AI 요약 섹션 */
+/* ④ AI 행동 지침 섹션 */
 .pdf-ai-section { margin-top: 0; }
-.pdf-ai-body {
-  font-size: 12.5px;
-  line-height: 1.85;
-  color: #374151;
-  white-space: pre-wrap;
-  background: #fffdf5;
-  border-left: 3px solid #f5c518;
-  border-radius: 0 8px 8px 0;
-  padding: 12px 16px;
+.pdf-ai-headline {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f5c518;
+}
+.pdf-ai-overview {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #4b5563;
+  margin-bottom: 14px;
+}
+.pdf-ai-tl-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+  margin-bottom: 7px;
+}
+.pdf-ai-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.pdf-ai-tl-item {
+  display: flex;
+  gap: 10px;
+  background: #fafaf8;
+  border: 1px solid #f0ede8;
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+.pdf-ai-tl-when {
+  font-size: 10px;
+  font-weight: 700;
+  color: #b79a25;
+  background: #fefce8;
+  border-radius: 99px;
+  padding: 2px 9px;
+  white-space: nowrap;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+.pdf-ai-tl-body { flex: 1; }
+.pdf-ai-tl-action {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 3px;
+}
+.pdf-ai-tl-reason {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+.pdf-ai-watchout {
+  margin: 0 0 12px;
+  padding-left: 16px;
+}
+.pdf-ai-watchout li {
+  font-size: 11.5px;
+  color: #4b5563;
+  line-height: 1.7;
+}
+.pdf-ai-next {
+  background: #1f2937;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pdf-ai-next-label {
+  display: inline-block;
+  background: #f5c518;
+  color: #3a3326;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: 99px;
+  margin-right: 6px;
 }
 .pdf-ai-placeholder {
   font-size: 12px;

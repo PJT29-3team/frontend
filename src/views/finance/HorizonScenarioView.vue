@@ -13,6 +13,7 @@ const router = useRouter();
 const rec = useRecommendationStore();
 
 const TERM_LABELS = { UNDER_1Y: "단기", Y1_TO_3: "중기", OVER_3Y: "장기" };
+const TERM_STEP_CLASS = { UNDER_1Y: "step-short", Y1_TO_3: "step-mid", OVER_3Y: "step-long" };
 const RISK_LABELS = { VERY_LOW: "매우 낮은 위험", LOW: "낮은 위험", MEDIUM: "보통 위험", HIGH: "높은 위험" };
 
 const products = ref([]);
@@ -74,6 +75,15 @@ const parking = computed(
   () => allocation.value?.segments.find((s) => s.cssType === "park") ?? null,
 );
 
+// 상품별 투자금 (favoriteId → invest)
+const investByFavoriteId = computed(() => {
+  const map = new Map();
+  for (const seg of allocation.value?.segments ?? []) {
+    if (seg.favoriteId) map.set(seg.favoriteId, seg.invest);
+  }
+  return map;
+});
+
 function dur(m) {
   if (m >= 600) return "50년 이상";
   const y = Math.floor(m / 12);
@@ -81,6 +91,19 @@ function dur(m) {
   if (y === 0) return `${mo}개월`;
   if (mo === 0) return `${y}년`;
   return `${y}년 ${mo}개월`;
+}
+
+function investOf(favoriteId) {
+  return investByFavoriteId.value.get(favoriteId) || 0;
+}
+
+function fundPct(amount) {
+  if (!totalFund.value) return 0;
+  return Math.round((amount / totalFund.value) * 100);
+}
+
+function investPct(favoriteId) {
+  return fundPct(investOf(favoriteId));
 }
 
 function segPct(seg) {
@@ -109,8 +132,7 @@ async function handleContinue() {
         percent: Math.round((s.invest / totalFund.value) * 10000) / 100,
       }));
     await saveAllocations(null, items);
-    saveMsg.value = "저장되었습니다.";
-    // TODO: 최종 페이지로 연결 필요
+    router.push("/summary");
   } catch {
     saveMsg.value = "저장에 실패했습니다.";
   } finally {
@@ -126,61 +148,61 @@ async function handleContinue() {
     <template v-if="products.length">
       <!-- 선택 상품 + 입력 -->
       <div class="survey-card">
-        <h1 class="step-title" style="text-align:left;margin-top:0">관심 금융상품 자금 계획</h1>
+        <h1 class="step-title" style="text-align:left;margin-top:0">얼마를 어디에 투자할까요?</h1>
         <p class="step-desc" style="text-align:left">
-          관심 등록한 {{ products.length }}개 상품의 만기에 맞춰 자금을 자동 배분합니다.
+          총 {{ formatKRW(totalFund) }}을 관심 등록한 {{ products.length }}개 상품에 아래와 같이 나눠 투자하세요.
         </p>
         <div class="picks">
-          <div v-for="p in products" :key="p.favoriteId" class="pick">
-            <div>
-              <span class="pick-tag">{{ p.tag }}</span>
-              <span class="pick-name">{{ p.name }}</span>
-              <div class="pick-meta">{{ p.meta }}</div>
+          <div v-if="parking" class="pick">
+            <div class="pick-step step-park">0</div>
+            <div class="pick-body">
+              <div class="pick-head">
+                <span class="pick-tag">파킹통장·CMA</span>
+                <span class="pick-name">통장</span>
+              </div>
+              <div class="pick-meta">
+                첫 상품 만기({{ products[0].maturity }}개월) 전까지 쓸 돈은
+                입출금이 자유로운 곳에 넣어두는 것을 추천합니다.
+              </div>
+              <div class="pick-bar-track">
+                <div class="pick-bar-fill" :style="{ width: fundPct(parking.invest) + '%' }"></div>
+              </div>
             </div>
-            <div class="pick-mat">만기 {{ p.maturity }}개월</div>
+            <div class="pick-amt">
+              <div class="pick-invest">{{ formatKRW(parking.invest) }}</div>
+              <div class="pick-pct">{{ fundPct(parking.invest) }}%</div>
+            </div>
+          </div>
+          <div v-for="(p, i) in products" :key="p.favoriteId" class="pick">
+            <div class="pick-step" :class="TERM_STEP_CLASS[termGroupOf(p.maturity)]">{{ i + 1 }}</div>
+            <div class="pick-body">
+              <div class="pick-head">
+                <span class="pick-tag">{{ p.tag }}</span>
+                <span class="pick-name">{{ p.name }}</span>
+              </div>
+              <div class="pick-meta">{{ p.meta }} · 만기 {{ p.maturity }}개월</div>
+              <div class="pick-bar-track">
+                <div class="pick-bar-fill" :style="{ width: investPct(p.favoriteId) + '%' }"></div>
+              </div>
+            </div>
+            <div class="pick-amt">
+              <div class="pick-invest">{{ formatKRW(investOf(p.favoriteId)) }}</div>
+              <div class="pick-pct">{{ investPct(p.favoriteId) }}%</div>
+            </div>
           </div>
         </div>
-
-        <div class="input-grid">
-          <div class="input-row">
-            <span>총 투자금액</span>
-            <span class="fund-display">{{ formatKRW(totalFund) }}</span>
-          </div>
-          <div class="input-row">
-            <span>매달 쓸 돈</span>
-            <span class="fund-display">{{ monthlyNeedMan }}만원</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 헤드라인 -->
-      <div v-if="timelineBase && timelineOpt" class="headline-card">
-        <div class="hl-label">이 돈으로 쓸 수 있는 기간</div>
-        <div v-if="timelineBase.funded === timelineOpt.funded" class="hl-big">
-          {{ dur(timelineBase.funded) }} 사용 가능
-        </div>
-        <div v-else class="hl-big">
-          {{ dur(timelineBase.funded) }} ~ {{ dur(timelineOpt.funded) }}
-        </div>
-        <div class="hl-sub">보수적 기준 ~ 이자 반영 기준</div>
-      </div>
-
-      <!-- 파킹/CMA 안내 -->
-      <div v-if="parking" class="survey-card park-card">
-        <div class="park-head">
-          <span class="park-badge">즉시 인출</span>
-          <b>파킹통장·CMA</b>
-        </div>
-        <p class="park-body">
-          첫 상품 만기({{ products[0].maturity }}개월) 전까지 쓸 돈은
-          입출금이 자유로운 <b>파킹통장·CMA</b>에 넣어두는 것을 추천합니다.
-        </p>
-        <div class="park-amt">{{ formatKRW(parking.invest) }}</div>
       </div>
 
       <!-- 타임라인 -->
-      <div v-if="timeline" class="survey-card">
+      <div v-if="timeline" class="survey-card" style="margin-top: 28px">
         <h2 class="tl-title">시기별로 어디서 돈이 나오는지</h2>
+        <p v-if="timelineBase && timelineOpt" class="tl-sub">
+          총 투자금액 <b>{{ formatKRW(totalFund) }}</b>으로
+          <b v-if="timelineBase.funded === timelineOpt.funded">{{ dur(timelineBase.funded) }}</b>
+          <b v-else>{{ dur(timelineBase.funded) }} ~ {{ dur(timelineOpt.funded) }}</b>
+          사용 가능
+          <span class="tl-sub-note">(보수적 기준 ~ 이자 반영 기준)</span>
+        </p>
         <div class="toggle-row tl-toggle">
           <button class="toggle" :class="{ active: !optimistic }" @click="optimistic = false">
             보수적 계산
@@ -194,7 +216,6 @@ async function handleContinue() {
           <span class="l-short">단기</span>
           <span class="l-mid">중기</span>
           <span class="l-long">장기</span>
-          <span class="l-gap">자금 공백 구간</span>
         </div>
 
         <div class="tl-bar">
@@ -211,24 +232,10 @@ async function handleContinue() {
 
         <table class="tl-table">
           <tr v-for="(seg, i) in timeline.segs" :key="i">
-            <template v-if="seg.type === 'gap'">
-              <td>자금 공백 구간 ({{ seg.from }}~{{ seg.to }}개월차)</td>
-              <td class="gap-cell">0원</td>
-            </template>
-            <template v-else>
-              <td>{{ seg.name }} ({{ seg.from }}~{{ seg.to }}개월차)</td>
-              <td>{{ formatKRW(seg.amount) }}</td>
-            </template>
+            <td>{{ seg.name }} ({{ seg.from }}~{{ seg.to }}개월차)</td>
+            <td>{{ formatKRW(seg.amount) }}</td>
           </tr>
         </table>
-
-        <div v-if="timeline.gap > 0" class="info-box warn">
-          총 <b>{{ timeline.gap }}개월</b>은 상품 만기가 이어지지 않아 자금 공백이 생깁니다.
-          총 투자금액을 늘리거나, 만기가 더 짧은 상품을 추가하면 공백을 줄일 수 있습니다.
-        </div>
-        <div v-else class="info-box">
-          상품이 바뀌는 시점마다 <b>끊기지 않고</b> 이어집니다.
-        </div>
 
         <p class="footnote">
           {{
@@ -271,11 +278,55 @@ async function handleContinue() {
 
 .pick {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   border: 1.5px solid var(--card-border);
   border-radius: 14px;
   padding: 14px 16px;
+}
+
+.pick-step {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--kb-yellow);
+  color: var(--btn-text);
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pick-step.step-park { background: #4f9a91; color: #fff; }
+.pick-step.step-short { background: #3b82f6; color: #fff; }
+.pick-step.step-mid { background: #7c3aed; color: #fff; }
+.pick-step.step-long { background: #1e1b4b; color: #fff; }
+
+.pick-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pick-bar-track {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--card-border);
+  overflow: hidden;
+}
+
+.pick-bar-fill {
+  height: 100%;
+  background: var(--kb-yellow);
+  border-radius: 3px;
 }
 
 .pick-tag {
@@ -301,29 +352,26 @@ async function handleContinue() {
   margin-top: 2px;
 }
 
-.pick-mat {
+.pick-amt {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.pick-invest {
   font-weight: 800;
-  color: var(--text-dark);
-  font-size: 14px;
+  color: var(--kb-yellow-deep);
+  font-size: 19px;
   white-space: nowrap;
 }
 
-/* 입력 */
-.input-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.input-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
+.pick-pct {
+  color: var(--text-muted);
+  font-size: 12.5px;
   font-weight: 700;
+  margin-top: 2px;
 }
 
+/* 입력 */
 .input-wrap {
   display: flex;
   align-items: center;
@@ -349,40 +397,19 @@ async function handleContinue() {
   font-size: 13px;
 }
 
-.fund-display {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text-dark);
-  padding: 8px 0;
-}
-
-/* 헤드라인 */
-.headline-card {
-  background: var(--text-dark);
-  color: #fff;
-  text-align: center;
-  border-radius: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
-  padding: 28px;
-  margin-bottom: 14px;
-}
-
-.hl-label {
-  color: rgba(255, 255, 255, 0.7);
+.tl-sub {
   font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 14px;
 }
 
-.hl-big {
-  font-size: 34px;
-  font-weight: 800;
-  color: var(--kb-yellow);
-  margin: 6px 0;
+.tl-sub b {
+  color: var(--kb-yellow-deep);
 }
 
-.hl-sub {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  margin-top: 4px;
+.tl-sub-note {
+  font-size: 12.5px;
+  color: var(--text-muted);
 }
 
 .toggle-row {
@@ -413,41 +440,6 @@ async function handleContinue() {
   margin-bottom: 12px;
 }
 
-/* 파킹/CMA 카드 */
-.park-card {
-  border-left: 4px solid #0d9488;
-}
-
-.park-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-}
-
-.park-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  background: #0d9488;
-  border-radius: 10px;
-  padding: 2px 8px;
-}
-
-.park-body {
-  color: var(--text-muted);
-  font-size: 13.5px;
-  margin: 8px 0 6px;
-  line-height: 1.5;
-}
-
-.park-amt {
-  font-weight: 800;
-  font-size: 18px;
-  color: #0d9488;
-  text-align: right;
-}
-
 /* 타임라인 */
 .tl-title {
   font-weight: 800;
@@ -473,21 +465,10 @@ async function handleContinue() {
   min-width: 2px;
 }
 
-.seg.park { background: #0d9488; }
-.seg.short { background: #2563eb; }
-.seg.mid { background: #4f46e5; }
+.seg.park { background: #4f9a91; }
+.seg.short { background: #3b82f6; }
+.seg.mid { background: #7c3aed; }
 .seg.long { background: #1e1b4b; }
-
-.seg.gap {
-  background: repeating-linear-gradient(
-    45deg,
-    #e5e7eb,
-    #e5e7eb 6px,
-    #f3f4f6 6px,
-    #f3f4f6 12px
-  );
-  color: var(--text-muted);
-}
 
 .legend {
   display: flex;
@@ -508,11 +489,10 @@ async function handleContinue() {
   vertical-align: -1px;
 }
 
-.l-park::before { background: #0d9488; }
-.l-short::before { background: #2563eb; }
-.l-mid::before { background: #4f46e5; }
+.l-park::before { background: #4f9a91; }
+.l-short::before { background: #3b82f6; }
+.l-mid::before { background: #7c3aed; }
 .l-long::before { background: #1e1b4b; }
-.l-gap::before { background: #e5e7eb; border: 1px solid #d1d5db; }
 
 /* 테이블 */
 .tl-table {
@@ -531,29 +511,6 @@ async function handleContinue() {
   text-align: right;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.gap-cell {
-  color: #b7853e;
-}
-
-/* 안내 박스 */
-.info-box {
-  background: var(--kb-yellow-soft);
-  border-left: 4px solid var(--kb-yellow);
-  padding: 14px 16px;
-  font-size: 14.5px;
-  margin-top: 10px;
-  border-radius: 0 8px 8px 0;
-}
-
-.info-box b {
-  color: var(--kb-yellow-deep);
-}
-
-.info-box.warn {
-  border-left-color: #b7853e;
-  background: #fbf1dc;
 }
 
 .notice {
@@ -608,9 +565,4 @@ async function handleContinue() {
   margin-top: 10px;
 }
 
-@media (max-width: 560px) {
-  .input-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

@@ -1,7 +1,7 @@
-export const TERM_GROUPS = { UNDER_1Y: 12, Y1_TO_3: 36, OVER_3Y: Infinity };
-
+// 백엔드 FinancialProductStockMapper.xml 기간 분류와 동일한 경계값
+// (SHORT < 12, 12 <= MEDIUM <= 35, LONG >= 36)
 export function termGroupOf(months) {
-  if (months <= TERM_GROUPS.UNDER_1Y) return "UNDER_1Y";
-  if (months <= TERM_GROUPS.Y1_TO_3) return "Y1_TO_3";
+  if (months < 12) return "UNDER_1Y";
+  if (months < 36) return "Y1_TO_3";
   return "OVER_3Y";
 }

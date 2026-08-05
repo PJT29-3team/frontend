@@ -55,7 +55,6 @@ export function allocate(products, monthlyNeed, totalFund) {
 
 /**
  * 배분된 상품들(invest 보유)을 만기 순서로 이어 붙여 타임라인을 만든다.
- * 앞 상품 소진 후 다음 상품 만기 전이면 gap(공백) 구간으로 표시한다.
  *
  * @param {Array} products [{ name, invest, maturity, rate, fixed, cssType? }]
  * @param {number} monthlyNeed 월 필요금액(원)
@@ -66,7 +65,6 @@ export function buildTimeline(products, monthlyNeed, optimistic = false) {
   let cursor = 0;
   const segs = [];
   let funded = 0;
-  let gap = 0;
 
   for (const p of sorted) {
     const principal =
@@ -74,14 +72,8 @@ export function buildTimeline(products, monthlyNeed, optimistic = false) {
         ? p.invest * (1 + (p.rate * p.maturity) / 12)
         : p.invest;
     const months = Math.floor(principal / monthlyNeed);
-    const availableFrom = Math.max(cursor, p.maturity);
+    cursor = Math.max(cursor, p.maturity);
 
-    if (availableFrom > cursor) {
-      const g = availableFrom - cursor;
-      segs.push({ type: "gap", from: cursor + 1, to: availableFrom, months: g });
-      gap += g;
-      cursor = availableFrom;
-    }
     if (months > 0) {
       segs.push({
         type: p.cssType || TERM_CSS[termGroupOf(p.maturity)] || "long",
@@ -96,5 +88,5 @@ export function buildTimeline(products, monthlyNeed, optimistic = false) {
     }
   }
 
-  return { segs, funded, gap, span: cursor };
+  return { segs, funded, span: cursor };
 }
