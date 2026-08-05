@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@vue/test-utils": "latest",
-    "jsdom": "latest",
+    "jsdom": "^26.1.0",
     "vitest": "latest"
   }
 }

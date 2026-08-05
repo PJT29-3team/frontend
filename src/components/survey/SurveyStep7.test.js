@@ -1,6 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import propertyRecommendationApi from "@/api/propertyRecommendation";
 import surveyApi from "@/api/survey";
 import { useSurveyStore } from "@/stores/survey";
 import { MESSAGES } from "@/utils/surveyValidation";
@@ -9,6 +10,20 @@ import SurveyStep7 from "./SurveyStep7.vue";
 vi.mock("@/api/survey", () => ({
   default: { calculate: vi.fn() },
 }));
+
+// 목으로 고정하지 않으면 jsdom이 실제 백엔드로 XHR을 날려 테스트가 환경을 탄다.
+vi.mock("@/api/propertyRecommendation", () => ({
+  default: { regionCounts: vi.fn() },
+}));
+
+/** 서버가 알려주는 지역별 매물 수. 개수 순서와 이름 순서가 다르게 잡아둔다. */
+const REGION_COUNTS = [
+  { sidoName: "서울", sigunguName: "강남구", count: 342 },
+  { sidoName: "서울", sigunguName: "송파구", count: 999 },
+  { sidoName: "서울", sigunguName: "노원구", count: 500 },
+  { sidoName: "경기도", sigunguName: "남양주시", count: 78 },
+  { sidoName: "경기도", sigunguName: "수원시", count: 120 },
+];
 
 function chipByName(wrapper, name) {
   return wrapper
@@ -23,21 +38,53 @@ describe("SurveyStep7", () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     surveyApi.calculate.mockResolvedValue(null);
+    propertyRecommendationApi.regionCounts.mockResolvedValue(REGION_COUNTS);
     survey = useSurveyStore();
   });
 
-  it("서울을 기본으로 보여주고 매물 수를 함께 노출한다", () => {
+  it("서울을 기본으로 보여주고 매물 수를 함께 노출한다", async () => {
     const wrapper = mount(SurveyStep7);
+    await flushPromises();
 
     expect(wrapper.text()).toContain("어느 지역에서");
     expect(wrapper.text()).toContain(
-      "매물 많은 순으로 보여드려요 · 여러 곳 함께 골라도 돼요",
+      "숫자는 예산으로 살 수 있는 매물 수예요 · 여러 곳 함께 골라도 돼요",
     );
     expect(chipByName(wrapper, "강남구").text()).toContain("342");
   });
 
+  it("설문에서 산출한 예산으로 매물 수를 요청한다", async () => {
+    survey.expectedSalePrice = 720_000_000;
+    survey.purchasePrice = 580_000_000;
+    survey.holdingYears = 7;
+    survey.residenceYears = 7;
+    survey.isRegulatedArea = false;
+    survey.reserveAmount = 150_000_000;
+
+    mount(SurveyStep7);
+    await flushPromises();
+
+    expect(propertyRecommendationApi.regionCounts).toHaveBeenCalledWith(
+      survey.maxPurchaseBudget,
+    );
+    expect(propertyRecommendationApi.regionCounts.mock.calls[0][0]).toBeGreaterThan(0);
+  });
+
+  it("시군구는 매물 수와 무관하게 가나다순으로 늘어선다", async () => {
+    const wrapper = mount(SurveyStep7);
+    await flushPromises();
+
+    const names = wrapper
+      .findAll(".sigungu-grid .region-chip")
+      .map((b) => b.text().replace(/[0-9]/g, ""));
+
+    // 송파구(999) > 노원구(500) > 강남구(342)지만 이름순이 우선이다.
+    expect(names).toEqual(["강남구", "노원구", "송파구"]);
+  });
+
   it("시도를 바꾸면 시군구 목록이 갈린다", async () => {
     const wrapper = mount(SurveyStep7);
+    await flushPromises();
 
     expect(chipByName(wrapper, "남양주시")).toBeUndefined();
 

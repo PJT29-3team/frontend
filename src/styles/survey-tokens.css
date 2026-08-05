@@ -683,6 +683,19 @@
   margin: 0;
 }
 
+/* 시군구 버튼. 글자 수가 달라도 칸이 흐트러지지 않게 3열 고정 그리드로 깐다 */
+.sigungu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+.sigungu-grid .region-chip {
+  padding: 9px 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* 6단계 매물 수 + 선택 안내 배너 */
 .region-count {
   margin-left: 5px;
