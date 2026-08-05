@@ -22,8 +22,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AuthCard from '../../components/auth/AuthCard.vue'
 import { verifyEmail } from '../../api/authApi'
-import MemberPageLayout from '@/components/MemberPageLayout.vue'
-import { saveSignupVerification } from '@/stores/signupVerificationStore'
+import MemberPageLayout from '../../components/MemberPageLayout.vue'
+import { saveSignupVerification } from '../../stores/signupVerificationStore'
 
 const route = useRoute()
 const state = ref('checking')

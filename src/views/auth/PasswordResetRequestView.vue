@@ -48,7 +48,7 @@
 import { ArrowLeft, CircleAlert } from '@lucide/vue'
 import { ref } from 'vue'
 import { requestPasswordReset } from '../../api/authApi'
-import MemberPageLayout from '@/components/MemberPageLayout.vue'
+import MemberPageLayout from '../../components/MemberPageLayout.vue'
 
 
 const email = ref('')

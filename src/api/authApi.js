@@ -73,7 +73,21 @@ export async function updateMe(payload) {
   return response.data
 }
 
+export async function changePassword(currentPassword, password, passwordConfirm) {
+  const response = await http.patch('/api/users/me/password', {
+    currentPassword,
+    password,
+    passwordConfirm,
+  })
+  return response.data
+}
+
 export async function requestDeletion(password) {
   const response = await http.post('/api/users/me/deletion-request', { password })
+  return response.data
+}
+
+export async function cancelDeletion() {
+  const response = await http.post('/api/users/me/deletion-request/cancel')
   return response.data
 }

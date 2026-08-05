@@ -99,7 +99,7 @@ import LoginHeader from '../../components/auth/LoginHeader.vue'
 import { authStore } from '../../stores/authStore'
 
 const SAVED_EMAIL_KEY = 'jh_saved_email'
-const VERIFICATION_REQUIRED_MESSAGE = '회원가입 후 최초 1회 이메일 인증이 필요합니다.'
+const VERIFICATION_REQUIRED_CODE = 'EMAIL_VERIFICATION_REQUIRED'
 
 const router = useRouter()
 const savedEmail = typeof localStorage === 'undefined' ? '' : localStorage.getItem(SAVED_EMAIL_KEY) || ''
@@ -133,7 +133,7 @@ async function submit() {
     router.push('/main')
   } catch (e) {
     error.value = e.response?.data?.message || '로그인 정보를 확인해주세요.'
-    verificationRequired.value = error.value === VERIFICATION_REQUIRED_MESSAGE
+    verificationRequired.value = e.response?.data?.errorCode === VERIFICATION_REQUIRED_CODE
   } finally {
     submitting.value = false
   }

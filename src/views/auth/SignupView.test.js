@@ -4,6 +4,7 @@ import * as authApi from '../../api/authApi'
 import SignupView from './SignupView.vue'
 
 const routerPush = vi.hoisted(() => vi.fn())
+const SIGNUP_VERIFICATION_KEY = 'jh_signup_verification'
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
@@ -23,16 +24,23 @@ async function fillVerifiedSignupForm(wrapper) {
 
 describe('SignupView', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     sessionStorage.clear()
   })
 
   afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
     routerPush.mockClear()
     vi.restoreAllMocks()
   })
 
   it('shows the full form and requests email verification inline', async () => {
     const signupSpy = vi.spyOn(authApi, 'signup')
+    vi.spyOn(authApi, 'checkEmailAvailability').mockResolvedValue({
+      email: 'senior@example.com',
+      available: true,
+    })
     const requestVerification = vi.spyOn(authApi, 'requestSignupEmailVerification').mockResolvedValue({
       email: 'senior@example.com',
       verified: false,
@@ -46,6 +54,8 @@ describe('SignupView', () => {
     expect(wrapper.get('[data-member-header]').text()).toContain('작은둥지')
     await wrapper.get('input[name="emailLocal"]').setValue('senior')
     await wrapper.get('select[name="emailDomain"]').setValue('example.com')
+    await vi.runAllTimersAsync()
+    await flushPromises()
     await wrapper.get('[data-request-verification]').trigger('click')
     await flushPromises()
 
@@ -57,6 +67,10 @@ describe('SignupView', () => {
 
   it('shows the sent message immediately while the email request is pending', async () => {
     let resolveVerification
+    vi.spyOn(authApi, 'checkEmailAvailability').mockResolvedValue({
+      email: 'senior@example.com',
+      available: true,
+    })
     vi.spyOn(authApi, 'requestSignupEmailVerification').mockReturnValue(new Promise((resolve) => {
       resolveVerification = resolve
     }))
@@ -66,6 +80,8 @@ describe('SignupView', () => {
 
     await wrapper.get('input[name="emailLocal"]').setValue('senior')
     await wrapper.get('select[name="emailDomain"]').setValue('example.com')
+    await vi.runAllTimersAsync()
+    await flushPromises()
     await wrapper.get('[data-request-verification]').trigger('click')
 
     expect(wrapper.text()).toContain('인증 메일을 보냈습니다.')
@@ -76,6 +92,27 @@ describe('SignupView', () => {
       message: '인증 메일을 보냈습니다.',
     })
     await flushPromises()
+  })
+
+  it('keeps verification disabled when the email is already registered', async () => {
+    const availability = vi.spyOn(authApi, 'checkEmailAvailability').mockResolvedValue({
+      email: 'senior@example.com',
+      available: false,
+    })
+    const requestVerification = vi.spyOn(authApi, 'requestSignupEmailVerification')
+    const wrapper = mount(SignupView, {
+      global: { stubs: ['RouterLink'] },
+    })
+
+    await wrapper.get('input[name="emailLocal"]').setValue('senior')
+    await wrapper.get('select[name="emailDomain"]').setValue('example.com')
+    await vi.runAllTimersAsync()
+    await flushPromises()
+
+    expect(availability).toHaveBeenCalledWith('senior@example.com')
+    expect(wrapper.text()).toContain('이미 가입된 이메일입니다.')
+    expect(wrapper.get('[data-request-verification]').attributes('disabled')).toBeDefined()
+    expect(requestVerification).not.toHaveBeenCalled()
   })
 
   it('submits verified email, phone number, and completion token', async () => {

@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { verifyEmail } from '../api/authApi'
+import { verifyEmail } from '../../api/authApi'
 import EmailVerificationResultView from './EmailVerificationResultView.vue'
 
 const SIGNUP_VERIFICATION_KEY = 'jh_signup_verification'
@@ -9,7 +9,7 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ query: { token: 'email-token' } }),
 }))
 
-vi.mock('../api/authApi', () => ({
+vi.mock('../../api/authApi', () => ({
   verifyEmail: vi.fn(),
 }))
 

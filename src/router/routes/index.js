@@ -19,4 +19,9 @@ export const routes = [
   { path: PATHS.socialCallback, component: () => import('@/views/auth/SocialLoginCallbackView.vue') },
   { path: PATHS.profile, component: () => import('@/views/account/ProfileView.vue') },
   { path: PATHS.socialProfile, component: () => import('@/views/auth/SocialProfileCompletionView.vue') },
+  { path: PATHS.financeHorizon, name: 'finance-horizon', component: () => import('@/views/finance/HorizonScenarioView.vue'), meta: { requiresAuth: true, process: true } },
+  { path: PATHS.financeRecommendation, name: 'recommendation', component: () => import('@/views/RecommendationConditionView.vue') },
+  { path: PATHS.financeRecommendationResult, name: 'recommendation-result', component: () => import('@/views/RecommendationResultView.vue') },
+  { path: PATHS.financeRecommendationFavorites, name: 'recommendation-favorites', component: () => import('@/views/RecommendationFavoritesView.vue') },
+  { path: PATHS.financeProductDetail, name: 'product-detail', component: () => import('@/views/ProductDetailView.vue'), props: true },
 ]
