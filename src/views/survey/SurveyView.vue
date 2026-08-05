@@ -44,7 +44,37 @@ onMounted(() => {
   } else {
     survey.init();
   }
+  window.addEventListener("keydown", onGlobalEnter);
 });
+
+/**
+ * 어느 단계에서든 엔터 = "다음" 버튼.
+ *
+ * 금액 입력칸은 AmountField 가 자체 처리(다음 칸 이동)하므로 건드리지 않고,
+ * 버튼·드롭다운 등 나머지 위치에서 누른 엔터만 다음 버튼 클릭으로 잇는다.
+ * 유효성 검사는 각 단계 submit 안에서 그대로 돌기 때문에 빈 값이면 넘어가지 않는다.
+ */
+function onGlobalEnter(event) {
+  if (event.key !== "Enter") return;
+  if (survey.showIntro || searching.value || showResetConfirm.value) return;
+
+  const target = event.target;
+  // 입력칸은 AmountField 의 enter 처리에 맡긴다. 여기서도 잡으면 두 번 동작한다.
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+  // 다음/이전 버튼에 포커스가 있으면 브라우저 기본 클릭에 맡긴다.
+  if (
+    target instanceof HTMLButtonElement &&
+    (target.classList.contains("primary-btn") || target.classList.contains("secondary-btn"))
+  ) {
+    return;
+  }
+
+  const nextButton = document.querySelector(".survey-card .primary-btn:not(:disabled)");
+  if (!nextButton) return;
+  // 토글·칩 버튼에 포커스가 남아 있을 때 엔터가 그 버튼을 다시 누르지 않도록 막는다.
+  event.preventDefault();
+  nextButton.click();
+}
 
 const showResetConfirm = ref(false);
 function confirmReset() {
@@ -99,6 +129,7 @@ function goToRecommendations() {
 }
 
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onGlobalEnter);
   clearInterval(stageTimer);
   clearTimeout(finishTimer);
 });
