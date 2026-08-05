@@ -56,7 +56,7 @@ describe('EmailLoginView', () => {
   it('matches the reference page layout and toggles password visibility', async () => {
     const wrapper = mountView()
 
-    expect(wrapper.get('[data-member-header]').text()).toContain('작은둥지')
+    expect(wrapper.get('.login-header__brand').text()).toContain('작은둥지')
     expect(wrapper.get('input[name="email"]').attributes('placeholder')).toBe('이메일을 입력하세요')
     expect(wrapper.get('input[name="saveEmail"]').exists()).toBe(true)
     expect(wrapper.get('input[name="autoLogin"]').exists()).toBe(true)
@@ -106,7 +106,12 @@ describe('EmailLoginView', () => {
 
   it('offers a verification email resend only for a pending account', async () => {
     vi.spyOn(authStore, 'login').mockRejectedValue({
-      response: { data: { message: '회원가입 후 최초 1회 이메일 인증이 필요합니다.' } },
+      response: {
+        data: {
+          errorCode: 'EMAIL_VERIFICATION_REQUIRED',
+          message: '회원가입 전 이메일 인증이 필요합니다.',
+        },
+      },
     })
     resendVerification.mockResolvedValue({ message: '인증 메일을 다시 보냈습니다.' })
     const wrapper = mountView()
