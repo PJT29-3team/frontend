@@ -14,9 +14,30 @@
     </div>
     <div class="pdf-header-line"></div>
 
-    <!-- ① 옮길 집 -->
+    <!-- ① AI 행동 지침 -->
+    <div v-if="aiSummary" class="pdf-section pdf-ai-section">
+      <div class="pdf-section-num">① 보고서 AI 요약</div>
+
+      <!-- 시뮬레이션 결과 (요약 문장) -->
+      <div class="pdf-ai-insight">
+        <span class="pdf-ai-insight-label">시뮬레이션 결과</span>
+        <div class="pdf-ai-insight-text"><strong>{{ aiSummary.dataTemplateText }}</strong></div>
+      </div>
+
+      <!-- 전문가 조언 (AI Insight) -->
+      <div class="pdf-ai-insight">
+        <span class="pdf-ai-insight-label">전문가의 조언</span>
+        <div class="pdf-ai-insight-text">{{ aiSummary.ai_insight }}</div>
+      </div>
+    </div>
+    <div v-else-if="aiLoading" class="pdf-section pdf-ai-section">
+      <div class="pdf-section-num">① 보고서 AI 요약</div>
+      <div class="pdf-ai-placeholder">AI가 행동 지침을 분석하고 있습니다…</div>
+    </div>
+
+    <!-- ② 옮길 집 -->
     <div class="pdf-section">
-      <div class="pdf-section-num">① 옮길 집</div>
+      <div class="pdf-section-num">② 옮길 집</div>
       <div class="pdf-sec1-row">
         <div class="pdf-sec1-left">
           <div class="pdf-home-name">{{ pr.newHome.name }}</div>
@@ -33,9 +54,9 @@
       </div>
     </div>
 
-    <!-- ② 남는 돈 -->
+    <!-- ③ 남는 돈 -->
     <div class="pdf-section">
-      <div class="pdf-section-num">② 남는 돈</div>
+      <div class="pdf-section-num">③ 남는 돈</div>
       <div class="pdf-sec2-row">
         <div class="pdf-label-sm">손에 쥐는 돈</div>
         <div class="pdf-highlight">{{ formatKRW(pr.netFund) }}</div>
@@ -55,9 +76,9 @@
       <div class="pdf-cost-note">실제 거래가·세금에 따라 달라질 수 있어요</div>
     </div>
 
-    <!-- ③ 굴리는 돈 -->
+    <!-- ④ 굴리는 돈 -->
     <div class="pdf-section">
-      <div class="pdf-section-num">③ 굴리는 돈</div>
+      <div class="pdf-section-num">④ 굴리는 돈</div>
 
       <div class="pdf-sec3-top">
         <span class="pdf-invest-amount">{{ formatKRW(fp.investable) }}</span>
@@ -113,56 +134,6 @@
           >{{ item.maturityMonths === 0 ? '즉시' : item.maturityMonths + '개월' }}</div>
         </div>
       </div>
-
-      <!-- 결론 박스 -->
-      <div class="pdf-conclusion">
-        <div class="pdf-conclusion-label">매달 {{ formatKRW(fp.monthlyNeed) }}씩</div>
-        <div class="pdf-conclusion-value">{{ fp.fundedMonths }}</div>
-        <div class="pdf-conclusion-tail">더 사용 가능</div>
-      </div>
-    </div>
-
-    <!-- ④ AI 행동 지침 -->
-    <div v-if="aiSummary" class="pdf-section pdf-ai-section">
-      <div class="pdf-section-num">④ AI 행동 지침</div>
-
-      <!-- 헤드라인 -->
-      <div class="pdf-ai-headline">{{ aiSummary.headline }}</div>
-
-      <!-- 종합 평가 -->
-      <div class="pdf-ai-overview">{{ aiSummary.overview }}</div>
-
-      <!-- 타임라인 -->
-      <div class="pdf-ai-tl-label">시기별 행동 계획</div>
-      <div class="pdf-ai-timeline">
-        <div
-          v-for="(step, i) in aiSummary.timeline"
-          :key="i"
-          class="pdf-ai-tl-item"
-        >
-          <div class="pdf-ai-tl-when">{{ step.when }}</div>
-          <div class="pdf-ai-tl-body">
-            <div class="pdf-ai-tl-action">{{ step.action }}</div>
-            <div class="pdf-ai-tl-reason">{{ step.reason }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 주의사항 -->
-      <div class="pdf-ai-tl-label" style="margin-top:12px;">주의해야 할 상황</div>
-      <ul class="pdf-ai-watchout">
-        <li v-for="(w, i) in aiSummary.watchout" :key="i">{{ w }}</li>
-      </ul>
-
-      <!-- 지금 당장 할 일 -->
-      <div class="pdf-ai-next">
-        <span class="pdf-ai-next-label">지금 당장</span>
-        {{ aiSummary.next_action }}
-      </div>
-    </div>
-    <div v-else-if="aiLoading" class="pdf-section pdf-ai-section">
-      <div class="pdf-section-num">④ AI 행동 지침</div>
-      <div class="pdf-ai-placeholder">AI가 행동 지침을 분석하고 있습니다…</div>
     </div>
 
   </div>
@@ -306,90 +277,24 @@ defineExpose({ pdfRoot })
 
 /* ④ AI 행동 지침 섹션 */
 .pdf-ai-section { margin-top: 0; }
-.pdf-ai-headline {
-  font-size: 15px;
+.pdf-ai-insight {
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+.pdf-ai-insight-label {
+  display: inline-block;
+  font-size: 11px;
   font-weight: 800;
-  color: #1f2937;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f5c518;
-}
-.pdf-ai-overview {
-  font-size: 12px;
-  line-height: 1.8;
-  color: #4b5563;
-  margin-bottom: 14px;
-}
-.pdf-ai-tl-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #9ca3af;
-  letter-spacing: 0.05em;
-  margin-bottom: 7px;
-}
-.pdf-ai-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-.pdf-ai-tl-item {
-  display: flex;
-  gap: 10px;
-  background: #fafaf8;
-  border: 1px solid #f0ede8;
-  border-radius: 8px;
-  padding: 9px 12px;
-}
-.pdf-ai-tl-when {
-  font-size: 10px;
-  font-weight: 700;
   color: #b79a25;
   background: #fefce8;
+  padding: 2px 10px;
   border-radius: 99px;
-  padding: 2px 9px;
-  white-space: nowrap;
-  align-self: flex-start;
-  flex-shrink: 0;
+  margin-bottom: 6px;
 }
-.pdf-ai-tl-body { flex: 1; }
-.pdf-ai-tl-action {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 3px;
-}
-.pdf-ai-tl-reason {
-  font-size: 11px;
-  color: #6b7280;
-  line-height: 1.5;
-}
-.pdf-ai-watchout {
-  margin: 0 0 12px;
-  padding-left: 16px;
-}
-.pdf-ai-watchout li {
-  font-size: 11.5px;
-  color: #4b5563;
+.pdf-ai-insight-text {
+  font-size: 12.5px;
   line-height: 1.7;
-}
-.pdf-ai-next {
-  background: #1f2937;
-  color: #fff;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.pdf-ai-next-label {
-  display: inline-block;
-  background: #f5c518;
-  color: #3a3326;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 1px 8px;
-  border-radius: 99px;
-  margin-right: 6px;
+  color: #4b5563;
 }
 .pdf-ai-placeholder {
   font-size: 12px;

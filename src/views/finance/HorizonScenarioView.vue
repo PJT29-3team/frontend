@@ -197,7 +197,7 @@ async function handleContinue() {
       <div v-if="timeline" class="survey-card" style="margin-top: 28px">
         <h2 class="tl-title">시기별로 어디서 돈이 나오는지</h2>
         <p v-if="timelineBase && timelineOpt" class="tl-sub">
-          총 투자금액 <b>{{ formatKRW(totalFund) }}</b>으로
+          한달에 추가로 <b>{{ formatKRW(monthlyNeed) }}</b>씩
           <b v-if="timelineBase.funded === timelineOpt.funded">{{ dur(timelineBase.funded) }}</b>
           <b v-else>{{ dur(timelineBase.funded) }} ~ {{ dur(timelineOpt.funded) }}</b>
           사용 가능

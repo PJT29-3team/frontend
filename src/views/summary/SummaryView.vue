@@ -170,7 +170,7 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref, reactive } from 'vue'
 import PdfReport from './PdfReport.vue'
 import { preparePdfCapture } from '@/utils/pdfCapture'
 import { fitCanvasToA4 } from '@/utils/pdfLayout'
@@ -179,15 +179,24 @@ import { fetchFavoriteProducts } from '@/api/financeApi'
 import { useRecommendationStore } from '@/stores/recommendation'
 import { authStore } from '@/stores/authStore'
 import { termGroupOf } from '@/utils/finance/portfolioAllocation'
-// TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
-import { dummySummary as data } from '@/mock/dummySummary'
+import { getFavoriteProperties } from '@/api/favoriteApi'
+import surveyApi from '@/api/survey'
+import { dummySummary as rawData } from '@/mock/dummySummary'
+import { useSurveyStore } from '@/stores/survey'
 
 const rec = useRecommendationStore()
+const survey = useSurveyStore()
 const TERM_LABELS = { UNDER_1Y: '단기', Y1_TO_3: '중기', OVER_3Y: '장기' }
 const RISK_LABELS = { VERY_LOW: '매우 낮은 위험', LOW: '낮은 위험', MEDIUM: '보통 위험', HIGH: '높은 위험' }
 
+const data = reactive(rawData)
 const pr = data.propertyResult
 const fp = data.financePlan
+
+// Reset costs and immediateExpenses so dummy data doesn't leak
+pr.costs = []
+fp.immediateExpenses = []
+
 const showPropertyDetail = ref(false)
 const showExpenseDetail = ref(false)
 const isPdfLoading = ref(false)
@@ -195,15 +204,92 @@ const pdfReportRef = ref(null)
 const aiSummary = ref(null)
 const aiLoading = ref(false)
 
-// 포트폴리오 배분: DB에 저장된 관심상품 배분(금액/비율)을 조회해서 구성
+// 포트폴리오 배분: DB에 저장된 관심상품 배분을 조회해서 구성
 const portfolioItems = ref([])
-const portfolioMonthlyNeed = ref(fp.monthlyNeed)
+const portfolioMonthlyNeed = ref(0)
 
 onMounted(async () => {
+  if (!authStore.state.user && authStore.state.accessToken) {
+    try {
+      await authStore.refresh()
+    } catch (e) {
+      console.warn('Failed to recover user state', e)
+    }
+  }
+  const userId = authStore.state.user?.userId ?? 0
+
+  data.userName = survey.displayName || authStore.state.user?.name || '고객'
+
+  // 매물 정보 로드
   try {
-    const surveyId = authStore.state.user?.userId ?? 0
-    const favorites = await fetchFavoriteProducts(surveyId)
-    const totalFund = rec.investAmount || fp.investable
+    const favorites = await getFavoriteProperties()
+    const selectedHome = favorites.find(h => h.selected === 'Y') || favorites[0]
+    
+    if (selectedHome) {
+      pr.newHome = {
+        name: selectedHome.houseName,
+        pyeong: Math.round(selectedHome.houseSize / 3.3),
+        fitScore: Math.round((selectedHome.safetyScore + selectedHome.convenienceScore + selectedHome.assetScore) / 3),
+        purchasePrice: selectedHome.housePrice
+      }
+      pr.netFund = selectedHome.remainingAmount
+      fp.netFund = selectedHome.remainingAmount
+    }
+  } catch (e) {
+    console.warn('관심 매물 조회 실패', e)
+  }
+
+  pr.currentHome.name = survey.currentAddress || '기존 주택'
+  pr.currentHome.pyeong = survey.currentPyeong || survey.residenceSize || '기존'
+  pr.currentHome.estimatedSalePrice = survey.expectedSalePrice ? (survey.expectedSalePrice * 10000) : 0
+  
+  let taxAmount = survey.taxResult?.amount ?? survey.taxResult ?? 0
+  let brokerAmount = survey.brokerage?.amount ?? survey.brokerage ?? 0
+  let mortgageAmt = survey.mortgageBalance || 0
+
+  let activeSurveyId = survey.surveyId
+
+  // 만약 새로고침으로 값이 없다면 백엔드에서 조회
+  if (taxAmount === 0 && brokerAmount === 0 && userId) {
+    try {
+      const latest = await surveyApi.findLatest(userId)
+      if (latest && latest.survey) {
+        activeSurveyId = latest.survey.surveyId
+        taxAmount = latest.survey.capitalGainsTaxAmount || 0
+        brokerAmount = latest.survey.brokerageFeeAmount || 0
+        mortgageAmt = latest.survey.mortgageBalanceAmount || 0
+        if (!pr.currentHome.estimatedSalePrice) {
+          pr.currentHome.estimatedSalePrice = latest.survey.transferPriceAmount || 0
+        }
+      }
+    } catch (e) {
+      console.warn('설문 내역 조회 실패', e)
+    }
+  }
+
+  const costs = []
+  costs.push({ label: '양도소득세 예상액', amount: taxAmount })
+  costs.push({ label: '중개수수료 예상액', amount: brokerAmount })
+  if (mortgageAmt > 0) {
+    costs.push({ label: '주택담보대출 상환', amount: mortgageAmt })
+  }
+  pr.costs = costs
+
+  const immediateExp = rec.immediateExpense || 0
+  fp.investable = fp.netFund ? Math.max(0, fp.netFund - immediateExp) : rec.investAmount
+  fp.monthlyNeed = rec.monthlyNeed
+  fp.immediateExpenses = [{ label: '당장 쓸 돈', amount: immediateExp }]
+
+  const covMonths = rec.coveredMonths
+  if (covMonths === Infinity || covMonths === 0) {
+    fp.fundedMonths = '평생'
+  } else {
+    fp.fundedMonths = `${Math.floor(covMonths / 12)}년 ${covMonths % 12}개월`
+  }
+
+  try {
+    const favorites = await fetchFavoriteProducts(userId || activeSurveyId)
+    const totalFund = fp.investable
     if (rec.monthlyNeed) portfolioMonthlyNeed.value = rec.monthlyNeed
 
     const allocated = favorites
@@ -229,6 +315,9 @@ onMounted(async () => {
           percent: Math.round((parking / totalFund) * 100),
         }, ...allocated]
       : allocated
+    
+    // 💡 목업 대신 실제 배분 데이터를 PDF/보고서 데이터에 연결
+    fp.items = portfolioItems.value
   } catch (e) {
     console.warn('포트폴리오 배분 조회 실패', e)
   }
@@ -275,14 +364,32 @@ async function downloadPdf() {
   aiSummary.value = null
   let restoreCaptureStyle = () => {}
   try {
+    const userAge = authStore.state.user?.birthYear ? Math.floor((new Date().getFullYear() - authStore.state.user.birthYear) / 10) * 10 : 60;
+    const profileCode = rec.riskLevel || 'MEDIUM';
+
+    const currentNet = formatKRW(survey.afterMortgage || pr.currentHome.estimatedSalePrice);
+    const newNet = formatKRW(pr.netFund);
+    const itemNames = fp.items.map(i => i.name).join(', ');
+    const itemAmounts = fp.items.map(i => formatKRW(i.invest)).join(', ');
+    
+    const dataTemplateText = `현재 살고 계신 ${pr.currentHome.name}을(를) 팔고 관련 세금 및 주택담보 대출을 갚고 나면 ${currentNet}이 남고, ${pr.newHome.name}으(로) 이사를 가신다면 ${newNet}이 남습니다. 남는 돈을 ${itemNames}에 각각 ${itemAmounts}씩 투자하신다면, 매달 추가로 ${formatKRW(fp.monthlyNeed)}씩을 ${fp.fundedMonths} 동안 사용 가능합니다.`;
+
     // 1단계: OpenAI로 행동 지침 JSON 생성
-    aiSummary.value = await generateActionPlan({
+    const generated = await generateActionPlan({
       investable: fp.investable,
       monthlyNeed: fp.monthlyNeed,
       fundedMonths: fp.fundedMonths,
       items: fp.items,
       propertyResult: pr,
-    })
+      userAge,
+      profileCode,
+      dataTemplateText,
+    });
+    
+    aiSummary.value = {
+      ...generated,
+      dataTemplateText,
+    };
     aiLoading.value = false
 
     // 2단계: Vue가 aiSummary를 PdfReport에 반영할 때까지 대기

@@ -7,7 +7,6 @@ import { formatKRW } from '@/stores/survey';
 // 여유자금(이사후 차액)은 본래 PRF-008/COM-004(관심매물 비교, 조진혁 담당)에서
 // 파라미터로 넘어온다. 그 화면이 아직 없어 지금은 mock 상수를 사용하며,
 // 연결되면 setFundingAmount()로 주입한다.
-const MOCK_FUNDING_AMOUNT = 156_500_000; // 약 1억 5650만원 (목업 기준)
 
 // risk_tolerance 공통코드(VERY_LOW/LOW/MEDIUM) ↔ 화면 라벨/안내. grade는 명세 위험등급.
 export const RISK_OPTIONS = [
@@ -52,7 +51,7 @@ export const PERIOD_OPTIONS = [
 
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
-    fundingAmount: MOCK_FUNDING_AMOUNT,
+    fundingAmount: 0,
     // 목업 흐름: 즉시지출(당장 쓸 돈)을 빼면 나머지가 투자금액.
     // 매달쓸돈은 인출 속도 — 찜/배분 페이지에서 "몇 달 쓸 수 있나" 계산의 입력값.
     immediateExpense: 0,

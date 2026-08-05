@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { getFavoriteProperties } from '@/api/favoriteApi';
 import {
   useRecommendationStore,
   RISK_OPTIONS,
@@ -10,6 +11,20 @@ import '@/styles/survey-tokens.css';
 
 const router = useRouter();
 const rec = useRecommendationStore();
+
+onMounted(async () => {
+  if (rec.fundingAmount === 156_500_000 || rec.fundingAmount === 0) {
+    try {
+      const favorites = await getFavoriteProperties();
+      const selectedHome = favorites.find(h => h.selected === 'Y') || favorites[0];
+      if (selectedHome) {
+        rec.setFundingAmount(selectedHome.remainingAmount);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch favorite properties', e);
+    }
+  }
+});
 
 // 입력은 만원 단위, 저장은 원 단위(×10000).
 const immediateManwon = computed({

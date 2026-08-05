@@ -66,12 +66,17 @@ export function buildTimeline(products, monthlyNeed, optimistic = false) {
   const segs = [];
   let funded = 0;
 
+  let leftover = 0;
+
   for (const p of sorted) {
     const principal =
       optimistic && p.fixed
         ? p.invest * (1 + (p.rate * p.maturity) / 12)
         : p.invest;
-    const months = Math.floor(principal / monthlyNeed);
+    const totalAvailable = principal + leftover;
+    const months = Math.floor(totalAvailable / monthlyNeed);
+    leftover = totalAvailable - (months * monthlyNeed);
+    
     cursor = Math.max(cursor, p.maturity);
 
     if (months > 0) {
