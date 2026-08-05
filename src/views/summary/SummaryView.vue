@@ -163,7 +163,12 @@
   </div>
 
   <!-- PDF 캡처 전용 숨김 컴포넌트 -->
-  <PdfReport ref="pdfReportRef" :report="data" />
+  <PdfReport
+    ref="pdfReportRef"
+    :report="data"
+    :ai-summary="aiSummary"
+    :ai-loading="aiLoading"
+  />
 </template>
 
 <script setup>
@@ -171,6 +176,7 @@ import { nextTick, ref } from 'vue'
 import PdfReport from './PdfReport.vue'
 import { preparePdfCapture } from '@/utils/pdfCapture'
 import { fitCanvasToA4 } from '@/utils/pdfLayout'
+import { generateRecommendationSummary } from '@/utils/openaiSummary'
 // TODO: 목업 import — 실제 API 연동 후 삭제
 import { dummySummary as data } from '@/mock/dummySummary'
 
@@ -180,6 +186,8 @@ const showPropertyDetail = ref(false)
 const showExpenseDetail = ref(false)
 const isPdfLoading = ref(false)
 const pdfReportRef = ref(null)
+const aiSummary = ref('')
+const aiLoading = ref(false)
 
 function formatKRW(value) {
   const eok = Math.floor(value / 1_0000_0000)
@@ -215,14 +223,45 @@ async function downloadPdf() {
   if (!el) return
 
   isPdfLoading.value = true
+  aiLoading.value = true
+  aiSummary.value = ''
   let restoreCaptureStyle = () => {}
   try {
+    // 1단계: OpenAI로 요약 생성
+    const items = fp.items.map(item => ({
+      name: item.name,
+      tag: item.tag,
+      invest: item.invest,
+      percent: item.percent,
+      maturityMonths: item.maturityMonths,
+    }))
+    aiSummary.value = await generateRecommendationSummary({
+      investAmount: fp.investable,
+      remainingCash: pr.netFund - fp.investable,
+      monthlyNeed: fp.monthlyNeed,
+      riskLabel: '안정형',
+      // openaiSummary는 periods 형태를 기대하므로 financePlan을 변환
+      periods: [{ label: '전체 포트폴리오', hint: '', products: items.map(i => ({
+        category: i.tag,
+        institution: '',
+        name: i.name,
+        rate: null,
+        termMonths: i.maturityMonths,
+        safetyLevel: i.tag,
+      })) }],
+    })
+    aiLoading.value = false
+
+    // 2단계: Vue가 aiSummary를 PdfReport에 반영할 때까지 대기
+    await nextTick()
+    await nextTick()
+
+    // 3단계: 캡처
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import('html2canvas'),
       import('jspdf'),
     ])
 
-    // 캡처 전 잠깐 보이게 (0px opacity로 레이아웃 반영)
     restoreCaptureStyle = preparePdfCapture(el)
     el.style.top = '0'
     el.style.left = '0'
@@ -236,8 +275,6 @@ async function downloadPdf() {
       logging: false,
     })
 
-    // 다시 숨김
-
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
     const { x, y, width, height } = fitCanvasToA4(canvas)
@@ -247,6 +284,7 @@ async function downloadPdf() {
     console.error('PDF generation failed:', error)
     window.alert('PDF 생성에 실패했습니다. 다시 시도해 주세요.')
   } finally {
+    aiLoading.value = false
     restoreCaptureStyle()
     isPdfLoading.value = false
   }

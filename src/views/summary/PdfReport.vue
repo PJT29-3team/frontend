@@ -122,6 +122,16 @@
       </div>
     </div>
 
+    <!-- ④ AI 요약 -->
+    <div v-if="aiSummary" class="pdf-section pdf-ai-section">
+      <div class="pdf-section-num">④ AI 추천 요약</div>
+      <div class="pdf-ai-body">{{ aiSummary }}</div>
+    </div>
+    <div v-else-if="aiLoading" class="pdf-section pdf-ai-section">
+      <div class="pdf-section-num">④ AI 추천 요약</div>
+      <div class="pdf-ai-placeholder">요약을 생성하고 있습니다…</div>
+    </div>
+
   </div>
 </template>
 
@@ -132,6 +142,14 @@ const props = defineProps({
   report: {
     type: Object,
     required: true,
+  },
+  aiSummary: {
+    type: String,
+    default: '',
+  },
+  aiLoading: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -252,4 +270,24 @@ defineExpose({ pdfRoot })
 .pdf-seg-short, .pdf-dot-short { background: #2563eb; }
 .pdf-seg-mid, .pdf-dot-mid { background: #4f46e5; }
 .pdf-seg-long, .pdf-dot-long { background: #1e1b4b; }
+
+/* ④ AI 요약 섹션 */
+.pdf-ai-section { margin-top: 0; }
+.pdf-ai-body {
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: #374151;
+  white-space: pre-wrap;
+  background: #fffdf5;
+  border-left: 3px solid #f5c518;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+}
+.pdf-ai-placeholder {
+  font-size: 12px;
+  color: #9ca3af;
+  padding: 12px 16px;
+  background: #fafaf8;
+  border-radius: 8px;
+}
 </style>
