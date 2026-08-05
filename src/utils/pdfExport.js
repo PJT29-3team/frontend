@@ -1,7 +1,5 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { preparePdfCapture } from './pdfCapture';
-import { fitCanvasToA4 } from './pdfLayout';
 
 const PAGE_W = 210; // mm (A4)
 const PAGE_H = 297; // mm (A4)
@@ -22,17 +20,19 @@ const CONTENT_W = PAGE_W - MARGIN * 2;
 async function renderSummaryPage(summaryText, meta) {
   const div = document.createElement('div');
 
+  // ✅ z-index:-1 대신 화면 밖(왼쪽)으로 밀어둬야 html2canvas가 정상 캡처함
   div.style.cssText = `
-    position: fixed;
-    top: 0; left: 0;
+    position: absolute;
+    top: 0;
+    left: -9999px;
     width: 794px;
     background: #fff;
     font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
     color: #1a1a1a;
     padding: 56px 60px 60px;
     box-sizing: border-box;
-    z-index: -1;
     visibility: visible;
+    pointer-events: none;
   `;
 
   const formatWon = (n) => {
@@ -77,7 +77,9 @@ async function renderSummaryPage(summaryText, meta) {
   `;
 
   document.body.appendChild(div);
-  const restore = preparePdfCapture(div);
+
+  // 브라우저 레이아웃 계산이 끝날 때까지 대기
+  await new Promise((r) => requestAnimationFrame(r));
   await new Promise((r) => requestAnimationFrame(r));
 
   const canvas = await html2canvas(div, {
@@ -85,12 +87,19 @@ async function renderSummaryPage(summaryText, meta) {
     useCORS: true,
     backgroundColor: '#ffffff',
     logging: false,
+    // 오프스크린 요소도 캡처하도록 scrollX/scrollY 보정
+    scrollX: 0,
+    scrollY: 0,
+    x: 0,
+    y: 0,
+    width: div.offsetWidth,
+    height: div.offsetHeight,
   });
 
-  restore();
   document.body.removeChild(div);
   return canvas;
 }
+
 
 /**
  * PDF 1페이지에 canvas 이미지를 꽉 차게 넣는다.
