@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
 import { authStore } from '@/stores/authStore';
 import recommendationApi from '@/api/recommendation';
+import { generateRecommendationSummary } from '@/utils/openaiSummary';
+import { exportRecommendationPdf } from '@/utils/pdfExport';
 import '@/styles/survey-tokens.css';
 
 const router = useRouter();
@@ -24,6 +26,43 @@ function setSectionRef(code, el) {
 function scrollTo(code) {
   activeCode.value = code; // 클릭 즉시 활성화 표시
   sectionEls[code]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// PDF 내보내기 상태
+const pdfState = ref('idle'); // 'idle' | 'summarizing' | 'capturing' | 'done' | 'error'
+const pdfError = ref(null);
+
+async function downloadPdf() {
+  if (pdfState.value !== 'idle' && pdfState.value !== 'error' && pdfState.value !== 'done') return;
+  pdfState.value = 'summarizing';
+  pdfError.value = null;
+  try {
+    const riskOption = RISK_OPTIONS.find((o) => o.code === rec.riskLevel);
+    const summaryText = await generateRecommendationSummary({
+      investAmount: rec.investAmount,
+      remainingCash: rec.remainingCash,
+      monthlyNeed: rec.monthlyNeed,
+      riskLabel: riskOption?.label ?? rec.riskLevel,
+      periods: periods.value,
+    });
+    pdfState.value = 'capturing';
+    const sectionList = Object.entries(sectionEls).map(([code, el]) => ({ code, el }));
+    await exportRecommendationPdf({
+      summaryText,
+      meta: {
+        investAmount: rec.investAmount,
+        remainingCash: rec.remainingCash,
+        monthlyNeed: rec.monthlyNeed,
+        riskLabel: riskOption?.label ?? rec.riskLevel,
+      },
+      sectionEls: sectionList,
+    });
+    pdfState.value = 'done';
+    setTimeout(() => { pdfState.value = 'idle'; }, 3000);
+  } catch (e) {
+    pdfError.value = e.message ?? 'PDF 생성 중 오류가 발생했습니다.';
+    pdfState.value = 'error';
+  }
 }
 
 // sticky nav 아래 기준선(px)을 지나친 마지막 구간을 활성으로 판단
@@ -258,6 +297,19 @@ function showProductDetail(product) {
       </section>
 
       <div v-if="!loading && !error" class="next-row">
+        <button
+          id="pdf-export-btn"
+          class="pdf-btn"
+          type="button"
+          :disabled="pdfState === 'summarizing' || pdfState === 'capturing'"
+          @click="downloadPdf"
+        >
+          <span v-if="pdfState === 'summarizing'">✦ AI 요약 생성 중…</span>
+          <span v-else-if="pdfState === 'capturing'">📄 PDF 생성 중…</span>
+          <span v-else-if="pdfState === 'done'">✓ PDF 다운로드 완료</span>
+          <span v-else>📥 PDF로 내보내기</span>
+        </button>
+        <p v-if="pdfState === 'error'" class="pdf-error">⚠ {{ pdfError }}</p>
         <button class="primary-btn cta" type="button" @click="goFavorites">
           담은 상품으로 비율 정하기 →
         </button>
@@ -474,8 +526,41 @@ function showProductDetail(product) {
 .p-card.is-locked { border-color: #e7cfc9; background: #fdf8f7; }
 .p-locked-note { margin: 0 0 12px; font-size: 12px; font-weight: 700; color: #c0442e; line-height: 1.45; }
 
-.next-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+.next-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
 .cta { width: auto; min-width: 260px; margin: 0; padding: 15px 30px; }
+
+/* PDF 내보내기 버튼 */
+.pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 13px 22px;
+  border-radius: 12px;
+  border: 2px solid #e8a000;
+  background: #fff;
+  color: #9a6800;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s, opacity 0.18s;
+  white-space: nowrap;
+}
+.pdf-btn:hover:not(:disabled) {
+  background: #fdf4e0;
+  border-color: #c88000;
+  color: #7a5000;
+}
+.pdf-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.pdf-error {
+  font-size: 12px;
+  color: #c0442e;
+  margin: 0;
+  flex-basis: 100%;
+  text-align: right;
+}
 
 /* 푸터 */
 .rec-footer { background: #46413a; color: #cdc7bc; margin-top: 36px; }
