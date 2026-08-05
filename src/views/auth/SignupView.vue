@@ -14,6 +14,7 @@
                 name="emailLocal"
                 autocomplete="username"
                 placeholder="email"
+                required
                 :readonly="Boolean(verification)"
                 :class="{ invalid: attempted && !isEmailValid }"
               />
@@ -34,10 +35,26 @@
                 class="verify-button"
                 type="button"
                 data-request-verification
-                :disabled="!isEmailValid || submitting || Boolean(verification)"
+                :disabled="
+                  !isEmailValid
+                    || submitting
+                    || requestingVerification
+                    || checkingEmailAvailability
+                    || Boolean(verification)
+                    || !emailAvailabilityChecked
+                    || !emailAvailable
+                "
                 @click="requestVerification"
               >
-                {{ verification ? '완료' : requestingVerification ? '전송 중' : '인증' }}
+                {{
+                  verification
+                    ? '완료'
+                    : requestingVerification
+                      ? '전송 중'
+                      : checkingEmailAvailability
+                        ? '확인 중'
+                        : '인증'
+                }}
               </button>
             </div>
             <p v-if="verification" class="field-message success">이메일 인증이 완료되었습니다.</p>
@@ -208,11 +225,18 @@
 
 <script setup>
 import { CalendarDays, ChevronLeft, ChevronRight, Eye, EyeOff } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { requestSignupEmailVerification, signup } from '../../api/authApi.js'
+import {
+  checkEmailAvailability,
+  requestSignupEmailVerification,
+  signup,
+} from '../../api/authApi.js'
 import MemberPageLayout from '../../components/MemberPageLayout.vue'
-import { getSignupVerification } from '../../stores/signupVerificationStore'
+import {
+  clearSignupVerification,
+  getSignupVerification,
+} from '../../stores/signupVerificationStore'
 
 const router = useRouter()
 const storedVerification = getSignupVerification()
@@ -233,7 +257,13 @@ const submitting = ref(false)
 const attempted = ref(false)
 const verificationMessage = ref('')
 const verificationError = ref(false)
+const emailAvailabilityChecked = ref(Boolean(storedVerification))
+const emailAvailable = ref(Boolean(storedVerification))
+const checkingEmailAvailability = ref(false)
 const signupError = ref('')
+const EMAIL_AVAILABILITY_DELAY_MS = 350
+let emailAvailabilityTimer
+let emailAvailabilityRequestId = 0
 
 const currentYear = new Date().getFullYear()
 const currentDecade = Math.floor(currentYear / 10) * 10
@@ -263,6 +293,54 @@ const isValid = computed(() =>
   isBirthYearValid.value &&
   isPhoneValid.value
 )
+
+watch([emailLocal, emailDomain], scheduleEmailAvailabilityCheck)
+onBeforeUnmount(resetEmailAvailability)
+
+function resetEmailAvailability() {
+  emailAvailabilityRequestId += 1
+  clearTimeout(emailAvailabilityTimer)
+  emailAvailabilityTimer = undefined
+  emailAvailabilityChecked.value = false
+  emailAvailable.value = false
+  checkingEmailAvailability.value = false
+}
+
+function scheduleEmailAvailabilityCheck() {
+  resetEmailAvailability()
+  verificationMessage.value = ''
+  verificationError.value = false
+  if (!isEmailValid.value || verification.value) return
+
+  const requestedEmail = email.value
+  const requestId = emailAvailabilityRequestId
+  checkingEmailAvailability.value = true
+  verificationMessage.value = '이메일 중복을 확인하고 있습니다.'
+
+  emailAvailabilityTimer = setTimeout(async () => {
+    try {
+      const response = await checkEmailAvailability(requestedEmail)
+      if (requestId !== emailAvailabilityRequestId || email.value !== requestedEmail) return
+
+      emailAvailabilityChecked.value = true
+      emailAvailable.value = response.available
+      verificationError.value = !response.available
+      verificationMessage.value = response.available
+        ? '사용 가능한 이메일입니다.'
+        : '이미 가입된 이메일입니다.'
+    } catch (error) {
+      if (requestId !== emailAvailabilityRequestId || email.value !== requestedEmail) return
+
+      verificationError.value = true
+      verificationMessage.value = error.response?.data?.message
+        || '이메일 중복 여부를 확인하지 못했습니다.'
+    } finally {
+      if (requestId === emailAvailabilityRequestId) {
+        checkingEmailAvailability.value = false
+      }
+    }
+  }, EMAIL_AVAILABILITY_DELAY_MS)
+}
 
 function toggleYearPicker() {
   if (!yearPickerOpen.value) {
@@ -313,7 +391,14 @@ function handlePhoneInput(event) {
 }
 
 async function requestVerification() {
-  if (!isEmailValid.value || requestingVerification.value || verification.value) return
+  if (
+    !isEmailValid.value
+      || requestingVerification.value
+      || checkingEmailAvailability.value
+      || verification.value
+      || !emailAvailabilityChecked.value
+      || !emailAvailable.value
+  ) return
 
   verificationMessage.value = '인증 메일을 보냈습니다.'
   verificationError.value = false
@@ -324,6 +409,10 @@ async function requestVerification() {
   } catch (error) {
     verificationError.value = true
     verificationMessage.value = error.response?.data?.message || '인증 메일을 보내지 못했습니다.'
+    if (verificationMessage.value === '이미 가입된 이메일입니다.') {
+      emailAvailabilityChecked.value = true
+      emailAvailable.value = false
+    }
   } finally {
     requestingVerification.value = false
   }

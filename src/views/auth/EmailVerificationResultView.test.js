@@ -9,7 +9,7 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ query: { token: 'email-token' } }),
 }))
 
-vi.mock('../api/authApi', () => ({
+vi.mock('../../api/authApi', () => ({
   verifyEmail: vi.fn(),
 }))
 
