@@ -113,8 +113,9 @@ onMounted(async () => {
 
   if (!mapContainer.value) return;
 
+  const firstHome = props.homes[0]
   map = new window.kakao.maps.Map(mapContainer.value, {
-    center: new window.kakao.maps.LatLng(37.4138, 127.1268),
+    center: new window.kakao.maps.LatLng(firstHome?.latitude || 37.5486808, firstHome?.longitude || 127.0088805),
     level: 6,
   })
 

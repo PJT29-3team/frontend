@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { favoriteStore } from '@/stores/favoriteStore'
 import { Heart, LoaderCircle, X } from '@lucide/vue'
 import {
   getFavoriteProperties,
@@ -9,6 +10,7 @@ import {
 } from '@/api/favoriteApi'
 
 const router = useRouter()
+const favorite = favoriteStore()
 const homes = ref([])
 const pendingRemoval = ref(null)
 const loading = ref(true)
@@ -40,6 +42,86 @@ function formatWon(value, prefix = '') {
 
 function formatSize(value) {
   return `${Number(value || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}평`
+}
+
+function getNormalHousingAcquisitionRate(buyPrice) {
+  if (buyPrice <= 600_000_000) return 0.01
+  if (buyPrice <= 900_000_000) return (buyPrice * 2 / 300_000_000 - 3) / 100
+  return 0.03
+}
+
+function calculateRuralTax(buyPrice, isSmallArea) {
+  return isSmallArea ? 0 : Math.round(buyPrice * 0.002)
+}
+
+function calculateEducationTax(buyPrice, acquisitionRate) {
+  let educationRate
+  if (buyPrice <= 600_000_000) {
+    educationRate = 0.001
+  } else if (buyPrice <= 900_000_000) {
+    educationRate = acquisitionRate * 0.1
+  } else {
+    educationRate = 0.003
+  }
+  return Math.round(buyPrice * educationRate)
+}
+
+function calculatePurchaseCost(buyPrice, exclusiveAreaSqm) {
+  const isSmallArea = exclusiveAreaSqm == null ? true : exclusiveAreaSqm <= 85
+  const acquisitionRate = getNormalHousingAcquisitionRate(buyPrice)
+  const ruralTax = calculateRuralTax(buyPrice, isSmallArea)
+  const educationTax = calculateEducationTax(buyPrice, acquisitionRate)
+  const acquisitionTax = Math.round(buyPrice * acquisitionRate)
+  const totalTax = acquisitionTax + ruralTax + educationTax
+  return { acquisitionTax, ruralTax, educationTax, totalTax }
+}
+
+function calculateBrokerageFee(price) {
+  let rate, limit
+  if (price < 50_000_000) {
+    rate = 0.006
+    limit = 250_000
+  } else if (price < 200_000_000) {
+    rate = 0.005
+    limit = 800_000
+  } else if (price < 900_000_000) {
+    rate = 0.004
+    limit = null
+  } else if (price < 1_200_000_000) {
+    rate = 0.005
+    limit = null
+  } else if (price < 1_500_000_000) {
+    rate = 0.006
+    limit = null
+  } else {
+    rate = 0.007
+    limit = null
+  }
+  const rawFee = price * rate
+  const brokerageFee = Math.round(limit == null ? rawFee : Math.min(rawFee, limit))
+  const vat = Math.round(brokerageFee * 0.1)
+  return { rate, limit, rawFee, brokerageFee, vat }
+}
+
+function purchaseSummary(home) {
+  const buyPrice = Number(home?.housePrice || 0)
+  const purchaseCost = calculatePurchaseCost(buyPrice)
+  const brokerage = calculateBrokerageFee(buyPrice)
+  const totalPurchaseAmount = buyPrice + purchaseCost.totalTax + brokerage.brokerageFee + brokerage.vat
+  const netProceedsAmount = Number(home?.netProceedsAmount || 0)
+  const remainingAfterPurchase = Math.max(netProceedsAmount - totalPurchaseAmount, 0)
+  return {
+    totalPurchaseAmount,
+    remainingAfterPurchase,
+  }
+}
+
+function totalPurchasePrice(home) {
+  return purchaseSummary(home).totalPurchaseAmount
+}
+
+function remainingAfterPurchase(home) {
+  return purchaseSummary(home).remainingAfterPurchase
 }
 
 async function loadFavorites() {
@@ -87,6 +169,7 @@ async function confirmRemoval() {
       await selectFavoriteProperty(homes.value[0].houseId)
       homes.value[0] = { ...homes.value[0], selected: 'Y' }
     }
+    await favorite.loadFavorites(true)
     pendingRemoval.value = null
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '관심 매물을 해제하지 못했습니다.'
@@ -126,9 +209,9 @@ onMounted(loadFavorites)
         <div class="row-title">평수</div>
         <div v-for="home in homes" :key="`${home.houseId}-size`" class="value-cell" :class="{ 'is-selected': home.houseId === selectedHome?.houseId }">{{ formatSize(home.houseSize) }}</div>
         <div class="row-title">매수 금액 (세금포함)</div>
-        <div v-for="home in homes" :key="`${home.houseId}-price`" class="value-cell" :class="{ 'is-selected': home.houseId === selectedHome?.houseId }">{{ formatWon(home.housePrice) }}</div>
+        <div v-for="home in homes" :key="`${home.houseId}-price`" class="value-cell" :class="{ 'is-selected': home.houseId === selectedHome?.houseId }">{{ formatWon(totalPurchasePrice(home)) }}</div>
         <div class="row-title">이사후 여유자금</div>
-        <div v-for="home in homes" :key="`${home.houseId}-balance`" class="value-cell value-cell--balance" :class="{ 'is-selected': home.houseId === selectedHome?.houseId }">{{ formatWon(home.remainingAmount, '약 ') }}</div>
+        <div v-for="home in homes" :key="`${home.houseId}-balance`" class="value-cell value-cell--balance" :class="{ 'is-selected': home.houseId === selectedHome?.houseId }">{{ formatWon(remainingAfterPurchase(home), '약 ') }}</div>
       </div>
       <div class="select-grid" :style="gridStyle">
         <div></div>

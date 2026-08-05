@@ -5,11 +5,12 @@ import { useSurveyStore } from "@/stores/survey";
 import SurveyView from "./SurveyView.vue";
 
 vi.mock("vue-router", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRoute: () => ({ query: {} }),
 }));
 
 vi.mock("@/api/survey", () => ({
-  default: { calculate: vi.fn(), submit: vi.fn() },
+  default: { calculate: vi.fn(), submit: vi.fn(), findLatest: vi.fn() },
 }));
 
 vi.mock("@/api/propertyRecommendation", () => ({
