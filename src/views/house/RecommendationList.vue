@@ -58,7 +58,7 @@ import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { favoriteStore } from '@/stores/favoriteStore.js';
-import { formatKRW, useSurveyStore } from '@/stores/survey';
+import { useSurveyStore } from '@/stores/survey';
 import propertyRecommendationApi from '@/api/propertyRecommendation';
 
 const favStore = favoriteStore();
@@ -74,14 +74,14 @@ async function loadRecommendations() {
   isLoading.value = true;
   loadError.value = null;
   try {
-    const items = await propertyRecommendationApi.list(survey.recommendationQuery);
-    const mapped = items.map((item, index) => ({
-      id: item.houseId,
-      rank: index + 1,
-      price: formatKRW(item.price),
-      // PurchaseCostPanel은 priceNum을 만원 단위로 쓰는데(예: 34500 = 3억 4,500만원),
-      // 백엔드 item.price는 원 단위라 여기서 변환해준다.
-      priceNum: Math.round(Number(item.price) / 10000),
+    // 서버가 로그인한 사용자의 완료된 설문(예산/성향/희망지역)을 직접 조회해서 추천한다.
+    const items = await propertyRecommendationApi.list();
+    const mapped = items.map((item) => ({
+      id: item.id,
+      rank: item.rank,
+      price: item.price, // 이미 "3억 4,500만원" 형태로 포맷되어 온다.
+      // PurchaseCostPanel은 priceNum을 만원 단위로 쓰는데, 백엔드 priceNum은 원 단위라 변환한다.
+      priceNum: Math.round(Number(item.priceNum) / 10000),
       address: item.address,
       score: Math.round(Number(item.score ?? 0)),
       latitude: item.latitude,
@@ -90,7 +90,7 @@ async function loadRecommendations() {
     homes.splice(0, homes.length, ...mapped);
     selectedId.value = homes[0]?.id ?? null;
   } catch (e) {
-    loadError.value = '추천 매물을 불러오지 못했어요.';
+    loadError.value = e.response?.data?.message || '추천 매물을 불러오지 못했어요.';
   } finally {
     isLoading.value = false;
   }
