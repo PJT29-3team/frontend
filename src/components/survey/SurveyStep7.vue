@@ -27,7 +27,7 @@ onMounted(async () => {
 });
 
 /**
- * 추천 가능한 단지가 있는 지역만, 많은 순으로 보여준다.
+ * 추천 가능한 단지가 있는 지역만, 가나다순으로 보여준다.
  * 0개인 지역을 그대로 두면 고른 뒤 추천이 빈 목록으로 나와 사용자가 이유를 알 수 없다.
  * 서버 응답을 못 받았을 때는 거르지 않는다(전부 0으로 보여 선택지가 사라지는 것보다 낫다).
  */
@@ -35,12 +35,14 @@ const sigunguList = computed(() => {
   const all = SIGUNGU_BY_SIDO[sido.value] || [];
   const counts = countByRegion.value;
   if (Object.keys(counts).length === 0) {
-    return all.map((g) => ({ name: g.name, count: null }));
+    return all
+      .map((g) => ({ name: g.name, count: null }))
+      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
   }
   return all
     .map((g) => ({ name: g.name, count: counts[`${sido.value}|${g.name}`] ?? 0 }))
     .filter((g) => g.count > 0)
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 });
 
 const errors = computed(() =>
@@ -73,7 +75,7 @@ function submit() {
   <div>
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
     <p class="step-desc">
-      매물 많은 순으로 보여드려요 · 여러 곳 함께 골라도 돼요
+      지역 이름 옆 숫자는 매물 수예요 · 여러 곳 함께 골라도 돼요
     </p>
 
     <div class="d-flex gap-2">
@@ -90,7 +92,7 @@ function submit() {
       </button>
     </div>
 
-    <div class="d-flex gap-2 flex-wrap mt-3">
+    <div class="sigungu-grid">
       <button
         v-for="g in sigunguList"
         :key="g.name"
