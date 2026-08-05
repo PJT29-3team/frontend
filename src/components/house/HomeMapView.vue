@@ -42,7 +42,9 @@ function renderMarkers() {
   overlays = []
 
   props.homes.forEach((home, index) => {
-    const position = dummyPositions[index]
+    const position = (home.latitude != null && home.longitude != null)
+      ? { lat: Number(home.latitude), lng: Number(home.longitude) }
+      : dummyPositions[index]
     if (!position) return
 
     const markerPosition = new window.kakao.maps.LatLng(position.lat, position.lng)
@@ -79,6 +81,11 @@ onMounted(async () => {
 watch(() => store.count, () => {
   renderMarkers()
 })
+
+// 추천 목록은 마운트 이후 비동기로 채워지므로, 도착하면 다시 그려준다.
+watch(() => props.homes, () => {
+  renderMarkers()
+}, { deep: true })
 </script>
 
 <style scoped>
