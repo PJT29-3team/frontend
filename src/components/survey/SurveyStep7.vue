@@ -6,7 +6,8 @@ import { SIDO_LIST, SIGUNGU_BY_SIDO } from "@/constants/regions";
 import propertyRecommendationApi from "@/api/propertyRecommendation";
 
 const survey = useSurveyStore();
-const emit = defineEmits(["next", "prev", "complete"]);
+// searching: 제출 API가 시작될 때. 부모가 "집 찾는 중" 로딩을 띄우는 신호다.
+const emit = defineEmits(["searching", "prev", "complete"]);
 
 const sido = ref(SIDO_LIST[0]);
 const submitted = ref(false);
@@ -69,7 +70,7 @@ const selectionText = computed(() => {
 function submit() {
   submitted.value = true;
   if (!isValid.value) return;
-  emit("next");
+  emit("searching");
   survey.submitSurvey(survey.desiredRegions).then(() => emit("complete"));
 }
 </script>

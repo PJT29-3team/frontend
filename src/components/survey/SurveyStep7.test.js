@@ -137,10 +137,10 @@ describe("SurveyStep7", () => {
 
     expect(wrapper.text()).toContain(MESSAGES.desiredRegions);
     expect(surveyApi.calculate).not.toHaveBeenCalled();
-    expect(wrapper.emitted("next")).toBeUndefined();
+    expect(wrapper.emitted("searching")).toBeUndefined();
   });
 
-  it("한 곳 이상 고르면 완료 처리하고 next를 emit한다", async () => {
+  it("한 곳 이상 고르면 완료 처리하고 searching을 emit한다", async () => {
     const wrapper = mount(SurveyStep7);
 
     await chipByName(wrapper, "강남구").trigger("click");
@@ -150,7 +150,7 @@ describe("SurveyStep7", () => {
       { sidoName: "서울", sigunguName: "강남구", eupmyeondongName: null },
     ]);
     expect(survey.done).toBe(true);
-    expect(wrapper.emitted("next")).toHaveLength(1);
+    expect(wrapper.emitted("searching")).toHaveLength(1);
   });
 
   it("제출하면 백엔드 확정 계산까지 요청한다", async () => {
