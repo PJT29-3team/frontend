@@ -26,7 +26,7 @@
           <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
 
           <div class="map-area">
-            <HomeMapView :homes="displayedHomes"/>
+            <HomeMapView :homes="displayedHomes" :selected-id="selectedId" @select="selectHome"/>
           </div>
         </div>
       </section>
@@ -109,11 +109,13 @@ function selectHome(homeId) {
 }
 
 async function restartSurvey() {
+  favStore.clear();
   await survey.reset();
   router.push('/survey');
 }
 
 function changeConditions() {
+  favStore.clear();
   survey.startConditionEdit();
   router.push('/survey');
 }
