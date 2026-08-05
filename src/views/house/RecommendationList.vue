@@ -79,7 +79,9 @@ async function loadRecommendations() {
       id: item.houseId,
       rank: index + 1,
       price: formatKRW(item.price),
-      priceNum: item.price,
+      // PurchaseCostPanel은 priceNum을 만원 단위로 쓰는데(예: 34500 = 3억 4,500만원),
+      // 백엔드 item.price는 원 단위라 여기서 변환해준다.
+      priceNum: Math.round(Number(item.price) / 10000),
       address: item.address,
       score: Math.round(Number(item.score ?? 0)),
       latitude: item.latitude,
