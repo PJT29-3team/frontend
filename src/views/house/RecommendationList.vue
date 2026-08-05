@@ -4,8 +4,14 @@
       <section class="content">
         <!-- 왼쪽 패널, 매물 목록 5곳 -->
         <div class="left-panel">
-          <h2 class="main-title">홍길동님 예산에 맞는 집, 5곳을 찾았어요.</h2>
+          <h2 class="main-title">예산에 맞는 집, {{ displayedHomes.length }}곳을 찾았어요.</h2>
           <p class="sub-title">이중에서 최대 3곳을 관심 목록에 담아보세요.</p>
+
+          <p v-if="isLoading" class="state-message">불러오는 중이에요...</p>
+          <p v-else-if="loadError" class="state-message">{{ loadError }}</p>
+          <p v-else-if="displayedHomes.length === 0" class="state-message">
+            조건에 맞는 매물을 찾지 못했어요.
+          </p>
 
           <HomeCard
             v-for="home in displayedHomes"
@@ -20,7 +26,7 @@
           <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
 
           <div class="map-area">
-            <HomeMapView :homes="displayedHomes"/>
+            <HomeMapView :homes="displayedHomes" :selected-id="selectedId" @select="selectHome"/>
           </div>
         </div>
       </section>
@@ -49,41 +55,67 @@
 import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '@/components/house/HomeMapView.vue';
 import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { favoriteStore } from '@/stores/favoriteStore.js';
 import { useSurveyStore } from '@/stores/survey';
-
-const dummyHomes = reactive ([
-    { id: 1, rank: 1, price : '3억 4,500만원', priceNum: 34500, address : '야탑동 탑마을(선경) · 24평', score : 88, isFavorite : true },
-    { id: 2, rank: 2, price: '3억 5,000만원', priceNum: 35000, address: '정자동 한솔마을(주공5단지) · 21평', score: 84, isFavorite: false },
-    { id: 3, rank: 3, price: '3억 3,800만원', priceNum: 33800, address: '서현동 풍림아이원플러스 · 23평', score: 79, isFavorite: true },
-    { id: 4, rank: 4, price: '2억 9,500만원', priceNum: 29500, address: '정자동 인빌리전자A · 25평', score: 76, isFavorite: true },
-    { id: 5, rank: 5, price: '3억 2,000만원', priceNum: 32000, address: '수내동 파크뷰(오피스텔) · 22평', score: 72, isFavorite: false },
-]);
+import propertyRecommendationApi from '@/api/propertyRecommendation';
 
 const favStore = favoriteStore();
 const router = useRouter();
 const survey = useSurveyStore();
 
-const selectedId = ref(dummyHomes[0].id); // 기본값 : 1번 (적합도 1위)
+const homes = reactive([]);
+const selectedId = ref(null);
+const isLoading = ref(true);
+const loadError = ref(null);
+
+async function loadRecommendations() {
+  isLoading.value = true;
+  loadError.value = null;
+  try {
+    // 서버가 로그인한 사용자의 완료된 설문(예산/성향/희망지역)을 직접 조회해서 추천한다.
+    const items = await propertyRecommendationApi.list();
+    const mapped = items.map((item) => ({
+      id: item.id,
+      rank: item.rank,
+      price: item.price, // 이미 "3억 4,500만원" 형태로 포맷되어 온다.
+      // PurchaseCostPanel은 priceNum을 만원 단위로 쓰는데, 백엔드 priceNum은 원 단위라 변환한다.
+      priceNum: Math.round(Number(item.priceNum) / 10000),
+      address: item.address,
+      score: Math.round(Number(item.score ?? 0)),
+      latitude: item.latitude,
+      longitude: item.longitude,
+    }));
+    homes.splice(0, homes.length, ...mapped);
+    selectedId.value = homes[0]?.id ?? null;
+  } catch (e) {
+    loadError.value = e.response?.data?.message || '추천 매물을 불러오지 못했어요.';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+onMounted(loadRecommendations);
 
 const selectedHome = computed(() => {
-  return dummyHomes.find(h => h.id === selectedId.value);
+  return homes.find(h => h.id === selectedId.value);
 });
 
-const displayedHomes = computed(() => dummyHomes.slice(0, 5));
+const displayedHomes = computed(() => homes.slice(0, 5));
 
 function selectHome(homeId) {
   selectedId.value = homeId;
 }
 
 async function restartSurvey() {
+  favStore.clear();
   await survey.reset();
   router.push('/survey');
 }
 
 function changeConditions() {
+  favStore.clear();
   survey.startConditionEdit();
   router.push('/survey');
 }
@@ -121,6 +153,12 @@ function changeConditions() {
 .sub-title {
   color: #888;
   margin: 0 0 20px;
+}
+
+.state-message {
+  color: #888;
+  padding: 24px 0;
+  text-align: center;
 }
 
 /* 구분선 */
