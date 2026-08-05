@@ -77,40 +77,47 @@
 
       <hr class="divider" />
 
-      <!-- 만기 사다리 타임라인 -->
-      <div class="plan-meta">
-        <div class="plan-meta-item">
-          <span class="sub-label">매달 더 필요한 돈</span>
-          <strong>{{ formatKRW(fp.monthlyNeed) }}</strong>
+      <!-- ── 포트폴리오 + 타임라인 ── -->
+      <div class="pf-section">
+        <!-- 헤더: 매달 인출 기준 -->
+        <div class="pf-meta-row">
+          <span class="pf-meta-label">포트폴리오 배분</span>
+          <span class="pf-meta-monthly">매달 <b>{{ formatKRW(fp.monthlyNeed) }}</b> 인출 기준</span>
         </div>
-      </div>
 
-      <div class="timeline">
-        <div v-for="(item, i) in fp.items" :key="i" class="tl-node">
-          <div class="tl-rail">
-            <div class="tl-dot" :class="dotColor(i)" />
-            <div v-if="i < fp.items.length - 1" class="tl-line" />
-          </div>
-          <div class="tl-card">
-            <div class="tl-card-head">
-              <span class="product-tag">{{ item.tag }}</span>
-              <span class="tl-period">{{ periodLabel(item, i) }}</span>
+        <!-- 배분 비율 바 -->
+        <div class="pf-alloc-bar">
+          <div
+            v-for="(item, i) in fp.items"
+            :key="i"
+            class="pf-alloc-seg"
+            :class="'seg-' + dotColor(i)"
+            :style="{ flex: item.percent }"
+            :title="item.name + ' ' + item.percent + '%'"
+          ></div>
+        </div>
+
+        <!-- 상품 목록 -->
+        <div class="pf-items">
+          <div v-for="(item, i) in fp.items" :key="i" class="pf-item">
+            <div class="pf-item-left">
+              <span class="pf-color-dot" :class="'dot-' + dotColor(i)"></span>
+              <div class="pf-item-info">
+                <div class="pf-item-name">{{ item.name }}</div>
+                <span class="pf-item-tag">{{ item.tag }}</span>
+              </div>
             </div>
-            <strong class="product-name">{{ item.name }}</strong>
-            <span class="product-desc">{{ item.description }}</span>
-            <div class="tl-card-foot">
-              <span>{{ formatKRW(item.invest) }}</span>
-              <span class="product-percent">{{ item.percent }}%</span>
+            <div class="pf-item-right">
+              <div class="pf-item-bar-wrap">
+                <div class="pf-item-bar" :class="'seg-' + dotColor(i)" :style="{ width: item.percent + '%' }"></div>
+              </div>
+              <div class="pf-item-nums">
+                <span class="pf-item-amount">{{ formatKRW(item.invest) }}</span>
+                <span class="pf-item-pct">{{ item.percent }}%</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 최종 결론 -->
-      <div class="conclusion-box">
-        <span class="conclusion-label">매달 {{ formatKRW(fp.monthlyNeed) }}씩</span>
-        <strong class="conclusion-value">{{ fp.fundedMonths }}</strong>
-        <span class="conclusion-tail">사용 가능</span>
       </div>
     </section>
 
@@ -148,15 +155,22 @@
       </button>
     </div>
 
-    <button class="pdf-btn" @click="downloadPdf">
-      상세 보고서 PDF 다운로드
+    <button class="pdf-btn" :disabled="isPdfLoading" @click="downloadPdf">
+      <span v-if="isPdfLoading">PDF 생성 중…</span>
+      <span v-else>상세 보고서 PDF 다운로드</span>
     </button>
     <p class="pdf-hint">저장된 보고서는 마이페이지에서 언제든 다시 볼 수 있어요</p>
   </div>
+
+  <!-- PDF 캡처 전용 숨김 컴포넌트 -->
+  <PdfReport ref="pdfReportRef" :report="data" />
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
+import PdfReport from './PdfReport.vue'
+import { preparePdfCapture } from '@/utils/pdfCapture'
+import { fitCanvasToA4 } from '@/utils/pdfLayout'
 // TODO: 목업 import — 실제 API 연동 후 삭제
 import { dummySummary as data } from '@/mock/dummySummary'
 
@@ -164,6 +178,8 @@ const pr = data.propertyResult
 const fp = data.financePlan
 const showPropertyDetail = ref(false)
 const showExpenseDetail = ref(false)
+const isPdfLoading = ref(false)
+const pdfReportRef = ref(null)
 
 function formatKRW(value) {
   const eok = Math.floor(value / 1_0000_0000)
@@ -176,6 +192,15 @@ function formatKRW(value) {
 const DOT_COLORS = ['park', 'short', 'mid', 'long']
 function dotColor(i) { return DOT_COLORS[i] || 'long' }
 
+// 타임라인 바 각 세그먼트의 상대 너비 계산
+function tlWidth(item, i) {
+  const items = fp.items
+  const from = item.maturityMonths || 0
+  const next = items[i + 1]
+  const to = next ? (next.maturityMonths || 0) : from + 30
+  return Math.max(to - from, 4)
+}
+
 function periodLabel(item, i) {
   const items = fp.items
   const from = item.maturityMonths
@@ -184,9 +209,47 @@ function periodLabel(item, i) {
   return `${from}~${next.maturityMonths}개월차`
 }
 
-function downloadPdf() {
-  // TODO: 실제 PDF 생성/다운로드 연동
-  alert('PDF 다운로드 기능은 추후 연동 예정입니다.')
+async function downloadPdf() {
+  if (!pdfReportRef.value) return
+  const el = pdfReportRef.value.pdfRoot
+  if (!el) return
+
+  isPdfLoading.value = true
+  let restoreCaptureStyle = () => {}
+  try {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ])
+
+    // 캡처 전 잠깐 보이게 (0px opacity로 레이아웃 반영)
+    restoreCaptureStyle = preparePdfCapture(el)
+    el.style.top = '0'
+    el.style.left = '0'
+    await nextTick()
+    await document.fonts?.ready
+
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    })
+
+    // 다시 숨김
+
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+    const { x, y, width, height } = fitCanvasToA4(canvas)
+    pdf.addImage(imgData, 'PNG', x, y, width, height)
+    pdf.save('다운사이징_보고서.pdf')
+  } catch (error) {
+    console.error('PDF generation failed:', error)
+    window.alert('PDF 생성에 실패했습니다. 다시 시도해 주세요.')
+  } finally {
+    restoreCaptureStyle()
+    isPdfLoading.value = false
+  }
 }
 </script>
 
@@ -349,27 +412,111 @@ function downloadPdf() {
   padding: 4px 0;
 }
 
-/* ── 자금 계획 메타 ── */
-.plan-meta {
-  display: flex;
-  gap: 16px;
-  padding: 10px 16px;
-  background: #fafafa;
-  border-radius: 10px;
-  margin: 8px 0 16px;
-}
+/* ── 포트폴리오 섹션 ── */
+.pf-section { margin-top: 0; }
 
-.plan-meta-item {
+.pf-meta-row {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.pf-meta-label { font-size: 13px; font-weight: 700; color: #6b7280; }
+.pf-meta-monthly { font-size: 12px; color: #9ca3af; }
+.pf-meta-monthly b { color: #374151; font-weight: 700; }
+
+/* 배분 비율 바 */
+.pf-alloc-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.pf-alloc-seg { border-radius: 2px; min-width: 2px; }
+
+/* 상품 목록 */
+.pf-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.pf-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: #fafaf8;
+  border-radius: 10px;
+  border: 1px solid #f0ede8;
+}
+.pf-item-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.pf-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pf-item-info { min-width: 0; }
+.pf-item-name { font-size: 13.5px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-item-tag { font-size: 11px; color: #9ca3af; }
+
+.pf-item-right { flex-shrink: 0; text-align: right; min-width: 130px; }
+.pf-item-bar-wrap { background: #e5e7eb; border-radius: 4px; height: 5px; margin-bottom: 5px; overflow: hidden; }
+.pf-item-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.pf-item-nums { display: flex; justify-content: flex-end; align-items: baseline; gap: 6px; }
+.pf-item-amount { font-size: 14px; font-weight: 700; color: #1f2937; }
+.pf-item-pct { font-size: 11.5px; font-weight: 700; color: #f59e0b; }
+
+/* 타임라인 바 */
+.pf-timeline {
+  background: #f8f7f3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid #eeebe4;
+}
+.pf-tl-title { font-size: 11px; font-weight: 700; color: #9ca3af; margin-bottom: 8px; letter-spacing: 0.03em; text-transform: uppercase; }
+.pf-tl-bar {
+  display: flex;
+  height: 32px;
+  border-radius: 7px;
+  overflow: hidden;
   gap: 2px;
 }
-
-.plan-meta-item strong {
-  font-size: 15px;
+.pf-tl-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2px;
+  border-radius: 4px;
+  overflow: hidden;
 }
+.pf-tl-seg-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 5px;
+}
+.pf-tl-axis {
+  display: flex;
+  margin-top: 5px;
+}
+.pf-tl-tick {
+  font-size: 10px;
+  color: #b0ab9f;
+  min-width: 0;
+  overflow: hidden;
+}
+.pf-tl-tick span { white-space: nowrap; }
 
-/* ── 세로 타임라인 ── */
+/* 색상 토큰 */
+.seg-park, .dot-park { background: #0d9488; }
+.seg-short, .dot-short { background: #2563eb; }
+.seg-mid, .dot-mid { background: #4f46e5; }
+.seg-long, .dot-long { background: #1e1b4b; }
+
+/* ── 세로 타임라인 (기존, 미사용 가능) ── */
 .timeline {
   margin-top: 4px;
 }
