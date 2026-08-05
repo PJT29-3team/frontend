@@ -11,12 +11,15 @@ const emit = defineEmits(["next", "prev", "complete"]);
 const sido = ref(SIDO_LIST[0]);
 const submitted = ref(false);
 
-/** 서버가 알려준 지역별 단지 수. "시도|시군구" → 개수 */
+/** 서버가 알려준 지역별 매물 수. "시도|시군구" → 개수 */
 const countByRegion = ref({});
 
 onMounted(async () => {
   try {
-    const counts = await propertyRecommendationApi.regionCounts();
+    // 설문에서 산출한 예산을 넘겨, 실제로 추천될 수 있는 매물만 센다.
+    const counts = await propertyRecommendationApi.regionCounts(
+      survey.maxPurchaseBudget,
+    );
     countByRegion.value = Object.fromEntries(
       counts.map((r) => [`${r.sidoName}|${r.sigunguName}`, r.count]),
     );
@@ -75,7 +78,7 @@ function submit() {
   <div>
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
     <p class="step-desc">
-      지역 이름 옆 숫자는 매물 수예요 · 여러 곳 함께 골라도 돼요
+      숫자는 예산으로 살 수 있는 매물 수예요 · 여러 곳 함께 골라도 돼요
     </p>
 
     <div class="d-flex gap-2">

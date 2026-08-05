@@ -32,6 +32,19 @@ function submit() {
   });
   emit("next");
 }
+
+/** 엔터: 비어 있는 다음 칸으로 옮기고, 다 채웠으면 다음 단계로 넘어간다. */
+function onEnter() {
+  if (purchasePrice.value === null) {
+    document.getElementById("survey-purchase-price")?.focus();
+    return;
+  }
+  if (expectedSalePrice.value === null) {
+    document.getElementById("survey-expected-sale-price")?.focus();
+    return;
+  }
+  submit();
+}
 </script>
 
 <template>
@@ -47,6 +60,7 @@ function submit() {
       input-id="survey-purchase-price"
       label="내 집을 샀던 가격"
       :error="shownError('purchasePrice')"
+      @enter="onEnter"
     />
 
     <div class="mt-4">
@@ -55,6 +69,7 @@ function submit() {
         input-id="survey-expected-sale-price"
         label="내 집을 팔고 싶은 가격"
         :error="shownError('expectedSalePrice')"
+        @enter="onEnter"
       />
     </div>
 
