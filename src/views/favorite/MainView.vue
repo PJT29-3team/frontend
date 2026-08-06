@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { favoriteStore } from '@/stores/favoriteStore'
+import { formatPyeong } from '@/utils/area'
 import { Heart, LoaderCircle, X } from '@lucide/vue'
 import {
   getFavoriteProperties,
@@ -40,8 +41,9 @@ function formatWon(value, prefix = '') {
   return `${prefix}${eok}억 ${new Intl.NumberFormat('ko-KR').format(man)}만원`
 }
 
+// API는 전용면적 ㎡를 내려준다. ㎡에 "평"만 붙이면 84.82㎡가 "84.8평"이 된다.
 function formatSize(value) {
-  return `${Number(value || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}평`
+  return formatPyeong(value)
 }
 
 function getNormalHousingAcquisitionRate(buyPrice) {

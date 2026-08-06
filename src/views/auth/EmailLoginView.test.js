@@ -56,7 +56,7 @@ describe('EmailLoginView', () => {
   it('matches the reference page layout and toggles password visibility', async () => {
     const wrapper = mountView()
 
-    expect(wrapper.get('.login-header__brand').text()).toContain('작은둥지')
+    expect(wrapper.get('.login-header__brand').text()).toContain('홀家분')
     expect(wrapper.get('input[name="email"]').attributes('placeholder')).toBe('이메일을 입력하세요')
     expect(wrapper.get('input[name="saveEmail"]').exists()).toBe(true)
     expect(wrapper.get('input[name="autoLogin"]').exists()).toBe(true)

@@ -25,7 +25,7 @@ describe('PasswordResetRequestView', () => {
   it('matches the first-step reset design and links back to the main page', () => {
     const wrapper = mountView()
 
-    expect(wrapper.get('[data-member-header]').text()).toContain('작은둥지')
+    expect(wrapper.get('[data-member-header]').text()).toContain('홀家분')
     expect(wrapper.text()).toContain('STEP 1 · 본인 인증')
     expect(wrapper.text()).toContain('비밀번호 재설정')
     expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/')

@@ -2,10 +2,10 @@
   <div class="member-page">
     <header class="member-header" data-member-header data-login-header>
       <div class="page-container header-inner">
-        <a class="brand" href="/" aria-label="작은둥지 홈">
+        <a class="brand" href="/" aria-label="홀家분 홈">
           <img src="../assets/small-nest-mark.png" alt="" />
           <span class="brand-wordmark">
-            <span>작은</span><span class="brand-accent">둥지</span>
+            <span>홀</span><span class="brand-accent">家분</span>
           </span>
         </a>
         <nav aria-label="회원 메뉴">
@@ -22,7 +22,7 @@
     <footer class="member-footer" data-member-footer data-login-footer>
       <div class="page-container footer-inner">
         <a href="#terms">이용약관</a>
-        <span>© 작은둥지</span>
+        <span>© 홀家분</span>
         <a href="#privacy">개인정보처리방침</a>
       </div>
     </footer>
