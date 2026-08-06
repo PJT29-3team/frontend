@@ -62,10 +62,11 @@ const props = defineProps({
 const survey = useSurveyStore();
 
 // 최신 완료 설문에 저장된 값을 기준으로 고정해서 표시한다.
+// net_proceeds_amount 는 이미 "매도가 - 양도세 - 중개수수료 - 대출상환액" 이라
+// 여기서 대출을 또 빼면 두 번 차감된다. 그러면 관심매물 화면과 금액이 어긋난다.
 const afterMortgageAmount = computed(() => {
   if (typeof survey.latestCompletedNetProceedsAmount === 'number') {
-    const mortgageBalance = Number(survey.latestCompletedMortgageBalanceAmount || 0);
-    return Math.max(survey.latestCompletedNetProceedsAmount - mortgageBalance, 0);
+    return Math.max(survey.latestCompletedNetProceedsAmount, 0);
   }
   return survey.afterMortgage || 0;
 });
