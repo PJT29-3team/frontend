@@ -43,7 +43,6 @@ function submit() {
       v-model="reserveAmount"
       input-id="survey-reserve-amount"
       label="이사후 남기고싶은 금액"
-      equals
       chips
       :error="shownError"
       @enter="submit"

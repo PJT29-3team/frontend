@@ -66,7 +66,8 @@ function canNavigate(key) {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 42px 56px 36px;
+  /* 화면이 낮으면 여백부터 줄여 본문이 스크롤 없이 들어가게 한다. */
+  padding: clamp(12px, 2.4vh, 42px) 56px clamp(10px, 2vh, 36px);
 }
 
 .step {
@@ -86,8 +87,8 @@ function canNavigate(key) {
 .step.done:disabled { opacity: 1; }
 
 .step-circle {
-  width: 60px;
-  height: 60px;
+  width: clamp(38px, 6vh, 60px);
+  height: clamp(38px, 6vh, 60px);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -96,7 +97,7 @@ function canNavigate(key) {
   border: 3px solid #ddd;
   color: #bbb;
   background: white;
-  margin-bottom: 10px;
+  margin-bottom: clamp(5px, 0.9vh, 10px);
 }
 
 .step-label {
@@ -104,12 +105,14 @@ function canNavigate(key) {
   font-weight: 500;
   margin: 0;
   color: #333;
+  line-height: 1.3;
 }
 
 .step-status {
   font-size: 13px;
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #bbb;
+  line-height: 1.3;
 }
 
 /* 완료 상태 */
@@ -144,6 +147,17 @@ function canNavigate(key) {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(245, 197, 24, 0);
+  }
+}
+
+/* 노트북처럼 세로가 짧은 화면에서는 상태 문구를 접어 본문 공간을 남긴다.
+   현재 단계는 원의 색과 반짝임으로 이미 구분된다. */
+@media (max-height: 820px) {
+  .step-status {
+    display: none;
+  }
+  .step-label {
+    font-size: 13.5px;
   }
 }
 

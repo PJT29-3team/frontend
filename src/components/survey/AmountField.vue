@@ -8,7 +8,6 @@ const props = defineProps({
   label: { type: String, default: "" },
   error: { type: String, default: "" },
   chips: { type: Boolean, default: false },
-  equals: { type: Boolean, default: false },
 });
 
 // enter: 입력을 마치고 엔터를 눌렀을 때. 다음 칸으로 넘어갈지 제출할지는 부모가 정한다.
@@ -22,11 +21,9 @@ const display = computed(() =>
   hasValue.value ? Number(props.modelValue).toLocaleString("ko-KR") : "",
 );
 
-const helpLine = computed(() => {
-  if (!hasValue.value) return "";
-  const won = formatKRW(props.modelValue);
-  return props.equals ? `= ${won}` : won;
-});
+const helpLine = computed(() =>
+  hasValue.value ? formatKRW(props.modelValue) : "",
+);
 
 function onInput(event) {
   const digits = event.target.value.replace(/[^0-9]/g, "");

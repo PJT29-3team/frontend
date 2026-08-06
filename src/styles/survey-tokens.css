@@ -17,7 +17,9 @@
 .survey-shell {
   max-width: 640px;
   margin: 0 auto;
-  padding: 32px 20px 60px;
+  /* 노트북(높이 800px 안팎)에서 스크롤이 생기지 않도록 상하 여백을 화면 높이에 맞춘다.
+     큰 화면에서는 기존과 같은 여백(32/60px)을 유지한다. */
+  padding: clamp(10px, 1.8vh, 32px) 20px clamp(10px, 2.2vh, 60px);
   font-family:
     "Pretendard",
     "Noto Sans KR",
@@ -33,7 +35,7 @@
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
-  padding: 32px 28px 28px;
+  padding: clamp(16px, 2.4vh, 32px) 28px clamp(14px, 2.2vh, 28px);
 }
 
 /* 추천 조건만 다시 설정할 때는 카드에 시선이 모이도록 화면 중앙에 배치합니다. */
@@ -112,15 +114,16 @@
 .step-title {
   font-weight: 800;
   font-size: 24px;
+  line-height: 1.28;
   text-align: center;
-  margin: 26px 0 6px;
+  margin: clamp(8px, 1.6vh, 26px) 0 6px;
   color: var(--text-dark);
 }
 .step-desc {
   text-align: center;
   color: var(--text-muted);
   font-size: 14px;
-  margin-bottom: 26px;
+  margin-bottom: clamp(14px, 2.4vh, 26px);
 }
 
 .intro-wrap {
@@ -420,8 +423,8 @@
 
 .primary-btn {
   width: 100%;
-  padding: 16px;
-  margin-top: 28px;
+  padding: clamp(12px, 2vh, 16px);
+  margin-top: clamp(14px, 2.4vh, 28px);
   border: none;
   border-radius: 14px;
   background: var(--kb-yellow);
@@ -510,7 +513,7 @@
 .info-banner {
   background: var(--kb-yellow-soft);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: clamp(8px, 1.4vh, 12px) 16px;
   text-align: center;
   font-size: 14px;
   font-weight: 700;
@@ -522,7 +525,7 @@
 .btn-row {
   display: flex;
   gap: 14px;
-  margin-top: 32px;
+  margin-top: clamp(16px, 2.8vh, 32px);
 }
 .btn-row .primary-btn,
 .btn-row .secondary-btn {
@@ -531,7 +534,7 @@
 }
 .secondary-btn {
   width: 100%;
-  padding: 16px;
+  padding: clamp(12px, 2vh, 16px);
   border-radius: 14px;
   border: 1.5px solid var(--card-border);
   background: #fff;
@@ -557,7 +560,7 @@
   border: 2px solid #e0cb55;
   border-right: none;
   border-radius: 14px 0 0 14px;
-  padding: 14px 16px;
+  padding: clamp(10px, 1.7vh, 14px) 16px;
   font-size: 22px;
   font-weight: 700;
   text-align: right;
@@ -612,7 +615,60 @@
   font-weight: 800;
   font-size: 15.5px;
   color: var(--text-dark);
-  margin-bottom: 8px;
+  margin-bottom: clamp(4px, 0.9vh, 8px);
+}
+
+/* 금액 입력칸 사이 간격. 화면이 낮으면 함께 줄어든다. */
+.amount-gap {
+  margin-top: clamp(12px, 2.4vh, 24px);
+}
+
+/* 세로 720px 안팎(구형 노트북·창 분할)에서도 스크롤 없이 들어가도록
+   본문 폰트와 여백을 한 단계 더 줄인다. 시니어 가독성 하한을 지키는 선이다. */
+@media (max-height: 760px) {
+  .survey-shell {
+    font-size: 16px;
+  }
+  .step-title {
+    font-size: 20px;
+    margin-top: 6px;
+  }
+  .info-banner {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  .result-card {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    margin-top: 5px;
+  }
+  .result-note {
+    margin-top: 3px;
+    line-height: 1.35;
+    font-size: 12px;
+  }
+  .result-divider {
+    margin-top: 9px;
+    margin-bottom: 7px;
+  }
+  .amount-gap {
+    margin-top: 10px;
+  }
+  .survey-select.form-select,
+  .addr-input {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .info-banner {
+    font-size: 13px;
+  }
+  .amount-input.form-control {
+    font-size: 20px;
+  }
+  .survey-card {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
 }
 
 /* 3단계 계산 결과 카드 */
@@ -663,9 +719,9 @@
 
 /* 2단계 각주 + 면책 문구 */
 .footnote {
-  margin-top: 26px;
+  margin-top: clamp(12px, 2vh, 26px);
   font-size: 12.5px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #9aa0a6;
 }
 .footnote strong {
@@ -674,9 +730,9 @@
   color: #8a8f94;
 }
 .disclaimer {
-  margin-top: 18px;
+  margin-top: clamp(10px, 1.6vh, 18px);
   font-size: 12.5px;
-  line-height: 1.7;
+  line-height: 1.55;
   color: #b0a98f;
 }
 .disclaimer p {
@@ -736,8 +792,31 @@
 .result-card {
   background: #fdf6d8;
   border-radius: 14px;
-  padding: 18px 20px;
-  margin-top: 14px;
+  padding: clamp(9px, 1.6vh, 18px) 20px;
+  margin-top: clamp(6px, 1.1vh, 14px);
+}
+
+/* 참고 자료 접이식. 펼치기 전에는 한 줄만 차지한다. */
+.survey-notes {
+  margin-top: clamp(10px, 1.8vh, 20px);
+}
+.survey-notes > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  list-style: none;
+}
+.survey-notes > summary::-webkit-details-marker {
+  display: none;
+}
+.survey-notes > summary::before {
+  content: "▸ ";
+}
+.survey-notes[open] > summary::before {
+  content: "▾ ";
+}
+.survey-notes > summary:hover {
+  color: var(--text-dark);
 }
 .result-row {
   display: flex;
@@ -757,13 +836,13 @@
   white-space: nowrap;
 }
 .result-note {
-  margin: 8px 0 0;
+  margin: clamp(4px, 0.8vh, 8px) 0 0;
   font-size: 12.5px;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--kb-yellow-deep);
 }
 .result-divider {
-  margin: 28px 0 18px;
+  margin: clamp(12px, 2.2vh, 28px) 0 clamp(8px, 1.5vh, 18px);
   border: 0;
   border-top: 1px solid #d9d9d9;
 }

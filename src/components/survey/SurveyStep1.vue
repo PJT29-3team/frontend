@@ -66,7 +66,7 @@ function onEnter() {
       @enter="onEnter"
     />
 
-    <div class="mt-4">
+    <div class="amount-gap">
       <AmountField
         v-model="expectedSalePrice"
         input-id="survey-expected-sale-price"
@@ -76,7 +76,7 @@ function onEnter() {
       />
     </div>
 
-    <p class="text-center mt-4">
+    <p class="text-center amount-gap">
       <!-- 설문 입력을 잃지 않도록 새 탭으로 연다.
            rel=noopener 는 새 탭이 window.opener 로 이 페이지를 건드리지 못하게 막는다. -->
       <a
