@@ -66,7 +66,7 @@
 <script setup>
 import AppHeader from '@/components/common/AppHeader.vue';
 import { useRoute, useRouter } from 'vue-router';
-import { fetchPropertyDetail } from '@/api/propertyDetailApi';
+import propertyRecommendationApi from '@/api/propertyRecommendation';
 import { onMounted, watch, ref } from 'vue';
 import EvaluationSection from '@/components/house/EvaluationSection.vue';
 
@@ -81,9 +81,9 @@ async function loadProperty(homeId) {
     loading.value = true;
     error.value = null;
     try {
-        property.value = await fetchPropertyDetail(homeId);
+        property.value = await propertyRecommendationApi.detail(homeId);
     } catch (e) {
-        error.value = e.message;
+        error.value = e.response?.data?.message || e.message || '매물 정보를 불러오는데 실패했습니다.';
     } finally {
         loading.value = false;
     }

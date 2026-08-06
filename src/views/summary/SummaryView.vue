@@ -241,7 +241,7 @@ onMounted(async () => {
 
   pr.currentHome.name = survey.currentAddress || '기존 주택'
   pr.currentHome.pyeong = survey.currentPyeong || survey.residenceSize || '기존'
-  pr.currentHome.estimatedSalePrice = survey.expectedSalePrice ? (survey.expectedSalePrice * 10000) : 0
+  pr.currentHome.estimatedSalePrice = survey.expectedSalePrice || 0
   
   let taxAmount = survey.taxResult?.amount ?? survey.taxResult ?? 0
   let brokerAmount = survey.brokerage?.amount ?? survey.brokerage ?? 0
