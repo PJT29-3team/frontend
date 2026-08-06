@@ -20,7 +20,7 @@
         <span class="row-label">새 집</span>
         <div class="row-value-group">
           <strong>{{ pr.newHome.name }} · {{ pr.newHome.pyeong }}평</strong>
-          <span class="row-sub">적합도 {{ pr.newHome.fitScore }}점</span>
+          <span class="row-sub">내 조건과 {{ pr.newHome.fitScore }}점만큼 맞아요</span>
         </div>
       </div>
 
