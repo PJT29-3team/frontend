@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import surveyApi from "@/api/survey";
 import { authStore } from "@/stores/authStore";
+import { areaCodeOf, areaRangeOf } from "@/constants/regions";
 import {
   calculateBrokerageFee,
   calculateCapitalGainsTax,
@@ -13,10 +14,20 @@ export const STEP_ORDER = [
   "MORTGAGE",
   "RESERVE_BUDGET",
   "PREFERENCE_PROFILE",
+  "DESIRED_AREA",
   "DESIRED_REGION",
 ];
-export const PROGRESS_STEPS_TOTAL = 6;
-export const CONDITION_EDIT_STEPS_TOTAL = 3;
+
+/** 단계 이름으로 인덱스를 얻는다. 중간에 단계를 끼워 넣어도 숫자를 고칠 일이 없다. */
+export const stepIndexOf = (name) => STEP_ORDER.indexOf(name);
+
+/** 조건 변경 모드에서 거치는 단계 순서. 전체 설문 순서와 다르다. */
+export const CONDITION_EDIT_FLOW = [
+  "PREFERENCE_PROFILE",
+  "RESERVE_BUDGET",
+  "DESIRED_AREA",
+  "DESIRED_REGION",
+];
 
 const PROGRESS_NUMBER = {
   SALE_PRICE: 1,
@@ -24,8 +35,12 @@ const PROGRESS_NUMBER = {
   MORTGAGE: 3,
   RESERVE_BUDGET: 4,
   PREFERENCE_PROFILE: 5,
-  DESIRED_REGION: 6,
+  DESIRED_AREA: 6,
+  DESIRED_REGION: 7,
 };
+
+export const PROGRESS_STEPS_TOTAL = Math.max(...Object.values(PROGRESS_NUMBER));
+export const CONDITION_EDIT_STEPS_TOTAL = CONDITION_EDIT_FLOW.length;
 
 export function formatKRW(n) {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return "";
@@ -50,6 +65,8 @@ function emptyAnswers() {
     mortgageBalance: null,
     reserveAmount: null,
     profileCode: null,
+    /** 희망 평수 구간 코드. null이면 아직 안 골랐고, "ANY"면 상관없음 */
+    desiredAreaCode: null,
     desiredRegions: [],
     latestCompletedNetProceedsAmount: null,
     latestCompletedMortgageBalanceAmount: null,
@@ -71,6 +88,10 @@ function applySavedSurveyState(store, payload) {
   store.hasMortgage = savedSurvey.hasMortgage ?? null;
   store.mortgageBalance = savedSurvey.mortgageBalanceAmount ?? null;
   store.reserveAmount = savedSurvey.reserveAmountUsed ?? savedSurvey.reserveCustomAmount ?? null;
+  store.desiredAreaCode = areaCodeOf(
+    savedSurvey.desiredMinAreaSqm ?? null,
+    savedSurvey.desiredMaxAreaSqm ?? null,
+  );
   store.latestCompletedNetProceedsAmount = savedSurvey.netProceedsAmount ?? null;
   store.latestCompletedMortgageBalanceAmount = savedSurvey.hasMortgage
     ? (savedSurvey.mortgageBalanceAmount ?? 0)
@@ -115,6 +136,7 @@ export function toCalculationRequest(state) {
 }
 
 export function toSubmitRequest(state) {
+  const area = areaRangeOf(state.desiredAreaCode);
   return {
     answers: toCalculationRequest(state),
     desiredRegions: state.desiredRegions.map((region) => ({
@@ -122,6 +144,8 @@ export function toSubmitRequest(state) {
       sigunguName: region.sigunguName,
       eupmyeondongName: region.eupmyeondongName ?? null,
     })),
+    desiredMinAreaSqm: area.min,
+    desiredMaxAreaSqm: area.max,
   };
 }
 
@@ -147,11 +171,8 @@ export const useSurveyStore = defineStore("survey", {
     currentStepName: (state) => STEP_ORDER[state.stepIndex],
     progressStep: (state) => {
       if (state.conditionEditMode) {
-        return {
-          5: 1, // 페르소나
-          4: 2, // 이사 후 최소 금액
-          6: 3, // 희망 지역
-        }[state.stepIndex] ?? null;
+        const position = CONDITION_EDIT_FLOW.indexOf(STEP_ORDER[state.stepIndex]);
+        return position < 0 ? null : position + 1;
       }
 
       return PROGRESS_NUMBER[STEP_ORDER[state.stepIndex]] ?? null;
@@ -266,7 +287,7 @@ export const useSurveyStore = defineStore("survey", {
     startConditionEdit() {
       // 기존 주택·세금 정보는 유지하고, 추천 조건만 다시 입력합니다.
       this.showIntro = false;
-      this.stepIndex = 5;
+      this.stepIndex = stepIndexOf(CONDITION_EDIT_FLOW[0]);
       this.done = false;
       this.conditionEditMode = true;
       this.desiredRegions = [];
@@ -279,13 +300,9 @@ export const useSurveyStore = defineStore("survey", {
     next() {
       this.errorMessage = null;
       if (this.conditionEditMode) {
-        const nextConditionStep = {
-          5: 4,
-          4: 6,
-        }[this.stepIndex];
-
-        if (nextConditionStep !== undefined) {
-          this.stepIndex = nextConditionStep;
+        const position = CONDITION_EDIT_FLOW.indexOf(STEP_ORDER[this.stepIndex]);
+        if (position >= 0 && position < CONDITION_EDIT_FLOW.length - 1) {
+          this.stepIndex = stepIndexOf(CONDITION_EDIT_FLOW[position + 1]);
         }
         return;
       }
@@ -296,13 +313,9 @@ export const useSurveyStore = defineStore("survey", {
     back() {
       this.errorMessage = null;
       if (this.conditionEditMode) {
-        const previousConditionStep = {
-          4: 5,
-          6: 4,
-        }[this.stepIndex];
-
-        if (previousConditionStep !== undefined) {
-          this.stepIndex = previousConditionStep;
+        const position = CONDITION_EDIT_FLOW.indexOf(STEP_ORDER[this.stepIndex]);
+        if (position > 0) {
+          this.stepIndex = stepIndexOf(CONDITION_EDIT_FLOW[position - 1]);
         } else {
           this.showIntro = true;
           this.conditionEditMode = false;
@@ -344,6 +357,11 @@ export const useSurveyStore = defineStore("survey", {
 
     async savePreference(profileCode) {
       this.profileCode = profileCode;
+      this.next();
+    },
+
+    async saveDesiredArea(areaCode) {
+      this.desiredAreaCode = areaCode;
       this.next();
     },
 

@@ -48,24 +48,26 @@ describe("SurveyStep7", () => {
 
     expect(wrapper.text()).toContain("어느 지역에서");
     expect(wrapper.text()).toContain(
-      "숫자는 예산으로 살 수 있는 매물 수예요 · 여러 곳 함께 골라도 돼요",
+      "숫자는 예산·평수에 맞는 매물 수예요 · 여러 곳 함께 골라도 돼요",
     );
     expect(chipByName(wrapper, "강남구").text()).toContain("342");
   });
 
-  it("설문에서 산출한 예산으로 매물 수를 요청한다", async () => {
+  it("설문에서 산출한 예산과 고른 평수로 매물 수를 요청한다", async () => {
     survey.expectedSalePrice = 720_000_000;
     survey.purchasePrice = 580_000_000;
     survey.holdingYears = 7;
     survey.residenceYears = 7;
     survey.isRegulatedArea = false;
     survey.reserveAmount = 150_000_000;
+    survey.desiredAreaCode = "60_85";
 
     mount(SurveyStep7);
     await flushPromises();
 
     expect(propertyRecommendationApi.regionCounts).toHaveBeenCalledWith(
       survey.maxPurchaseBudget,
+      { min: 60, max: 85 },
     );
     expect(propertyRecommendationApi.regionCounts.mock.calls[0][0]).toBeGreaterThan(0);
   });

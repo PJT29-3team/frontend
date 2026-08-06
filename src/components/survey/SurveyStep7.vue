@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useSurveyStore } from "@/stores/survey";
 import { validateDesiredRegions } from "@/utils/surveyValidation";
-import { SIDO_LIST, SIGUNGU_BY_SIDO } from "@/constants/regions";
+import { SIDO_LIST, SIGUNGU_BY_SIDO, areaRangeOf } from "@/constants/regions";
 import propertyRecommendationApi from "@/api/propertyRecommendation";
 
 const survey = useSurveyStore();
@@ -17,9 +17,10 @@ const countByRegion = ref({});
 
 onMounted(async () => {
   try {
-    // 설문에서 산출한 예산을 넘겨, 실제로 추천될 수 있는 매물만 센다.
+    // 설문에서 산출한 예산과 고른 평수를 넘겨, 실제로 추천될 수 있는 매물만 센다.
     const counts = await propertyRecommendationApi.regionCounts(
       survey.maxPurchaseBudget,
+      areaRangeOf(survey.desiredAreaCode),
     );
     countByRegion.value = Object.fromEntries(
       counts.map((r) => [`${r.sidoName}|${r.sigunguName}`, r.count]),
@@ -79,7 +80,7 @@ function submit() {
   <div>
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
     <p class="step-desc">
-      숫자는 예산으로 살 수 있는 매물 수예요 · 여러 곳 함께 골라도 돼요
+      숫자는 예산·평수에 맞는 매물 수예요 · 여러 곳 함께 골라도 돼요
     </p>
 
     <div class="d-flex gap-2">

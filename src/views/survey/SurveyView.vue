@@ -13,6 +13,7 @@ import SurveyStep3 from "@/components/survey/SurveyStep3.vue";
 import SurveyStep4 from "@/components/survey/SurveyStep4.vue";
 import SurveyStep5 from "@/components/survey/SurveyStep5.vue";
 import SurveyStep6 from "@/components/survey/SurveyStep6.vue";
+import SurveyStepArea from "@/components/survey/SurveyStepArea.vue";
 import SurveyStep7 from "@/components/survey/SurveyStep7.vue";
 
 const props = defineProps({
@@ -30,6 +31,7 @@ const STEP_COMPONENTS = [
   SurveyStep4,
   SurveyStep5,
   SurveyStep6,
+  SurveyStepArea,
   SurveyStep7,
 ];
 
