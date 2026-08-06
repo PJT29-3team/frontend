@@ -48,6 +48,7 @@ function submit() {
       equals
       chips
       :error="shownError"
+      @enter="submit"
     />
 
     <div class="btn-row">

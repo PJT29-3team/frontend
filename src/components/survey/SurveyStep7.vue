@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useSurveyStore } from "@/stores/survey";
 import { validateDesiredRegions } from "@/utils/surveyValidation";
 import { SIDO_LIST, SIGUNGU_BY_SIDO } from "@/constants/regions";
+import propertyRecommendationApi from "@/api/propertyRecommendation";
 
 const survey = useSurveyStore();
 const emit = defineEmits(["next", "prev", "complete"]);
@@ -10,14 +11,44 @@ const emit = defineEmits(["next", "prev", "complete"]);
 const sido = ref(SIDO_LIST[0]);
 const submitted = ref(false);
 
-const sigunguList = computed(() =>
-  (SIGUNGU_BY_SIDO[sido.value] || []).map((g) =>
-    typeof g === "string" ? { name: g, count: null } : { name: g.name, count: g.count ?? null },
-  ),
-);
+/** 서버가 알려준 지역별 매물 수. "시도|시군구" → 개수 */
+const countByRegion = ref({});
+
+onMounted(async () => {
+  try {
+    // 설문에서 산출한 예산을 넘겨, 실제로 추천될 수 있는 매물만 센다.
+    const counts = await propertyRecommendationApi.regionCounts(
+      survey.maxPurchaseBudget,
+    );
+    countByRegion.value = Object.fromEntries(
+      counts.map((r) => [`${r.sidoName}|${r.sigunguName}`, r.count]),
+    );
+  } catch {
+    // 개수를 못 받아도 지역 선택 자체는 되어야 한다. 숫자만 비워 둔다.
+    countByRegion.value = {};
+  }
+});
+
+/**
+ * 추천 가능한 단지가 있는 지역만, 가나다순으로 보여준다.
+ * 0개인 지역을 그대로 두면 고른 뒤 추천이 빈 목록으로 나와 사용자가 이유를 알 수 없다.
+ * 서버 응답을 못 받았을 때는 거르지 않는다(전부 0으로 보여 선택지가 사라지는 것보다 낫다).
+ */
+const sigunguList = computed(() => {
+  const all = SIGUNGU_BY_SIDO[sido.value] || [];
+  const counts = countByRegion.value;
+  if (Object.keys(counts).length === 0) {
+    return all
+      .map((g) => ({ name: g.name, count: null }))
+      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  }
+  return all
+    .map((g) => ({ name: g.name, count: counts[`${sido.value}|${g.name}`] ?? 0 }))
+    .filter((g) => g.count > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+});
 
 const errors = computed(() =>
-
   validateDesiredRegions({ desiredRegions: survey.desiredRegions }),
 );
 const isValid = computed(() => Object.keys(errors.value).length === 0);

@@ -18,12 +18,14 @@ export default {
 
   /**
    * 지역별 추천 가능한 단지 수.
-   * 희망지역 선택 화면이 실제 적재량을 보여주는 데 쓴다.
+   * 희망지역 선택 화면이 실제 적재량을 보여주는 데 쓴다. 로그인 불필요.
    *
+   * @param {number} [budget] 설문에서 산출한 여유자산(원). 주면 그 안의 매물만 센다.
    * @returns {Promise<Array<{sidoName: string, sigunguName: string, count: number}>>}
    */
-  regionCounts() {
-    return http.get("/api/recommendations/region-counts").then((res) => res.data);
+  regionCounts(budget) {
+    const params = budget != null ? `?budget=${budget}` : "";
+    return http.get(`/api/recommendations/region-counts${params}`).then((res) => res.data);
   },
 
   /** 매물 상세(안전/편의/자산 평가, AI 요약 포함). 로그인 필수. */
