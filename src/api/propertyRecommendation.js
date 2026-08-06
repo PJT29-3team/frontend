@@ -17,15 +17,22 @@ export default {
   },
 
   /**
-   * 지역별 추천 가능한 단지 수.
-   * 희망지역 선택 화면이 실제 적재량을 보여주는 데 쓴다. 로그인 불필요.
+   * 지역별 추천 가능한 매물 수.
+   * 희망지역 선택 화면이 설문 예산·평수로 살 수 있는 매물이 몇 개인지 보여주는 데 쓴다.
    *
    * @param {number} [budget] 설문에서 산출한 여유자산(원). 주면 그 안의 매물만 센다.
+   * @param {{min: number|null, max: number|null}} [area] 희망 전용면적(㎡) 범위.
    * @returns {Promise<Array<{sidoName: string, sigunguName: string, count: number}>>}
    */
-  regionCounts(budget) {
-    const params = budget != null ? `?budget=${budget}` : "";
-    return http.get(`/api/recommendations/region-counts${params}`).then((res) => res.data);
+  regionCounts(budget, area = {}) {
+    const params = new URLSearchParams();
+    if (budget != null) params.set("budget", budget);
+    if (area.min != null) params.set("minArea", area.min);
+    if (area.max != null) params.set("maxArea", area.max);
+    const query = params.toString();
+    return http
+      .get(`/api/recommendations/region-counts${query ? `?${query}` : ""}`)
+      .then((res) => res.data);
   },
 
   /** 매물 상세(안전/편의/자산 평가, AI 요약 포함). 로그인 필수. */

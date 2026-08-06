@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter,useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSurveyStore } from "@/stores/survey";
 import "@/styles/survey-tokens.css";
 
@@ -13,6 +13,7 @@ import SurveyStep3 from "@/components/survey/SurveyStep3.vue";
 import SurveyStep4 from "@/components/survey/SurveyStep4.vue";
 import SurveyStep5 from "@/components/survey/SurveyStep5.vue";
 import SurveyStep6 from "@/components/survey/SurveyStep6.vue";
+import SurveyStepArea from "@/components/survey/SurveyStepArea.vue";
 import SurveyStep7 from "@/components/survey/SurveyStep7.vue";
 
 const props = defineProps({
@@ -30,6 +31,7 @@ const STEP_COMPONENTS = [
   SurveyStep4,
   SurveyStep5,
   SurveyStep6,
+  SurveyStepArea,
   SurveyStep7,
 ];
 
@@ -39,18 +41,34 @@ const isLastStep = computed(
   () => survey.stepIndex === STEP_COMPONENTS.length - 1,
 );
 
+onMounted(() => {
+  window.addEventListener("keydown", onGlobalEnter);
+});
+
 onMounted(async () => {
   if (props.surveyId) {
     survey.loadById(props.surveyId);
     return;
   }
 
-  const mode = String(route.query.mode || '');
-  if (mode === 'resume') {
+  const mode = String(route.query.mode || "");
+  if (mode === "resume") {
     await survey.restoreLatest();
     survey.init();
+    return;
   }
-  window.addEventListener("keydown", onGlobalEnter);
+
+  if (mode === "restart" || mode === "conditions") {
+    survey.init();
+    return;
+  }
+
+  const restored = await survey.restoreLatest();
+  if (restored && survey.done) {
+    router.replace("/recommend");
+    return;
+  }
+  survey.init();
 });
 
 /**

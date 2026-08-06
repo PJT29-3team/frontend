@@ -78,3 +78,35 @@ export const YEAR_OPTIONS = Array.from({ length: 31 }, (_, i) => ({
   value: i,
   label: `${i}년`,
 }));
+
+/**
+ * 희망 평수 구간.
+ *
+ * DB의 house.house_size 는 전용면적 ㎡라 비교는 ㎡로 하고, 화면에는 평으로 보여준다.
+ * (1평 = 3.305785㎡) 경계는 국민주택 규격(60·85㎡)과 실제 매물 분포에 맞췄다.
+ * max 는 미만(<) 비교라 구간이 겹치지 않는다.
+ */
+export const AREA_OPTIONS = [
+  { code: "UNDER_60", label: "20평 이하", hint: "60㎡ 미만", min: null, max: 60 },
+  { code: "60_85", label: "20~30평대", hint: "60~85㎡", min: 60, max: 85 },
+  { code: "85_135", label: "30~40평대", hint: "85~135㎡", min: 85, max: 135 },
+  { code: "OVER_135", label: "40평 이상", hint: "135㎡ 이상", min: 135, max: null },
+  { code: "ANY", label: "상관없어요", hint: "평수를 가리지 않아요", min: null, max: null },
+];
+
+/** 구간 코드 → { min, max } (㎡). 모르는 코드나 ANY 는 둘 다 null이다. */
+export function areaRangeOf(code) {
+  const found = AREA_OPTIONS.find((option) => option.code === code);
+  return found ? { min: found.min, max: found.max } : { min: null, max: null };
+}
+
+/** 저장된 ㎡ 범위 → 구간 코드. 설문을 다시 열었을 때 고른 값을 복원한다. */
+export function areaCodeOf(minSqm, maxSqm) {
+  if (minSqm == null && maxSqm == null) return null;
+  const min = minSqm == null ? null : Number(minSqm);
+  const max = maxSqm == null ? null : Number(maxSqm);
+  const found = AREA_OPTIONS.find(
+    (option) => option.min === min && option.max === max && option.code !== "ANY",
+  );
+  return found ? found.code : null;
+}
