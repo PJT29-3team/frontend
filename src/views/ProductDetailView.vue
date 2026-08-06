@@ -70,7 +70,35 @@ function getCategoryLabel(cat) {
   return categoryLabel[cat] ?? cat;
 }
 
+let enterTime = Date.now();
+const isLiked = ref(false);
+
+function checkIsFavorited() {
+  return Object.values(rec.favorites).some((v) => v && v.productType === productType);
+}
+
+function toggleHeart(loc) {
+  const dwellTimeSec = Math.max(0, Math.floor((Date.now() - enterTime) / 1000));
+  isLiked.value = !isLiked.value;
+
+  // 노이즈 방어: 상단에서 3초 미만 빠른 찜 해제는 전송 안 함
+  if (loc === 'DETAIL_TOP' && dwellTimeSec < 3 && !isLiked.value) {
+    return;
+  }
+
+  const actionType = isLiked.value ? 'LIKE' : 'UNLIKE';
+
+  recommendationApi.logInteraction({
+    productType,
+    productKind: kind,
+    actionType,
+    location: loc,
+    dwellTimeSec,
+  }).catch(() => {});
+}
+
 onMounted(async () => {
+  enterTime = Date.now();
   try {
     // 캐시 확인
     let cached = rec.getCachedDetail(kind, productType);
@@ -82,6 +110,16 @@ onMounted(async () => {
       detail.value = res;
       rec.setCachedDetail(kind, productType, res);
     }
+    isLiked.value = checkIsFavorited();
+
+    // VIEW 로그 송신
+    recommendationApi.logInteraction({
+      productType,
+      productKind: kind,
+      actionType: 'VIEW',
+      location: 'DETAIL_TOP',
+      dwellTimeSec: 0,
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to load product detail:', e);
     error.value = '상세정보를 불러오지 못했어요.';
@@ -102,7 +140,15 @@ function goBack() {
       <header class="pd-header">
         <button type="button" class="back-btn" @click="goBack">← 뒤로</button>
         <h1 class="pd-title">상품 정보</h1>
-        <div style="width: 40px"></div>
+        <button
+          type="button"
+          class="top-heart-btn"
+          :class="{ on: isLiked }"
+          :aria-label="isLiked ? '관심 해제' : '관심 등록'"
+          @click="toggleHeart('DETAIL_TOP')"
+        >
+          {{ isLiked ? '♥' : '♡' }}
+        </button>
       </header>
 
       <!-- 로딩 상태 -->
@@ -227,6 +273,25 @@ function goBack() {
             <li v-if="detail.lossRisk === 'Y'" class="important">원금 손실이 발생할 수 있으므로 신중하게 선택해주세요.</li>
           </ul>
         </section>
+
+        <!-- 하단 정독 후 신중한 관심 등록 안내 섹션 -->
+        <section class="pd-section read-confirm-section">
+          <div class="read-confirm-card">
+            <h2 class="read-confirm-title">상품 안내를 모두 확인하셨나요?</h2>
+            <p class="read-confirm-sub">
+              위험도, 예상 금리, 주의사항까지 모두 확인하셨다면 관심 상품으로 등록해 보세요!
+            </p>
+            <button
+              type="button"
+              class="bottom-favorite-btn"
+              :class="{ on: isLiked }"
+              @click="toggleHeart('DETAIL_BOTTOM')"
+            >
+              <span class="heart-icon">{{ isLiked ? '♥' : '♡' }}</span>
+              <span>{{ isLiked ? '관심 등록 완료 (클릭 시 해제)' : '이 상품 관심 등록하기' }}</span>
+            </button>
+          </div>
+        </section>
       </div>
 
       <!-- 하단 버튼 -->
@@ -277,6 +342,75 @@ function goBack() {
 
 .back-btn:hover {
   background: #f3f4f6;
+}
+
+.top-heart-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #d1d5db;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: transform 0.15s, color 0.15s;
+}
+.top-heart-btn.on {
+  color: #e11d48;
+}
+.top-heart-btn:active {
+  transform: scale(1.2);
+}
+
+.read-confirm-section {
+  margin-top: 24px;
+}
+.read-confirm-card {
+  background: #fffcf0;
+  border: 1.5px solid #ffe899;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+}
+.read-confirm-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #342e22;
+  margin: 0 0 8px;
+}
+.read-confirm-sub {
+  font-size: 13.5px;
+  color: #6b6354;
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+.bottom-favorite-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.bottom-favorite-btn.on {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+.bottom-favorite-btn:hover {
+  border-color: #ffbb08;
+}
+.heart-icon {
+  font-size: 18px;
 }
 
 .pd-title {
