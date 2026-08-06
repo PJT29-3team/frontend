@@ -26,7 +26,7 @@
             <span class="tag">{{ property.buildYear }}.{{ property.buildMonth }}준공 · {{ property.buildingAge }}년차</span>
             <span class="tag">{{ property.floors }}층 · {{ property.buildingCount }}개동</span>
             <span class="tag">총 {{ property.householdCount }}세대</span>
-            <span class="tag">{{ property.pyeong }}</span>
+            <span class="tag">{{ property.pyeong }}평</span>
           </div>
         </div>
         <button class="eval-link" type="button" @click="router.push('/evaluation-method')">평가 방법 상세보기 →</button>
