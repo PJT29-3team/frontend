@@ -18,25 +18,45 @@ const storage = {
 }
 
 const ACCESS_TOKEN_KEY = 'jh_access_token'
+const USER_KEY = 'jh_auth_user'
+
+function loadStoredUser() {
+  const raw = storage.getItem(USER_KEY)
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    storage.removeItem(USER_KEY)
+    return null
+  }
+}
 
 export const authStore = {
   state: reactive({
     accessToken: storage.getItem(ACCESS_TOKEN_KEY) || '',
-    user: null,
+    user: loadStoredUser(),
   }),
 
   setSession(accessToken, user) {
     this.state.accessToken = accessToken
     this.state.user = user
+
     if (accessToken) {
       storage.setItem(ACCESS_TOKEN_KEY, accessToken)
+      storage.setItem(USER_KEY, JSON.stringify(user ?? null))
+      return
     }
+
+    storage.removeItem(ACCESS_TOKEN_KEY)
+    storage.removeItem(USER_KEY)
   },
 
   clearSession() {
     this.state.accessToken = ''
     this.state.user = null
     storage.removeItem(ACCESS_TOKEN_KEY)
+    storage.removeItem(USER_KEY)
   },
 
   async login(email, password) {

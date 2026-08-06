@@ -24,4 +24,5 @@ export const routes = [
   { path: PATHS.financeRecommendationResult, name: 'recommendation-result', component: () => import('@/views/RecommendationResultView.vue') },
   { path: PATHS.financeRecommendationFavorites, name: 'recommendation-favorites', component: () => import('@/views/RecommendationFavoritesView.vue') },
   { path: PATHS.financeProductDetail, name: 'product-detail', component: () => import('@/views/ProductDetailView.vue'), props: true },
+  { path: PATHS.summary, name: 'summary', component: () => import('@/views/summary/SummaryView.vue'), meta: { requiresAuth: true, process: true } },
 ]

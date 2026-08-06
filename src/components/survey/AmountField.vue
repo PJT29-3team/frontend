@@ -11,7 +11,8 @@ const props = defineProps({
   equals: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["update:modelValue"]);
+// enter: 입력을 마치고 엔터를 눌렀을 때. 다음 칸으로 넘어갈지 제출할지는 부모가 정한다.
+const emit = defineEmits(["update:modelValue", "enter"]);
 
 const hasValue = computed(
   () => props.modelValue !== null && props.modelValue !== undefined,
@@ -60,6 +61,7 @@ function addAmount(amount) {
         :value="display"
         :aria-invalid="!!error"
         @input="onInput"
+        @keydown.enter.prevent="emit('enter')"
       />
       <span class="input-group-text amount-unit">원</span>
     </div>

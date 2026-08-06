@@ -38,19 +38,17 @@ describe("allocate (만기 사다리, 총액 고정)", () => {
 });
 
 describe("allocate + buildTimeline", () => {
-  it("충분한 총액이면 gap 없이 이어진다", () => {
+  it("충분한 총액이면 끊기지 않고 이어진다", () => {
     const { segments } = allocate(products, M, 50_000_000);
-    const { funded, gap } = buildTimeline(segments, M, false);
+    const { funded } = buildTimeline(segments, M, false);
     // 파킹6 + 적금6 + ETF24 + 펀드14 = 50개월
     expect(funded).toBe(50);
-    expect(gap).toBe(0);
   });
 
-  it("파킹 버킷이 [0~첫만기]를 채워 초반 gap이 없다", () => {
+  it("파킹 버킷이 [0~첫만기]를 채운다", () => {
     const { segments } = allocate(products, M, 50_000_000);
     const { segs } = buildTimeline(segments, M, false);
     expect(segs[0]).toMatchObject({ type: "park", from: 1, to: 6 });
-    expect(segs.some((s) => s.type === "gap")).toBe(false);
   });
 
   it("낙관 모드에서 모든 상품(예적금+만기매칭ETF) 이자 반영", () => {

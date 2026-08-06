@@ -2,21 +2,27 @@
 import { computed, onMounted, ref } from "vue";
 import { useSurveyStore } from "@/stores/survey";
 import { validateDesiredRegions } from "@/utils/surveyValidation";
-import { SIDO_LIST, SIGUNGU_BY_SIDO } from "@/constants/regions";
+import { SIDO_LIST, SIGUNGU_BY_SIDO, areaRangeOf } from "@/constants/regions";
 import propertyRecommendationApi from "@/api/propertyRecommendation";
 
 const survey = useSurveyStore();
-const emit = defineEmits(["next", "prev", "complete"]);
+// searching: 제출 API가 시작될 때. 부모가 "집 찾는 중" 로딩을 띄우는 신호다.
+// 범용 next 로는 마지막 단계 제출을 구분할 수 없다(앞 단계들도 next 를 올린다).
+const emit = defineEmits(["searching", "prev", "complete"]);
 
 const sido = ref(SIDO_LIST[0]);
 const submitted = ref(false);
 
-/** 서버가 알려준 지역별 단지 수. "시도|시군구" → 개수 */
+/** 서버가 알려준 지역별 매물 수. "시도|시군구" → 개수 */
 const countByRegion = ref({});
 
 onMounted(async () => {
   try {
-    const counts = await propertyRecommendationApi.regionCounts();
+    // 설문에서 산출한 예산과 고른 평수를 넘겨, 실제로 추천될 수 있는 매물만 센다.
+    const counts = await propertyRecommendationApi.regionCounts(
+      survey.maxPurchaseBudget,
+      areaRangeOf(survey.desiredAreaCode),
+    );
     countByRegion.value = Object.fromEntries(
       counts.map((r) => [`${r.sidoName}|${r.sigunguName}`, r.count]),
     );
@@ -27,7 +33,7 @@ onMounted(async () => {
 });
 
 /**
- * 추천 가능한 단지가 있는 지역만, 많은 순으로 보여준다.
+ * 추천 가능한 단지가 있는 지역만, 가나다순으로 보여준다.
  * 0개인 지역을 그대로 두면 고른 뒤 추천이 빈 목록으로 나와 사용자가 이유를 알 수 없다.
  * 서버 응답을 못 받았을 때는 거르지 않는다(전부 0으로 보여 선택지가 사라지는 것보다 낫다).
  */
@@ -35,12 +41,14 @@ const sigunguList = computed(() => {
   const all = SIGUNGU_BY_SIDO[sido.value] || [];
   const counts = countByRegion.value;
   if (Object.keys(counts).length === 0) {
-    return all.map((g) => ({ name: g.name, count: null }));
+    return all
+      .map((g) => ({ name: g.name, count: null }))
+      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
   }
   return all
     .map((g) => ({ name: g.name, count: counts[`${sido.value}|${g.name}`] ?? 0 }))
     .filter((g) => g.count > 0)
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 });
 
 const errors = computed(() =>
@@ -64,7 +72,7 @@ const selectionText = computed(() => {
 function submit() {
   submitted.value = true;
   if (!isValid.value) return;
-  emit("next");
+  emit("searching");
   survey.submitSurvey(survey.desiredRegions).then(() => emit("complete"));
 }
 </script>
@@ -73,7 +81,7 @@ function submit() {
   <div>
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
     <p class="step-desc">
-      매물 많은 순으로 보여드려요 · 여러 곳 함께 골라도 돼요
+      숫자는 예산·평수에 맞는 매물 수예요 · 여러 곳 함께 골라도 돼요
     </p>
 
     <div class="d-flex gap-2">
@@ -90,7 +98,7 @@ function submit() {
       </button>
     </div>
 
-    <div class="d-flex gap-2 flex-wrap mt-3">
+    <div class="sigungu-grid">
       <button
         v-for="g in sigunguList"
         :key="g.name"

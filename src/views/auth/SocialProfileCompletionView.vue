@@ -170,7 +170,7 @@ async function submit() {
   submitting.value = true
   try {
     await authStore.completeSocialProfile(name.value, selectedBirthYear)
-    await router.replace('/main')
+    await router.replace('/survey')
   } catch (e) {
     error.value = e.response?.data?.message || '추가 정보를 저장하지 못했습니다. 다시 시도해주세요.'
   } finally {

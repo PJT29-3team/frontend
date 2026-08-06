@@ -2,32 +2,41 @@ import { http } from "./http";
 
 export default {
   /**
-   * 배치가 산출해 둔 점수로 매물을 추천받는다. 로그인 없이도 호출할 수 있다.
+   * 로그인한 사용자의 완료된 설문(예산/성향/희망지역)을 서버가 조회해서 추천한다.
+   * 로그인 필수이며, 완료된 설문이 없으면 400으로 실패한다.
    *
-   * @param {number} budget 설문에서 산출한 여유자산(원). 이 금액을 넘는 단지는 제외된다.
-   * @param {string} type 추천 유형 (SAFETY_FIRST / CONVENIENCE_FIRST / VALUE_STABILITY / BALANCED)
-   * @param {Array<{sidoName: string, sigunguName: string}>} regions
-   *        희망지역. 비우면 지역을 가리지 않는다.
-   * @param {number} limit 추천 개수
+   * @returns {Promise<Array<{
+   *   id: number, rank: number, name: string, price: string, priceNum: number,
+   *   address: string, score: number, size: number, buildYear: number, buildMonth: number,
+   *   floors: number, buildingCount: number, householdCount: number,
+   *   latitude: number, longitude: number, remainingAmount: number
+   * }>>}
    */
-  list({ budget, type, regions = [], limit = 20 }) {
-    const params = new URLSearchParams();
-    params.set("budget", budget);
-    params.set("type", type);
-    params.set("limit", limit);
-    // 백엔드는 시도:시군구 형식을 여러 번 받는다. 시군구명만으로는 시도가 다른 동명이 지역과 섞인다.
-    regions.forEach((r) => params.append("region", `${r.sidoName}:${r.sigunguName}`));
-
-    return http.get(`/api/recommendations?${params}`).then((res) => res.data);
+  list() {
+    return http.get("/api/recommendations").then((res) => res.data);
   },
 
   /**
-   * 지역별 추천 가능한 단지 수.
-   * 희망지역 선택 화면이 실제 적재량을 보여주는 데 쓴다.
+   * 지역별 추천 가능한 매물 수.
+   * 희망지역 선택 화면이 설문 예산·평수로 살 수 있는 매물이 몇 개인지 보여주는 데 쓴다.
    *
+   * @param {number} [budget] 설문에서 산출한 여유자산(원). 주면 그 안의 매물만 센다.
+   * @param {{min: number|null, max: number|null}} [area] 희망 전용면적(㎡) 범위.
    * @returns {Promise<Array<{sidoName: string, sigunguName: string, count: number}>>}
    */
-  regionCounts() {
-    return http.get("/api/recommendations/region-counts").then((res) => res.data);
+  regionCounts(budget, area = {}) {
+    const params = new URLSearchParams();
+    if (budget != null) params.set("budget", budget);
+    if (area.min != null) params.set("minArea", area.min);
+    if (area.max != null) params.set("maxArea", area.max);
+    const query = params.toString();
+    return http
+      .get(`/api/recommendations/region-counts${query ? `?${query}` : ""}`)
+      .then((res) => res.data);
+  },
+
+  /** 매물 상세(안전/편의/자산 평가, AI 요약 포함). 로그인 필수. */
+  detail(houseId) {
+    return http.get(`/api/recommendations/${houseId}`).then((res) => res.data);
   },
 };
