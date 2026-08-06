@@ -7,6 +7,7 @@ import propertyRecommendationApi from "@/api/propertyRecommendation";
 
 const survey = useSurveyStore();
 // searching: 제출 API가 시작될 때. 부모가 "집 찾는 중" 로딩을 띄우는 신호다.
+// 범용 next 로는 마지막 단계 제출을 구분할 수 없다(앞 단계들도 next 를 올린다).
 const emit = defineEmits(["searching", "prev", "complete"]);
 
 const sido = ref(SIDO_LIST[0]);
