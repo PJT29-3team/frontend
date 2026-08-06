@@ -5,6 +5,9 @@ import { validateSalePrice } from "@/utils/surveyValidation";
 import AmountField from "./AmountField.vue";
 
 const survey = useSurveyStore();
+
+/** KB부동산 시세 조회. 설문 입력 중에 참고할 수 있게 새 탭으로 연다. */
+const KB_PRICE_LOOKUP_URL = "https://kbland.kr/price";
 const emit = defineEmits(["next", "prev"]);
 
 const purchasePrice = ref(survey.purchasePrice);
@@ -74,8 +77,15 @@ function onEnter() {
     </div>
 
     <p class="text-center mt-4">
-      <a class="text-link" href="#" @click.prevent>
-        팔고싶은 가격을 정확히 모르겠어요 — 시세조회 사이트 연결
+      <!-- 설문 입력을 잃지 않도록 새 탭으로 연다.
+           rel=noopener 는 새 탭이 window.opener 로 이 페이지를 건드리지 못하게 막는다. -->
+      <a
+        class="text-link"
+        :href="KB_PRICE_LOOKUP_URL"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        팔고싶은 가격을 정확히 모르겠어요 — KB부동산에서 시세 확인하기
       </a>
     </p>
 
