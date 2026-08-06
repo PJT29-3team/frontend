@@ -131,6 +131,28 @@ function canNavigate(key) {
   color: #fff;
   font-size: 28px;
   font-weight: 900;
+  /* 지금 어느 단계인지 한눈에 보이도록 테두리가 은은하게 퍼졌다 사라진다. */
+  animation: step-pulse 1.8s ease-out infinite;
+}
+
+@keyframes step-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(245, 197, 24, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 197, 24, 0);
+  }
+}
+
+/* 움직임에 민감한 사용자는 애니메이션을 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  .step.active .step-circle {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.35);
+  }
 }
 
 .step.active .step-label {

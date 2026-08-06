@@ -66,11 +66,13 @@ function addAmount(amount) {
       <span class="input-group-text amount-unit">원</span>
     </div>
 
+    <!-- 환산 금액은 입력칸 오른쪽 끝에 맞춰 숫자가 세로로 정렬되게 한다.
+         오류 문구가 함께 뜨면 그쪽이 왼쪽을 차지한다. -->
     <div class="d-flex justify-content-between align-items-start gap-2">
-      <span class="field-help">{{ helpLine }}</span>
-      <span v-if="error" class="invalid-feedback d-block text-end mt-1">
+      <span v-if="error" class="invalid-feedback d-block mt-1">
         {{ error }}
       </span>
+      <span class="field-help ms-auto text-end">{{ helpLine }}</span>
     </div>
 
     <div v-if="chips" class="chip-row">
