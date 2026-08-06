@@ -56,7 +56,20 @@ onMounted(async () => {
       safetyLevel: rec.riskLevel,
     });
     periods.value = res.periods ?? [];
+    
+    // 추천 상품들의 상세 필드를 스토어 캐시에 선제적으로 보관하여 상세페이지 이동 시 API 호출 차단 (성능 극대화)
+    if (periods.value) {
+      for (const period of periods.value) {
+        if (period.products) {
+          for (const p of period.products) {
+            rec.setCachedDetail(p.kind, p.productType, p);
+          }
+        }
+      }
+    }
+
     activeCode.value = periods.value[0]?.code ?? 'SHORT';
+
     await nextTick();
     updateActive();
   } catch (e) {
@@ -97,6 +110,22 @@ function maturityText(p) {
   return p.kind === 'stock' ? `만기 약 ${dur} 뒤` : `${dur} 뒤 만기`;
 }
 
+function highlightCompareText(text) {
+  if (!text) return '';
+  // 쓸데없는 개행 문자(\r\n, \r, \n)를 공백으로 전부 치환하여 한 줄로 펴줍니다.
+  const cleaned = text.replace(/\r\n|\r|\n/g, ' ');
+  
+  // 대괄호 [...] 패턴을 찾아 인라인 강조 칩 스타일로 변환
+  return cleaned.replace(/\[([^\]]+)\]/g, (match, p1) => {
+    const isPlus = p1.includes('+');
+    const isMinus = p1.includes('-');
+    const colorClass = isPlus ? 'highlight-plus' : (isMinus ? 'highlight-minus' : 'highlight-default');
+    return `<span class="badge-inline ${colorClass}">${p1}</span>`;
+  });
+}
+
+
+
 async function goFavorites() {
   try {
     const payload = {
@@ -132,7 +161,7 @@ function showProductDetail(product) {
   <div class="result-page">
     <div class="result-shell">
       <!-- 헤더 -->
-      <header class="r-head">
+      <header v-if="!loading" class="r-head">
         <div class="r-head-left">
           <h1 class="r-title">기간별 추천 금융상품</h1>
           <p class="r-sub">
@@ -161,7 +190,18 @@ function showProductDetail(product) {
         </div>
       </header>
 
-      <p v-if="loading" class="state-msg">추천을 불러오는 중…</p>
+      <div v-if="loading" class="rec-loader" role="status" aria-live="polite">
+        <div class="loader-ring">
+          <span class="ring-spin" aria-hidden="true"></span>
+          <svg class="ring-glass" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <p class="loader-msg">딱 맞는 금융상품을 찾고 있어요</p>
+        <p class="loader-sub">잠시만 기다려 주세요</p>
+      </div>
       <p v-else-if="error" class="state-msg error">{{ error }}</p>
 
       <!-- 구간 이동 버튼 (스크롤 스파이) + 담기 카운터 -->
@@ -200,11 +240,8 @@ function showProductDetail(product) {
             <h2 class="period-title">{{ period.label }}</h2>
             <span class="period-hint">{{ period.hint }}</span>
           </div>
-          <p v-if="period.fallback" class="period-fallback">
-            선택하신 위험도(<b>{{ riskBadge(rec.riskLevel) }}</b>)에 맞는 상품이 이 기간에 없어
-            가까운 등급으로 보여드려요.
-          </p>
         </div>
+
 
         <div class="card-grid">
           <article
@@ -224,6 +261,8 @@ function showProductDetail(product) {
               <span class="badge">{{ categoryLabel(p.category) }}</span>
               <span v-if="p.popular" class="badge badge-popular">비슷한 자산 인기</span>
             </div>
+
+
             <div class="p-head">
               <span class="p-logo">{{ logoText(p.institution) }}</span>
               <div>
@@ -237,7 +276,13 @@ function showProductDetail(product) {
             <div class="p-maturity">
               예치기간 {{ p.termMonths }}개월 · {{ maturityText(p) }}
             </div>
-            <p class="p-reason">💬 {{ p.recommendReason }}</p>
+            <p class="p-reason-wrap">
+              <span class="p-reason-icon">💬</span>
+              <span class="p-reason-text" v-html="highlightCompareText(p.recommendReason)"></span>
+            </p>
+
+
+
             <p v-if="!rec.productActive(p.termMonths)" class="p-locked-note">
               🔒 예치기간 {{ p.termMonths }}개월이 매달 쓸 돈으로 버틸 수 있는 기간보다 길어 담을 수 없어요
             </p>
@@ -322,6 +367,28 @@ function showProductDetail(product) {
 
 .state-msg { text-align: center; color: var(--text-muted); padding: 48px 0; }
 .state-msg.error { color: #9b3b3b; }
+
+/* 추천 로딩: 돋보기를 감싸는 도넛 링 스피너 */
+.rec-loader {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; min-height: 60vh; text-align: center;
+}
+.loader-ring { position: relative; width: 92px; height: 92px; }
+.ring-spin {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 4px solid #ececec; border-top-color: #111;
+  animation: ring-rotate 0.9s linear infinite;
+}
+.ring-glass {
+  position: absolute; top: 50%; left: 50%; width: 34px; height: 34px;
+  transform: translate(-50%, -50%); color: #111;
+}
+.loader-msg { margin: 0; font-size: 18px; font-weight: 800; color: #111; }
+.loader-sub { margin: 0; font-size: 13px; color: #8a8a8a; }
+@keyframes ring-rotate { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ring-spin { animation-duration: 2.4s; }
+}
 
 /* 빈 상태 안내 (첫 찜 전) */
 .empty-hint {
@@ -435,7 +502,9 @@ function showProductDetail(product) {
 .badge-risk.tone-caution { background: #fff4e0; color: #b5760a; }
 .badge-risk.tone-warn { background: #fdecea; color: #c0442e; }
 .badge-popular { background: var(--kb-yellow-deep); color: #fff; }
+
 .p-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+
 .p-logo {
   width: 40px; height: 40px; flex: none;
   border-radius: 10px;
@@ -448,7 +517,51 @@ function showProductDetail(product) {
 .p-rate { font-size: 14px; color: var(--text-muted); }
 .p-rate b { color: var(--kb-yellow-deep); font-size: 18px; font-weight: 800; }
 .p-maturity { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); }
-.p-reason { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin: 12px 0 14px; flex: 1; }
+.p-reason-wrap {
+  margin: 12px 0 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  flex: 1;
+}
+.p-reason-icon {
+  font-size: 14px;
+  margin-right: 6px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.badge-inline {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.highlight-plus {
+  background: #e6f4ea;
+  color: #137333;
+  border: 1px solid #ceead6;
+}
+.highlight-minus {
+  background: #fce8e6;
+  color: #c5221f;
+  border: 1px solid #fad2cf;
+}
+.highlight-default {
+  background: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #d2e3fc;
+}
+.p-reason-text {
+  display: inline;
+  vertical-align: middle;
+}
+
+
 .p-actions { display: flex; gap: 8px; align-items: center; }
 .p-info-btn {
   flex: 1;

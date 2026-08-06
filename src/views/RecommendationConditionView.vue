@@ -50,13 +50,14 @@ function submit() {
 
         <!-- 당장 쓸 돈: 남은 돈 − 즉시지출 = 투자금액 (세로 뺄셈 계산식) -->
         <section class="block">
-          <h3 class="block-title">당장 쓸 돈</h3>
-          <p class="block-desc">병원비·빚 갚기·이사비처럼 곧 나갈 돈이 있으면 먼저 빼둡니다. 없으면 0으로 두세요.</p>
-
           <div class="calc-row">
             <span class="calc-label">이사 후 남은 돈</span>
             <span class="calc-amount">{{ formatKRW(rec.fundingAmount) }}</span>
           </div>
+
+          <h3 class="block-title">당장 쓸 돈</h3>
+          <p class="block-desc">병원비·빚 갚기·이사비처럼 곧 나갈 돈이 있으면 먼저 빼둡니다. 없으면 0으로 두세요.</p>
+
           <div class="calc-row">
             <div class="amount-input-row">
               <input class="amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 돈(만원)" />
@@ -169,10 +170,11 @@ function submit() {
 
 .calc-label { font-size: 14px; color: var(--text-muted); }
 
-.divider { border: none; border-top: 1px solid var(--card-border); margin: 20px 0; }
+.divider { border: none; border-top: 1px solid #cdd2d8; margin: 20px 0; }
 
 .block-head { display: flex; justify-content: space-between; align-items: baseline; }
 .block-title { font-weight: 800; font-size: 18px; margin: 0 0 4px; }
+.calc-row + .block-title { margin-top: 18px; }
 .block-desc { color: var(--text-muted); font-size: 13.5px; margin: 0 0 16px; }
 .calc-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .amount-input-row { display: flex; align-items: center; gap: 10px; }
