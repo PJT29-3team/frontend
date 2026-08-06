@@ -124,14 +124,20 @@ function submit() {
       </div>
     </div>
 
-    <div class="footnote">
-      <strong>조정대상지역</strong>
-      <div v-for="line in REGULATED_AREAS" :key="line">{{ line }}</div>
-    </div>
+    <!-- 참고 자료라 기본은 접어둔다. 펼치지 않아도 다음으로 넘어갈 수 있고,
+         화면이 낮은 노트북에서 세로 스크롤이 생기지 않는다. -->
+    <details class="survey-notes">
+      <summary>조정대상지역 목록과 세금 안내 보기</summary>
 
-    <div class="disclaimer">
-      <p v-for="line in TAX_DISCLAIMER" :key="line">{{ line }}</p>
-    </div>
+      <div class="footnote">
+        <strong>조정대상지역</strong>
+        <div v-for="line in REGULATED_AREAS" :key="line">{{ line }}</div>
+      </div>
+
+      <div class="disclaimer">
+        <p v-for="line in TAX_DISCLAIMER" :key="line">{{ line }}</p>
+      </div>
+    </details>
 
     <div class="btn-row">
       <button type="button" class="secondary-btn" @click="emit('prev')">

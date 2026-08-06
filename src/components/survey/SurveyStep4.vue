@@ -76,7 +76,6 @@ function submit() {
           v-model="mortgageBalance"
           input-id="survey-mortgage-balance"
           label="남은 대출 잔액"
-          equals
           chips
           :error="shownError"
           @enter="submit"
