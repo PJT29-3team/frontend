@@ -43,7 +43,7 @@ describe('PasswordResetCompleteView', () => {
     await flushPromises()
 
     expect(verifyPasswordReset).toHaveBeenCalledWith('valid-token')
-    expect(wrapper.get('[data-member-header]').text()).toContain('작은둥지')
+    expect(wrapper.get('[data-member-header]').text()).toContain('홀家분')
     expect(wrapper.get('input[name="password"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('STEP 2 · 새 비밀번호 설정')
   })

@@ -33,23 +33,34 @@ onMounted(async () => {
 });
 
 /**
- * 추천 가능한 단지가 있는 지역만, 가나다순으로 보여준다.
- * 0개인 지역을 그대로 두면 고른 뒤 추천이 빈 목록으로 나와 사용자가 이유를 알 수 없다.
- * 서버 응답을 못 받았을 때는 거르지 않는다(전부 0으로 보여 선택지가 사라지는 것보다 낫다).
+ * 시군구 전체를 가나다순으로 보여준다.
+ *
+ * 매물이 0개인 지역도 목록에서 빼지 않는다. 사라지면 사용자는 그 동네가
+ * 원래 없는 줄 알지만, 실제로는 예산·평수를 조금 넓히면 나오기 때문이다.
+ * 대신 0개인 칩은 흐리게 두고 선택은 막는다.
+ * 서버 응답을 못 받았을 때는 개수만 비운다(null).
  */
 const sigunguList = computed(() => {
   const all = SIGUNGU_BY_SIDO[sido.value] || [];
   const counts = countByRegion.value;
-  if (Object.keys(counts).length === 0) {
-    return all
-      .map((g) => ({ name: g.name, count: null }))
-      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
-  }
+  const hasCounts = Object.keys(counts).length > 0;
   return all
-    .map((g) => ({ name: g.name, count: counts[`${sido.value}|${g.name}`] ?? 0 }))
-    .filter((g) => g.count > 0)
+    .map((g) => ({
+      name: g.name,
+      count: hasCounts ? (counts[`${sido.value}|${g.name}`] ?? 0) : null,
+    }))
     .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 });
+
+/** 매물이 0개인 지역은 고를 수 없다. 고르면 추천이 빈 목록으로 나온다. */
+function isSoldOut(region) {
+  return region.count === 0;
+}
+
+function toggle(region) {
+  if (isSoldOut(region)) return;
+  survey.toggleRegion(sido.value, region.name);
+}
 
 const errors = computed(() =>
   validateDesiredRegions({ desiredRegions: survey.desiredRegions }),
@@ -82,6 +93,7 @@ function submit() {
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
     <p class="step-desc">
       숫자는 예산·평수에 맞는 매물 수예요 · 여러 곳 함께 골라도 돼요
+      <br />매물이 없는 지역은 흐리게 표시돼요
     </p>
 
     <div class="d-flex gap-2">
@@ -104,9 +116,11 @@ function submit() {
         :key="g.name"
         type="button"
         class="region-chip"
-        :class="{ on: survey.isRegionSelected(sido, g.name) }"
+        :class="{ on: survey.isRegionSelected(sido, g.name), 'sold-out': isSoldOut(g) }"
         :aria-pressed="survey.isRegionSelected(sido, g.name)"
-        @click="survey.toggleRegion(sido, g.name)"
+        :disabled="isSoldOut(g)"
+        :title="isSoldOut(g) ? '조건에 맞는 매물이 없어요' : undefined"
+        @click="toggle(g)"
       >
         {{ g.name
         }}<span v-if="g.count !== null" class="region-count">{{ g.count }}</span>

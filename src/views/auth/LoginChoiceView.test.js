@@ -24,7 +24,7 @@ describe('LoginChoiceView', () => {
   it('shows the small nest header and footer links', () => {
     const wrapper = mount(LoginChoiceView)
 
-    expect(wrapper.get('[data-login-header]').text()).toContain('작은둥지')
+    expect(wrapper.get('[data-login-header]').text()).toContain('홀家분')
     expect(wrapper.get('[data-login-footer]').text()).toContain('이용약관')
     expect(wrapper.get('[data-login-footer]').text()).toContain('개인정보처리방침')
   })

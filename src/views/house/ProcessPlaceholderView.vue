@@ -10,7 +10,7 @@ const description = computed(() => route.meta.description || '이 단계의 화�
 <template>
   <main class="placeholder-page">
     <section>
-      <p>작은 둥지 서비스</p>
+      <p>홀家분 서비스</p>
       <h1>{{ title }}</h1>
       <span>{{ description }}</span>
     </section>

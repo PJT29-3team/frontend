@@ -51,7 +51,7 @@ describe('SignupView', () => {
     })
 
     expect(wrapper.get('input[name="password"]').exists()).toBe(true)
-    expect(wrapper.get('[data-member-header]').text()).toContain('작은둥지')
+    expect(wrapper.get('[data-member-header]').text()).toContain('홀家분')
     await wrapper.get('input[name="emailLocal"]').setValue('senior')
     await wrapper.get('select[name="emailDomain"]').setValue('example.com')
     await vi.runAllTimersAsync()

@@ -3,14 +3,14 @@
     class="login-header"
     :class="{ 'login-header--brand-only': !showNavigation }"
   >
-    <RouterLink class="login-header__brand" to="/" aria-label="작은둥지 홈">
+    <RouterLink class="login-header__brand" to="/" aria-label="홀家분 홈">
       <img
         class="login-header__logo"
         src="../../assets/jiphyeonjeon-header-logo.png"
         alt=""
       />
       <span class="login-header__wordmark">
-        <span>작은</span><span class="login-header__wordmark-accent">둥지</span>
+        <span>홀</span><span class="login-header__wordmark-accent">家분</span>
       </span>
     </RouterLink>
     <nav v-if="showNavigation" class="login-header__nav" aria-label="로그인 보조 메뉴">

@@ -696,6 +696,16 @@
   white-space: nowrap;
 }
 
+/* 조건에 맞는 매물이 0개인 지역. 목록에서 빼지 않고 흐리게 두어
+   "이 동네는 지금 조건으로는 없다"는 것을 보여준다. */
+.region-chip.sold-out {
+  border-style: dashed;
+  background: #f6f5f2;
+  color: var(--text-muted);
+  font-weight: 400;
+  cursor: not-allowed;
+}
+
 /* 6단계 매물 수 + 선택 안내 배너 */
 .region-count {
   margin-left: 5px;
