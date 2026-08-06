@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter,useRoute } from "vue-router";
 import { useSurveyStore } from "@/stores/survey";
 import "@/styles/survey-tokens.css";
 
@@ -21,6 +21,7 @@ const props = defineProps({
 
 const survey = useSurveyStore();
 const router = useRouter();
+const route = useRoute();
 
 const STEP_COMPONENTS = [
   SurveyStep1,
@@ -38,10 +39,15 @@ const isLastStep = computed(
   () => survey.stepIndex === STEP_COMPONENTS.length - 1,
 );
 
-onMounted(() => {
+onMounted(async () => {
   if (props.surveyId) {
     survey.loadById(props.surveyId);
-  } else {
+    return;
+  }
+
+  const mode = String(route.query.mode || '');
+  if (mode === 'resume') {
+    await survey.restoreLatest();
     survey.init();
   }
   window.addEventListener("keydown", onGlobalEnter);

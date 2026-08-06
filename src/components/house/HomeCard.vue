@@ -25,7 +25,7 @@
       <button
       class="favorite-btn"
       :class="{ active: store.isFavorite(home.id) }"
-      @click.stop="store.toggleFavorite(home.id)"
+      @click.stop="onToggleFavorite"
       >
         <span class="heart-icon">{{ store.isFavorite(home.id) ? '♥' : '♡' }}</span>
         {{ store.isFavorite(home.id) ? '담았어요' : '관심 목록에 담기' }}
@@ -43,6 +43,14 @@ const emit = defineEmits(['select']);
 const store = favoriteStore();
 
 const router = useRouter();
+
+async function onToggleFavorite() {
+  try {
+    await store.toggleFavorite(props.home.id);
+  } catch (error) {
+    alert(error?.response?.data?.message || error?.message || '관심 매물을 처리하지 못했습니다.');
+  }
+}
 </script>
 
 <style scoped>

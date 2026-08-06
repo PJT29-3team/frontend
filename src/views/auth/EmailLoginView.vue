@@ -130,7 +130,7 @@ async function submit() {
         localStorage.removeItem(SAVED_EMAIL_KEY)
       }
     }
-    router.push('/main')
+    router.push('/survey')
   } catch (e) {
     error.value = e.response?.data?.message || '로그인 정보를 확인해주세요.'
     verificationRequired.value = e.response?.data?.errorCode === VERIFICATION_REQUIRED_CODE

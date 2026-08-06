@@ -6,8 +6,7 @@ import { SIDO_LIST, SIGUNGU_BY_SIDO } from "@/constants/regions";
 import propertyRecommendationApi from "@/api/propertyRecommendation";
 
 const survey = useSurveyStore();
-// searching: 제출 API가 시작될 때. 부모가 "집 찾는 중" 로딩을 띄우는 신호다.
-const emit = defineEmits(["searching", "prev", "complete"]);
+const emit = defineEmits(["next", "prev", "complete"]);
 
 const sido = ref(SIDO_LIST[0]);
 const submitted = ref(false);
@@ -70,7 +69,7 @@ const selectionText = computed(() => {
 function submit() {
   submitted.value = true;
   if (!isValid.value) return;
-  emit("searching");
+  emit("next");
   survey.submitSurvey(survey.desiredRegions).then(() => emit("complete"));
 }
 </script>
@@ -79,7 +78,7 @@ function submit() {
   <div>
     <h2 class="step-title">어느 지역에서<br />새 집을 찾아볼까요?</h2>
     <p class="step-desc">
-      숫자는 예산으로 살 수 있는 매물 수예요 · 여러 곳 함께 골라도 돼요
+      매물 많은 순으로 보여드려요 · 여러 곳 함께 골라도 돼요
     </p>
 
     <div class="d-flex gap-2">
@@ -96,7 +95,7 @@ function submit() {
       </button>
     </div>
 
-    <div class="sigungu-grid">
+    <div class="d-flex gap-2 flex-wrap mt-3">
       <button
         v-for="g in sigunguList"
         :key="g.name"

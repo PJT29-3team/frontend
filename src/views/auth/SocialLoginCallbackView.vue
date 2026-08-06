@@ -41,7 +41,7 @@ onMounted(async () => {
 
   try {
     await authStore.refresh()
-    await router.replace('/main')
+    await router.replace('/survey')
   } catch (e) {
     error.value = e.response?.data?.message || '소셜 로그인 정보를 확인하지 못했습니다.'
   }

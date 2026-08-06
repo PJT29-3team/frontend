@@ -9,11 +9,16 @@ const emit = defineEmits(["next", "prev"]);
 
 const reserveAmount = ref(survey.reserveAmount);
 const submitted = ref(false);
+const reserveLimit = computed(() =>
+  typeof survey.calculation?.netProceeds === "number"
+    ? survey.calculation.netProceeds
+    : survey.afterMortgage,
+);
 
 const errors = computed(() =>
   validateReserveBudget({
     reserveAmount: reserveAmount.value,
-    netProceeds: survey.afterMortgage,
+    netProceeds: reserveLimit.value,
   }),
 );
 const isValid = computed(() => Object.keys(errors.value).length === 0);

@@ -51,7 +51,53 @@ function emptyAnswers() {
     reserveAmount: null,
     profileCode: null,
     desiredRegions: [],
+    latestCompletedNetProceedsAmount: null,
+    latestCompletedMortgageBalanceAmount: null,
+    latestCompletedReserveAmount: null,
   };
+}
+
+function applySavedSurveyState(store, payload) {
+  const savedSurvey = payload?.survey;
+  if (!savedSurvey) return false;
+
+  store.surveyId = savedSurvey.surveyId ?? null;
+  store.profileCode = savedSurvey.profileCode ?? null;
+  store.purchasePrice = savedSurvey.acquisitionPriceAmount ?? null;
+  store.expectedSalePrice = savedSurvey.transferPriceAmount ?? null;
+  store.holdingYears = savedSurvey.holdingYears ?? null;
+  store.residenceYears = savedSurvey.residenceYears ?? null;
+  store.isRegulatedArea = savedSurvey.regulatedArea ?? null;
+  store.hasMortgage = savedSurvey.hasMortgage ?? null;
+  store.mortgageBalance = savedSurvey.mortgageBalanceAmount ?? null;
+  store.reserveAmount = savedSurvey.reserveAmountUsed ?? savedSurvey.reserveCustomAmount ?? null;
+  store.latestCompletedNetProceedsAmount = savedSurvey.netProceedsAmount ?? null;
+  store.latestCompletedMortgageBalanceAmount = savedSurvey.hasMortgage
+    ? (savedSurvey.mortgageBalanceAmount ?? 0)
+    : 0;
+  store.latestCompletedReserveAmount = savedSurvey.reserveAmountUsed ?? savedSurvey.reserveCustomAmount ?? null;
+  store.calculation = savedSurvey.maxPurchaseBudgetAmount == null
+    ? null
+    : {
+        availableAsset: savedSurvey.maxPurchaseBudgetAmount,
+        capitalGainsTax: { amount: savedSurvey.capitalGainsTaxAmount ?? 0 },
+        brokerageFee: { amount: savedSurvey.brokerageFeeAmount ?? 0 },
+        netProceeds: savedSurvey.netProceedsAmount ?? 0,
+      };
+  store.desiredRegions = (payload?.desiredRegions || []).map((region) => ({
+    sidoName: region.sidoName,
+    sigunguName: region.sigunguName,
+    eupmyeondongName: region.eupmyeondongName ?? null,
+  }));
+  store.userName = payload?.userName || authStore.state.user?.name || "";
+  store.done = savedSurvey.status === "COMPLETED";
+  store.showIntro = !store.done;
+  store.stepIndex = store.done ? STEP_ORDER.length - 1 : 0;
+  store.conditionEditMode = false;
+  store.errorMessage = null;
+  store.calculationFailed = false;
+  store.fieldErrors = {};
+  return true;
 }
 
 export function toCalculationRequest(state) {
@@ -195,6 +241,21 @@ export const useSurveyStore = defineStore("survey", {
       this.init();
     },
 
+    async restoreLatest() {
+      const userId = authStore.state.user?.userId;
+      if (!userId) return false;
+      try {
+        const response = await surveyApi.findLatest(userId);
+        return applySavedSurveyState(this, response);
+      } catch (error) {
+        if (error?.response?.status !== 404) {
+          this.errorMessage =
+            error.response?.data?.message || "저장된 설문을 불러오지 못했습니다.";
+        }
+        return false;
+      }
+    },
+
     startSurvey() {
       this.showIntro = false;
       this.stepIndex = 0;
@@ -208,6 +269,7 @@ export const useSurveyStore = defineStore("survey", {
       this.stepIndex = 5;
       this.done = false;
       this.conditionEditMode = true;
+      this.desiredRegions = [];
       this.errorMessage = null;
       this.fieldErrors = {};
       this.calculation = null;

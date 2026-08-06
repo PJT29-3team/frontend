@@ -4,10 +4,11 @@
       <section class="content">
         <!-- 왼쪽 패널, 매물 목록 5곳 -->
         <div class="left-panel">
-          <h2 class="main-title">예산에 맞는 집, {{ displayedHomes.length }}곳을 찾았어요.</h2>
-          <p class="sub-title">이중에서 최대 3곳을 관심 목록에 담아보세요.</p>
+          <h2 class="main-title">{{ survey.displayName }}님이 선택한 페르소나 기준으로 집 {{ displayedHomes.length }}곳을 찾았어요.</h2>
+          <p class="sub-title">저장된 설문조사와 희망 지역을 기준으로 추천했어요.</p>
+          <p v-if="loading" class="sub-title">추천 매물을 불러오는 중입니다.</p>
+          <p v-else-if="errorMessage" class="sub-title error-message">{{ errorMessage }}</p>
 
-          <p v-if="isLoading" class="state-message">불러오는 중이에요...</p>
           <p v-else-if="loadError" class="state-message">{{ loadError }}</p>
           <p v-else-if="displayedHomes.length === 0" class="state-message">
             조건에 맞는 매물을 찾지 못했어요.
@@ -55,7 +56,7 @@
 import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '@/components/house/HomeMapView.vue';
 import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted,reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { favoriteStore } from '@/stores/favoriteStore.js';
 import { useSurveyStore } from '@/stores/survey';
@@ -64,45 +65,34 @@ import propertyRecommendationApi from '@/api/propertyRecommendation';
 const favStore = favoriteStore();
 const router = useRouter();
 const survey = useSurveyStore();
+const homes = ref([]);
+const loading = ref(true);
+const errorMessage = ref('');
 
-const homes = reactive([]);
 const selectedId = ref(null);
-const isLoading = ref(true);
-const loadError = ref(null);
-
-async function loadRecommendations() {
-  isLoading.value = true;
-  loadError.value = null;
-  try {
-    // 서버가 로그인한 사용자의 완료된 설문(예산/성향/희망지역)을 직접 조회해서 추천한다.
-    const items = await propertyRecommendationApi.list();
-    const mapped = items.map((item) => ({
-      id: item.id,
-      rank: item.rank,
-      price: item.price, // 이미 "3억 4,500만원" 형태로 포맷되어 온다.
-      // PurchaseCostPanel은 priceNum을 만원 단위로 쓰는데, 백엔드 priceNum은 원 단위라 변환한다.
-      priceNum: Math.round(Number(item.priceNum) / 10000),
-      address: item.address,
-      score: Math.round(Number(item.score ?? 0)),
-      latitude: item.latitude,
-      longitude: item.longitude,
-    }));
-    homes.splice(0, homes.length, ...mapped);
-    selectedId.value = homes[0]?.id ?? null;
-  } catch (e) {
-    loadError.value = e.response?.data?.message || '추천 매물을 불러오지 못했어요.';
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-onMounted(loadRecommendations);
 
 const selectedHome = computed(() => {
-  return homes.find(h => h.id === selectedId.value);
+  return homes.value.find(h => h.id === selectedId.value) || homes.value[0] || null;
 });
 
-const displayedHomes = computed(() => homes.slice(0, 5));
+const displayedHomes = computed(() => homes.value.slice(0, 5));
+
+async function loadRecommendations() {
+  loading.value = true;
+  errorMessage.value = '';
+  try {
+    const response = await propertyRecommendationApi.list();
+    homes.value = response.map((home) => ({
+      ...home,
+      priceNum: Number(home.priceNum) / 10000,
+    }));
+    selectedId.value = homes.value[0]?.id ?? null;
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '추천 매물을 불러오지 못했습니다.';
+  } finally {
+    loading.value = false;
+  }
+}
 
 function selectHome(homeId) {
   selectedId.value = homeId;
@@ -111,14 +101,22 @@ function selectHome(homeId) {
 async function restartSurvey() {
   favStore.clear();
   await survey.reset();
-  router.push('/survey');
+  router.push('/survey?mode=restart');
 }
 
 function changeConditions() {
   favStore.clear();
   survey.startConditionEdit();
-  router.push('/survey');
+  router.push('/survey?mode=conditions');
 }
+
+onMounted(async () => {
+  if (!survey.calculation && !survey.expectedSalePrice) {
+    await survey.restoreLatest();
+  }
+  await favStore.loadFavorites(true);
+  await loadRecommendations();
+});
 </script>
 
 <style scoped>
@@ -153,6 +151,10 @@ function changeConditions() {
 .sub-title {
   color: #888;
   margin: 0 0 20px;
+}
+
+.error-message {
+  color: #b44;
 }
 
 .state-message {

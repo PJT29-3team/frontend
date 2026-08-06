@@ -32,7 +32,7 @@ const props = defineProps({
 })
 
 const steps = [
-  { key: 'survey', label: '설문 조사', icon: '✓', to: '/survey' },
+  { key: 'survey', label: '설문 조사', icon: '✓', to: '/survey?mode=resume' },
   { key: 'recommend', label: '추천 매물', icon: '⌕', to: '/recommend' },
   { key: 'favorite', label: '관심 매물', icon: '♡', to: '/favorite-home' },
   { key: 'finance-recommend', label: '금융상품 추천', icon: '🗄' },

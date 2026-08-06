@@ -61,9 +61,16 @@ const props = defineProps({
 
 const survey = useSurveyStore();
 
-// survey.afterMortgage / reserveAmount는 원 단위, 이 컴포넌트 내부 계산은 만원 단위라 변환한다.
-const afterMortgageManwon = computed(() => Math.round((survey.afterMortgage || 0) / 10000));
-const reserveManwon = computed(() => Math.round((survey.reserveAmount || 0) / 10000));
+// 최신 완료 설문에 저장된 값을 기준으로 고정해서 표시한다.
+const afterMortgageAmount = computed(() => {
+  if (typeof survey.latestCompletedNetProceedsAmount === 'number') {
+    const mortgageBalance = Number(survey.latestCompletedMortgageBalanceAmount || 0);
+    return Math.max(survey.latestCompletedNetProceedsAmount - mortgageBalance, 0);
+  }
+  return survey.afterMortgage || 0;
+});
+const afterMortgageManwon = computed(() => Math.round(afterMortgageAmount.value / 10000));
+const reserveManwon = computed(() => Math.round(((survey.latestCompletedReserveAmount ?? survey.reserveAmount) || 0) / 10000));
 
 // 1. 계산 함수들
 // 취득세율 로직
