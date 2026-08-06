@@ -126,7 +126,13 @@ function highlightCompareText(text) {
 
 
 
+const showEmptyModal = ref(false);
+
 async function goFavorites() {
+  if (rec.favoriteCount === 0) {
+    showEmptyModal.value = true;
+    return;
+  }
   try {
     const payload = {
       surveyId: null,
@@ -327,10 +333,35 @@ function showProductDetail(product) {
         </div>
       </div>
     </footer>
+
+    <!-- 찜 0개 경고 모달 (매물 찜 모달 스타일 통일) -->
+    <div v-if="showEmptyModal" class="modal-backdrop" @click.self="showEmptyModal = false">
+      <div class="remove-modal">
+        <button class="modal-close" type="button" @click="showEmptyModal = false">✕</button>
+        <div class="modal-heart">♡</div>
+        <h2>상품을 1개 이상 담아주세요</h2>
+        <p>추천된 기간별 상품 중 마음에 드는 상품의 하트(♡)를 클릭하여 관심 등록 후 이동해 주세요.</p>
+        <div class="modal-actions">
+          <button class="confirm-removal" type="button" @click="showEmptyModal = false">확인</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* 찜 0개 안내 모달 스타일 (매물 모달 디자인 통일) */
+.modal-backdrop { position: fixed; z-index: 999; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(28, 27, 24, .53); }
+.remove-modal { position: relative; width: min(100%, 500px); padding: 48px 36px 36px; border-radius: 24px; background: #fff; box-shadow: 0 20px 55px rgba(0,0,0,.28); text-align: center; }
+.modal-close { position: absolute; top: 21px; right: 21px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: transparent; color: #8c887f; border: 0; cursor: pointer; font-size: 18px; }
+.modal-close:hover { background: #f5f3ef; color: #333; }
+.modal-heart { width: 88px; height: 88px; display: grid; place-items: center; margin: 0 auto 24px; border-radius: 50%; background: #fff6cf; color: #ffba00; font-size: 40px; font-weight: bold; }
+.remove-modal h2 { margin: 0; color: #2f2d29; font-size: 22px; line-height: 1.3; font-weight: 800; }
+.remove-modal p { margin: 16px 0 32px; color: #5e6674; font-size: 15px; line-height: 1.5; }
+.modal-actions { display: flex; justify-content: center; }
+.confirm-removal { width: 100%; max-width: 220px; min-height: 50px; border-radius: 12px; font-size: 16px; font-weight: 800; background: #ffcc00; color: #4c483e; border: 0; cursor: pointer; box-shadow: 0 6px 12px rgba(58,44,17,.18); transition: background 0.15s; }
+.confirm-removal:hover { background: #ffbb08; }
+
 .result-page {
   font-family: "Pretendard", "Noto Sans KR", -apple-system, sans-serif;
   color: var(--text-dark);
