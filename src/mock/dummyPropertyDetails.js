@@ -29,7 +29,7 @@ export const dummyPropertyDetails = {
         ],
       },
       convenience: {
-        grade: '매우우수',
+        grade: '우수',
         items: [
           { label: '장보기 산책', stars: 5, note: '시장, 마트, 공원' },
           { label: '대중교통', stars: 5, note: '버스정류장, 지하철역' },
@@ -102,7 +102,7 @@ export const dummyPropertyDetails = {
         details: ['지하철역까지 걸어서 8분이에요', '전통시장이 가까이 있어요'],
       },
       asset: {
-        grade: '매우우수',
+        grade: '우수',
         items: [
           { label: '집값수준', stars: 5, note: '' },
           { label: '팔기 쉬운정도', stars: 5, note: '' },
@@ -137,7 +137,7 @@ export const dummyPropertyDetails = {
         details: ['종합병원까지 차량 10분 이내예요', '치안 지표가 양호해요'],
       },
       convenience: {
-        grade: '매우우수',
+        grade: '우수',
         items: [
           { label: '장보기 산책', stars: 5, note: '시장, 마트, 공원' },
           { label: '대중교통', stars: 5, note: '버스정류장, 지하철역' },
@@ -181,7 +181,7 @@ export const dummyPropertyDetails = {
       '준공년도가 비교적 최근이라 시설 노후도가 낮고, 판교테크노밸리 접근성이 좋아 자산 안정성이 높게 평가됩니다.',
     evaluation: {
       safety: {
-        grade: '매우우수',
+        grade: '우수',
         items: [
           { label: '보행안전', stars: 5, note: '경사, 엘리베이터' },
           { label: '의료안전', stars: 5, note: '동네의원, 종합병원, 약국' },
