@@ -166,7 +166,6 @@
     :report="data"
     :ai-summary="aiSummary"
     :ai-loading="aiLoading"
-    :funded-months="fundedMonths"
   />
 </template>
 
@@ -178,6 +177,7 @@ import { fitCanvasToA4 } from '@/utils/pdfLayout'
 import { generateActionPlan } from '@/utils/openaiSummary'
 import { fetchFavoriteProducts } from '@/api/financeApi'
 import { useRecommendationStore } from '@/stores/recommendation'
+import { authStore } from '@/stores/authStore'
 import { termGroupOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
 // TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
@@ -250,6 +250,9 @@ onMounted(async () => {
       portfolioMonthlyNeed.value,
     )
     fundedMonths.value = dur(funded)
+
+    // PDF도 화면과 같은 실제 배분 결과를 그리도록 연결
+    if (portfolioItems.value.length) fp.items = portfolioItems.value
   } catch (e) {
     console.warn('포트폴리오 배분 조회 실패', e)
   }
@@ -296,14 +299,31 @@ async function downloadPdf() {
   aiSummary.value = null
   let restoreCaptureStyle = () => {}
   try {
-    // 1단계: OpenAI로 행동 지침 JSON 생성
-    aiSummary.value = await generateActionPlan({
+    // 1단계: 요약 문장을 먼저 만들고, OpenAI에는 그 문장에 대한 전문가 조언만 요청
+    const items = portfolioItems.value.length ? portfolioItems.value : fp.items
+    const birthYear = authStore.state.user?.birthYear
+    const userAge = birthYear
+      ? Math.floor((new Date().getFullYear() - birthYear) / 10) * 10
+      : 60
+    const itemNames = items.map((i) => i.name).join(', ')
+    const itemAmounts = items.map((i) => formatKRW(i.invest)).join(', ')
+    const dataTemplateText =
+      `현재 살고 계신 ${pr.currentHome.name}을(를) 팔고 관련 세금 및 주택담보 대출을 갚고 나면 ` +
+      `${formatKRW(pr.currentHome.estimatedSalePrice)}이 남고, ${pr.newHome.name}으(로) 이사를 가신다면 ` +
+      `${formatKRW(pr.netFund)}이 남습니다. 남는 돈을 ${itemNames}에 각각 ${itemAmounts}씩 투자하신다면, ` +
+      `매달 추가로 ${formatKRW(portfolioMonthlyNeed.value)}씩을 ${fundedMonths.value} 동안 사용 가능합니다.`
+
+    const generated = await generateActionPlan({
       investable: fp.investable,
       monthlyNeed: portfolioMonthlyNeed.value,
       fundedMonths: fundedMonths.value,
-      items: fp.items,
+      items,
       propertyResult: pr,
+      userAge,
+      profileCode: rec.riskLevel,
+      dataTemplateText,
     })
+    aiSummary.value = { ...generated, dataTemplateText }
     aiLoading.value = false
 
     // 2단계: Vue가 aiSummary를 PdfReport에 반영할 때까지 대기
