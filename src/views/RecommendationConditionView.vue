@@ -89,19 +89,14 @@ function submit() {
             국민연금 등 고정 수입 외에, <strong>이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?</strong>
           </p>
 
-          <!-- 참조 사진 2 스타일: 대형 입력창 + 우측 월 한글 금액 -->
-          <div class="hero-input-card">
-            <div class="hero-input-row">
-              <div class="hero-input-left">
-                <input class="hero-amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" placeholder="0" />
-                <span class="hero-unit">만원</span>
-              </div>
-              <div class="hero-amount-right">
-                월 <strong>{{ formatKRW(rec.monthlyNeed) }}</strong>
-              </div>
+          <!-- 전폭(Full Width) 대형 금액 입력 박스 -->
+          <div class="full-input-card">
+            <div class="full-input-wrap">
+              <input class="full-amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" placeholder="0" />
+              <span class="full-amount-unit">만원 / 월</span>
             </div>
             <!-- 퀵 추가 버튼 + 재설정 버튼 -->
-            <div class="quick-row hero-quick-row">
+            <div class="quick-row full-quick-row">
               <div class="chips-left">
                 <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
               </div>
@@ -109,31 +104,30 @@ function submit() {
             </div>
           </div>
 
-          <!-- 참조 사진 1 스타일: 평가손익 형태 2행 버팀 카드 -->
-          <div class="runway-photo1-card">
-            <div class="photo1-row main-row">
-              <span class="photo1-label">기간별 나눠 담으면</span>
-              <div class="photo1-val-wrap">
-                <strong class="photo1-val main">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
-                <span class="photo1-diff-badge">(최소 +{{ rec.runwayAnalysis.diffText }} 연장!)</span>
+          <!-- 주식 평가손익 스타일 버팀 수명 요약 카드 -->
+          <div class="runway-stock-card">
+            <div class="stock-main-row">
+              <span class="stock-label">기간별 나눠 담으면</span>
+              <div class="stock-months-wrap">
+                <strong class="stock-months">{{ rec.runwayAnalysis.appMonths }}개월</strong>
+                <span class="stock-diff-pill">(+{{ rec.runwayAnalysis.diffMonths }}개월 연장!)</span>
               </div>
             </div>
-            <div class="photo1-row sub-row">
-              <span class="photo1-label">현금 단순 보유 시</span>
-              <span class="photo1-val sub">약 {{ rec.runwayAnalysis.cashYearsText }} ({{ rec.runwayAnalysis.cashMonths }}개월)</span>
+            <div class="stock-sub-row">
+              <span class="stock-sub-text">총 약 {{ rec.runwayAnalysis.appYearsText }} (현금 단순 보유 시 {{ rec.runwayAnalysis.cashYearsText }})</span>
             </div>
           </div>
         </section>
 
-        <!-- 자금 조정 질문 & 분기 버튼 2개 -->
+        <!-- 자금 조정 질문 & 분기 버튼 2개 (예/아니오 관습 준수, 아니오 노란색 메인 유지) -->
         <div class="adjust-decision-box">
           <p class="adjust-question">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</p>
           <div class="adjust-buttons">
-            <button type="button" class="btn-decision primary" @click="skipAdjust">
-              아니오, 남은 돈 그대로 전액 굴리기
-            </button>
             <button type="button" class="btn-decision secondary" @click="openAdjustForm">
               예, 조정할 자금 입력 (+/-)
+            </button>
+            <button type="button" class="btn-decision primary" @click="skipAdjust">
+              ⚡ 아니오, 남은 돈 그대로 전액 굴리기
             </button>
           </div>
         </div>
@@ -303,53 +297,42 @@ function submit() {
 .quick-chip { padding: 8px 16px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--text-muted); cursor: pointer; }
 .quick-chip.reset { color: #999; }
 
-/* 참조 사진 2 스타일 대형 금액 입력 박스 */
-.hero-input-card {
-  padding: 18px 22px;
-  background: #faf8f5;
+/* 전폭(Full Width) 대형 금액 입력 박스 */
+.full-input-card {
+  padding: 20px 24px;
+  background: #ffffff;
   border: 1.5px solid var(--card-border);
   border-radius: 16px;
   margin-bottom: 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.03);
 }
-.hero-input-row {
+.full-input-wrap {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
-}
-.hero-input-left {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.hero-amount-input {
-  width: 170px;
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text-dark);
-  padding: 8px 14px;
-  border: 1.5px solid #c9c3bc;
+  background: #faf8f5;
+  border: 1.5px solid #d4cecb;
   border-radius: 12px;
-  background: #ffffff;
-  text-align: right;
+  padding: 10px 18px;
 }
-.hero-unit {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-.hero-amount-right {
-  font-size: 15px;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-.hero-amount-right strong {
-  font-size: 20px;
+.full-amount-input {
+  flex: 1;
+  font-size: 28px;
   font-weight: 800;
   color: var(--text-dark);
+  border: none;
+  background: transparent;
+  outline: none;
+}
+.full-amount-unit {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+  white-space: nowrap;
 }
 
-.hero-quick-row {
+.full-quick-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -357,7 +340,18 @@ function submit() {
 }
 .chips-left {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+}
+.quick-chip {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1.4px solid var(--card-border);
+  background: #fff;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--text-dark);
+  cursor: pointer;
 }
 .quick-chip.reset-btn {
   background: #ece8e1;
@@ -370,54 +364,56 @@ function submit() {
   color: #111;
 }
 
-/* 참조 사진 1 스타일 평가손익형 2행 요약 카드 */
-.runway-photo1-card {
+/* 주식 평가손익 스타일 버팀 수명 요약 카드 */
+.runway-stock-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px 22px;
+  gap: 10px;
+  padding: 20px 24px;
   background: #faf8f5;
   border: 1.5px solid #eae5db;
   border-radius: 16px;
 }
-.photo1-row {
+.stock-main-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.photo1-label {
-  font-size: 14px;
+.stock-label {
+  font-size: 14.5px;
   color: #666;
   font-weight: 600;
 }
-.photo1-val-wrap {
+.stock-months-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.photo1-val.main {
-  font-size: 19px;
+.stock-months {
+  font-size: 24px;
   font-weight: 800;
   color: var(--text-dark);
 }
-.photo1-diff-badge {
+.stock-diff-pill {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  background: #fff6cf;
-  color: #835f00;
-  border: 1px solid #ffe266;
-  font-size: 14px;
+  padding: 4px 12px;
+  background: #eef8f1;
+  color: #1e6434;
+  border: 1px solid #c3e6cb;
+  font-size: 14.5px;
   font-weight: 800;
-  border-radius: 6px;
+  border-radius: 8px;
 }
-.photo1-row.sub-row {
-  padding-top: 10px;
+.stock-sub-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
   border-top: 1px dashed #e4dfd4;
 }
-.photo1-val.sub {
+.stock-sub-text {
   font-size: 14.5px;
-  color: #777;
+  color: #666;
   font-weight: 600;
 }
 
