@@ -53,8 +53,12 @@
           <strong class="negative">-{{ formatKRW(pr.newHome.purchasePrice) }}</strong>
         </div>
         <div v-for="cost in pr.costs" :key="cost.label" class="row-between cost-row">
-          <span class="row-label">{{ cost.label }}</span>
-          <strong class="negative">-{{ formatKRW(cost.amount) }}</strong>
+          <span class="row-label">
+            {{ cost.label }}
+            <span v-if="cost.note" class="cost-note">{{ cost.note }}</span>
+          </span>
+          <strong v-if="cost.amount > 0" class="negative">-{{ formatKRW(cost.amount) }}</strong>
+          <strong v-else class="cost-zero">0원</strong>
         </div>
       </div>
       <hr class="divider" />
@@ -202,12 +206,18 @@ const selectedHome = ref(null)
 const propertyResult = computed(() => {
   const home = selectedHome.value
   const buy = purchaseSummary(home)
+  // 양도소득세는 0원이어도 숨기지 않는다. 안 보이면 계산이 빠진 건지 비과세인지 알 수 없다.
+  const tax = survey.taxResult ?? { amount: 0, exempt: false }
+  let taxNote = ''
+  if (tax.exempt) taxNote = '1세대 1주택 비과세'
+  else if (tax.amount === 0 && (survey.expectedSalePrice ?? 0) > 0) taxNote = '양도차익 없음'
+
   const costs = [
-    { label: '양도소득세', amount: survey.capitalGainsTax?.amount ?? 0 },
-    { label: '현재 집 중개수수료', amount: survey.brokerage?.amount ?? 0 },
-    { label: '새 집 취득세', amount: buy.purchaseCost.totalTax },
-    { label: '새 집 중개수수료', amount: buy.brokerage.brokerageFee + buy.brokerage.vat },
-  ].filter((c) => c.amount > 0)
+    { label: '양도소득세', amount: tax.amount, note: taxNote },
+    { label: '현재 집 중개수수료', amount: survey.brokerage?.amount ?? 0, note: '' },
+    { label: '새 집 취득세', amount: buy.purchaseCost.totalTax, note: '' },
+    { label: '새 집 중개수수료', amount: buy.brokerage.brokerageFee + buy.brokerage.vat, note: '' },
+  ].filter((c) => c.amount > 0 || c.note)
 
   return {
     // 설문은 금액만 받고 현재 집의 이름·평수는 저장하지 않는다. 지어내지 않고 비워 둔다.
@@ -541,6 +551,21 @@ async function downloadPdf() {
 
 .row-sub {
   font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 0원인 항목의 사유(비과세 등). 숨기면 계산이 빠진 것처럼 보인다 */
+.cost-note {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eef2f7;
+  color: #6b7280;
+  font-size: 11.5px;
+}
+
+.cost-zero {
+  font-size: 17px;
   color: #9ca3af;
 }
 
