@@ -228,9 +228,13 @@ const propertyResult = computed(() => {
     currentHome: { name: '', pyeong: null, estimatedSalePrice: survey.expectedSalePrice ?? 0 },
     newHome: {
       name: home?.houseName ?? '',
+      // PDF는 area를 "84.9㎡ · 26평" 형태로 함께 찍는다. 비어 있으면 " · 26평"이 된다.
+      area: home?.houseSize == null ? '' : `${Number(home.houseSize).toFixed(1)}㎡`,
       pyeong: home?.houseSize == null ? null : Math.round(Number(home.houseSize) / 3.3058),
       fitScore: home?.totalScore ?? null,
       purchasePrice: buy.buyPrice,
+      tags: home?.houseLocation ? [home.houseLocation] : [],
+      memo: '',
     },
     costs,
     // 새 집까지 사고 남는 돈. 관심매물 화면이 금융 추천으로 넘기는 값과 같은 계산이다.
