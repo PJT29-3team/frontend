@@ -79,10 +79,10 @@ function submit() {
       </header>
 
       <div class="survey-card">
-        <!-- Step 1: 매달 꺼내 쓸 생활비 정하기 -->
+        <!-- 생활비 설정 -->
         <section class="block step-block">
           <div class="block-head-wrap">
-            <span class="step-badge">Step 1</span>
+            <span class="step-badge">생활비 설정</span>
             <h2 class="block-title">매달 꺼내 쓸 생활비 정하기</h2>
           </div>
           <p class="block-desc">
@@ -110,7 +110,7 @@ function submit() {
               <span class="stock-label">기간별 나눠 담으면</span>
               <div class="stock-months-wrap">
                 <strong class="stock-months">{{ rec.runwayAnalysis.appMonths }}개월</strong>
-                <span class="stock-diff-pill">(+{{ rec.runwayAnalysis.diffMonths }}개월 연장!)</span>
+                <span class="stock-diff-pill">(+최소 {{ rec.runwayAnalysis.diffMonths }}개월 연장)</span>
               </div>
             </div>
             <div class="stock-sub-row">
@@ -119,7 +119,7 @@ function submit() {
           </div>
         </section>
 
-        <!-- 자금 조정 질문 & 분기 버튼 2개 (예/아니오 관습 준수, 아니오 노란색 메인 유지) -->
+        <!-- 자금 조정 질문 & 분기 버튼 2개 -->
         <div class="adjust-decision-box">
           <p class="adjust-question">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</p>
           <div class="adjust-buttons">
@@ -132,10 +132,10 @@ function submit() {
           </div>
         </div>
 
-        <!-- Step 2: 자금 조정 3단 계산기 (기본 접힘/Hidden) -->
+        <!-- 자금 조정 (기본 접힘/Hidden) -->
         <section v-if="showAdjustForm" ref="adjustSectionRef" class="block step-block adjust-section">
           <div class="block-head-wrap">
-            <span class="step-badge">Step 2</span>
+            <span class="step-badge">자금 조정</span>
             <h2 class="block-title">자금 조정하기</h2>
           </div>
           <p class="block-desc">이사 후 남은 돈에서 추가로 더할 돈이나, 미리 뺄 긴급 지출이 있다면 입력해 주세요.</p>
@@ -147,30 +147,34 @@ function submit() {
               <span class="calc-amount">{{ formatKRW(rec.fundingAmount) }}</span>
             </div>
 
-            <!-- 추가로 합칠 돈 + -->
-            <div class="calc-row plus-row">
-              <span class="calc-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</span>
-              <div class="amount-input-row">
-                <input class="amount-input" type="number" min="0" step="10" v-model.number="additionalManwon" aria-label="추가로 합칠 돈(만원)" />
-                <span class="amount-unit">만원</span>
+            <!-- 추가로 합칠 돈 + (Step 1 통일 전폭 인풋) -->
+            <div class="calc-group-block">
+              <label class="calc-group-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</label>
+              <div class="full-input-wrap">
+                <input class="full-amount-input" type="number" min="0" step="10" v-model.number="additionalManwon" aria-label="추가로 합칠 돈(만원)" placeholder="0" />
+                <span class="full-amount-unit">만원</span>
               </div>
-            </div>
-            <div class="quick-row">
-              <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addAdditional(q)">+{{ q }}만원</button>
-              <button type="button" class="quick-chip reset" @click="rec.setAdditionalDeposit(0)">다시 입력</button>
+              <div class="quick-row full-quick-row">
+                <div class="chips-left">
+                  <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addAdditional(q)">+{{ q }}만원</button>
+                </div>
+                <button type="button" class="quick-chip reset-btn" @click="rec.setAdditionalDeposit(0)">다시 입력</button>
+              </div>
             </div>
 
-            <!-- 당장 쓸 긴급 돈 - -->
-            <div class="calc-row minus-row">
-              <span class="calc-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</span>
-              <div class="amount-input-row">
-                <input class="amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 긴급 돈(만원)" />
-                <span class="amount-unit">만원</span>
+            <!-- 당장 쓸 긴급 돈 - (Step 1 통일 전폭 인풋) -->
+            <div class="calc-group-block">
+              <label class="calc-group-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
+              <div class="full-input-wrap">
+                <input class="full-amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 긴급 돈(만원)" placeholder="0" />
+                <span class="full-amount-unit">만원</span>
               </div>
-            </div>
-            <div class="quick-row">
-              <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addImmediate(q)">+{{ q }}만원</button>
-              <button type="button" class="quick-chip reset" @click="rec.setImmediateExpense(0)">다시 입력</button>
+              <div class="quick-row full-quick-row">
+                <div class="chips-left">
+                  <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addImmediate(q)">+{{ q }}만원</button>
+                </div>
+                <button type="button" class="quick-chip reset-btn" @click="rec.setImmediateExpense(0)">다시 입력</button>
+              </div>
             </div>
 
             <!-- 최종 투자금 -->
@@ -181,16 +185,16 @@ function submit() {
           </div>
 
           <button type="button" class="btn-to-risk" @click="scrollToRisk">
-            다음: 위험도 선택하기 ↓
+            위험도 선택하기 단계로 이동 ↓
           </button>
         </section>
 
         <hr class="divider" />
 
-        <!-- Step 3: 위험도 선택 & 맞춤 상품 특징 -->
+        <!-- 위험도 선택 & 맞춤 상품 특징 -->
         <section ref="riskSectionRef" class="block step-block">
           <div class="block-head-wrap">
-            <span class="step-badge">Step 3</span>
+            <span class="step-badge">위험도 선택</span>
             <h2 class="block-title">위험도 선택하기</h2>
           </div>
           <p class="block-desc">
@@ -300,21 +304,36 @@ function submit() {
 /* 전폭(Full Width) 대형 금액 입력 박스 */
 .full-input-card {
   padding: 20px 24px;
-  background: #ffffff;
+  background: #faf8f5;
   border: 1.5px solid var(--card-border);
   border-radius: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.03);
 }
 .full-input-wrap {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: #faf8f5;
-  border: 1.5px solid #d4cecb;
+  background: #ffffff;
+  border: 1.5px solid #c9c3bc;
   border-radius: 12px;
   padding: 10px 18px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.full-input-wrap:focus-within {
+  border-color: #d4a000;
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
+}
+.calc-group-block {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.calc-group-label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-dark);
 }
 .full-amount-input {
   flex: 1;
