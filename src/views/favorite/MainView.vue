@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { favoriteStore } from '@/stores/favoriteStore'
+import { useRecommendationStore } from '@/stores/recommendation'
 import { formatPyeong } from '@/utils/area'
 import { Heart, LoaderCircle, X } from '@lucide/vue'
 import {
@@ -180,6 +181,14 @@ async function confirmRemoval() {
   }
 }
 
+function goToRecommendation() {
+  if (selectedHome.value) {
+    const surplus = remainingAfterPurchase(selectedHome.value)
+    useRecommendationStore().setFundingAmount(surplus)
+  }
+  router.push('/recommendation')
+}
+
 onMounted(loadFavorites)
 </script>
 
@@ -225,7 +234,7 @@ onMounted(loadFavorites)
 
     <footer class="favorite-footer">
       <button type="button" class="back-button" @click="router.push('/process/recommended')">← 추천 매물 다시 보기</button>
-      <div v-if="selectedHome" class="footer-next"><span>{{ selectedHome.houseName }}을 선택함</span><button type="button">이대로 금융상품 알아보기&nbsp; →</button></div>
+      <div v-if="selectedHome" class="footer-next"><span>{{ selectedHome.houseName }}을 선택함</span><button type="button" @click="goToRecommendation">이대로 금융상품 알아보기&nbsp; →</button></div>
     </footer>
     <p class="disclaimer">본 점수는 입력한 조건과 공공데이터를 활용한 매물 간 비교지표입니다. 주택의 가격 적정성, 관리관계, 실제 시설 상태 또는 거래 안전성을 보증하지 않습니다.</p>
 
