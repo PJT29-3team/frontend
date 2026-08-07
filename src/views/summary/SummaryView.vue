@@ -166,6 +166,7 @@
     :report="data"
     :ai-summary="aiSummary"
     :ai-loading="aiLoading"
+    :funded-months="fundedMonths"
   />
 </template>
 
@@ -179,6 +180,7 @@ import { fetchFavoriteProducts } from '@/api/financeApi'
 import { useRecommendationStore } from '@/stores/recommendation'
 import { authStore } from '@/stores/authStore'
 import { termGroupOf } from '@/utils/finance/portfolioAllocation'
+import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
 // TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
 import { dummySummary as data } from '@/mock/dummySummary'
 
@@ -198,6 +200,8 @@ const aiLoading = ref(false)
 // 포트폴리오 배분: DB에 저장된 관심상품 배분(금액/비율)을 조회해서 구성
 const portfolioItems = ref([])
 const portfolioMonthlyNeed = ref(fp.monthlyNeed)
+// 이자 반영 기준 지속 기간 — horizon과 같은 buildTimeline으로 계산해 숫자가 어긋나지 않게 한다
+const fundedMonths = ref('')
 
 onMounted(async () => {
   try {
@@ -208,14 +212,20 @@ onMounted(async () => {
 
     const allocated = favorites
       .filter((f) => f.amount != null)
-      .map((f) => ({
-        name: f.productName,
-        tag: `${TERM_LABELS[termGroupOf(f.termMonths || 0)]} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
-        description: `${f.termMonths}개월 · 기본금리 연 ${Number(f.annualRate).toFixed(1)}%`,
-        maturityMonths: f.termMonths || 0,
-        invest: Number(f.amount),
-        percent: Math.round(Number(f.percent)),
-      }))
+      .map((f) => {
+        // horizon과 동일하게 우대금리 기준 (stock은 maxAnnualRate가 없어 수익률로 떨어진다)
+        const rate = Number(f.maxAnnualRate ?? f.annualRate)
+        return {
+          name: f.productName,
+          tag: `${TERM_LABELS[termGroupOf(f.termMonths || 0)]} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
+          description: `${f.termMonths}개월 · 연 ${rate.toFixed(1)}%`,
+          maturityMonths: f.termMonths || 0,
+          rate: rate / 100,
+          fixed: !!f.fixed,
+          invest: Number(f.amount),
+          percent: Math.round(Number(f.percent)),
+        }
+      })
       .sort((a, b) => a.maturityMonths - b.maturityMonths)
 
     const parking = totalFund - allocated.reduce((s, it) => s + it.invest, 0)
@@ -225,10 +235,23 @@ onMounted(async () => {
           tag: '즉시 인출',
           description: '첫 상품 만기 전 생활비 커버',
           maturityMonths: 0,
+          rate: 0,
+          fixed: false,
           invest: parking,
           percent: Math.round((parking / totalFund) * 100),
         }, ...allocated]
       : allocated
+
+    const { funded } = buildTimeline(
+      portfolioItems.value.map((it) => ({
+        maturity: it.maturityMonths,
+        rate: it.rate,
+        fixed: it.fixed,
+        invest: it.invest,
+      })),
+      portfolioMonthlyNeed.value,
+    )
+    fundedMonths.value = dur(funded)
   } catch (e) {
     console.warn('포트폴리오 배분 조회 실패', e)
   }
@@ -278,8 +301,8 @@ async function downloadPdf() {
     // 1단계: OpenAI로 행동 지침 JSON 생성
     aiSummary.value = await generateActionPlan({
       investable: fp.investable,
-      monthlyNeed: fp.monthlyNeed,
-      fundedMonths: fp.fundedMonths,
+      monthlyNeed: portfolioMonthlyNeed.value,
+      fundedMonths: fundedMonths.value,
       items: fp.items,
       propertyResult: pr,
     })
