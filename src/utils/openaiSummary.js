@@ -1,5 +1,8 @@
+import { http } from '@/api/http'
+
 /**
  * OpenAI API를 이용해 다운사이징 자산 설계의 "앞으로 행동 지침"을 JSON으로 생성한다.
+ * OpenAI 키는 서버에만 보관하므로, 완성된 프롬프트만 백엔드(/api/ai-summary)로 보낸다.
  *
  * @param {object} params
  * @param {number}  params.investable      - 투자 가능 금액 (원)
@@ -22,9 +25,6 @@ export async function generateActionPlan({
   profileCode,
   dataTemplateText,
 }) {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  if (!apiKey) throw new Error('VITE_OPENAI_API_KEY가 설정되지 않았습니다.');
-
   const formatWon = (n) => {
     if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억 원`;
     if (n >= 10_000) return `${Math.round(n / 10_000).toLocaleString()}만 원`;
@@ -83,30 +83,6 @@ ${dataTemplateText}
 [포트폴리오 상품 (만기 순)]
 ${itemText}`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.5,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message ?? `OpenAI API 오류 (${response.status})`);
-  }
-
-  const data = await response.json();
-  const raw = data.choices?.[0]?.message?.content ?? '{}';
-  return JSON.parse(raw);
+  const { data } = await http.post('/api/ai-summary', { systemPrompt, userPrompt });
+  return data;
 }

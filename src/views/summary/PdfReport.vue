@@ -41,9 +41,13 @@
       <div class="pdf-sec1-row">
         <div class="pdf-sec1-left">
           <div class="pdf-home-name">{{ pr.newHome.name }}</div>
-          <div class="pdf-home-meta">{{ pr.newHome.area }} · {{ pr.newHome.pyeong }}평</div>
-          <div class="pdf-tags">
-            <span v-for="tag in (pr.newHome.tags || [])" :key="tag" class="pdf-tag">● {{ tag }}</span>
+          <div class="pdf-home-meta">{{ pr.newHome.location }} · {{ pr.newHome.pyeong }}평</div>
+          <div class="pdf-grades">
+            <span
+              v-for="g in (pr.newHome.grades || [])"
+              :key="g.label"
+              :class="['pdf-grade', gradeClass(g.score)]"
+            ><i></i>{{ g.label }} {{ grade(g.score) }}</span>
           </div>
           <div v-if="pr.newHome.memo" class="pdf-home-memo">{{ pr.newHome.memo }}</div>
         </div>
@@ -62,16 +66,19 @@
         <div class="pdf-highlight">{{ formatKRW(pr.netFund) }}</div>
       </div>
       <div class="pdf-cost-row">
-        <span>내 집 팔고 대출 갚고 남는 돈</span>
+        <span>현재 집 매도 예상가</span>
         <span>{{ formatKRW(pr.currentHome.estimatedSalePrice) }}</span>
       </div>
       <div class="pdf-cost-row">
-        <span>이 집 가격</span>
+        <span>새 집 매수가</span>
         <span class="pdf-neg">- {{ formatKRW(pr.newHome.purchasePrice) }}</span>
       </div>
       <div v-for="cost in pr.costs" :key="cost.label" class="pdf-cost-row">
-        <span>{{ cost.label }}</span>
-        <span class="pdf-neg">- {{ formatKRW(cost.amount) }}</span>
+        <span>{{ cost.label }}<template v-if="cost.note"> ({{ cost.note }})</template></span>
+        <span :class="{ 'pdf-neg': cost.amount > 0 }">
+          <template v-if="cost.amount > 0">- {{ formatKRW(cost.amount) }}</template>
+          <template v-else>0원</template>
+        </span>
       </div>
       <div class="pdf-cost-note">실제 거래가·세금에 따라 달라질 수 있어요</div>
     </div>
@@ -112,26 +119,32 @@
         </div>
       </div>
 
-      <!-- 타임라인 -->
-      <div class="pdf-timeline-wrap">
+      <!-- 타임라인 — 상품별 담당 구간 간트차트. 가로축이 시간(개월), 행 하나가 상품 하나 -->
+      <div v-if="timeline.segs.length" class="pdf-timeline-wrap">
         <div class="pdf-tl-label">시기별 자금 흐름</div>
-        <div class="pdf-tl-bar">
-          <div
-            v-for="(item, i) in fp.items"
-            :key="'tl'+i"
-            :class="['pdf-tl-seg', 'pdf-seg-' + dotColor(item)]"
-            :style="{ flex: tlWidth(item, i) }"
-          >
-            <span class="pdf-tl-seg-text">{{ item.name.length > 8 ? item.name.slice(0, 8) + '…' : item.name }}</span>
+        <div class="pdf-gantt">
+          <div v-for="(seg, i) in timeline.segs" :key="'g'+i" class="pdf-gantt-row">
+            <div class="pdf-gantt-name">
+              <span class="pdf-gantt-name-main">{{ seg.name }}</span>
+              <span class="pdf-gantt-name-sub">{{ seg.from }}~{{ seg.to }}개월차</span>
+            </div>
+            <div class="pdf-gantt-track">
+              <div
+                :class="['pdf-gantt-bar', 'pdf-seg-' + seg.type]"
+                :style="{ left: pctOf(seg.from - 1) + '%', width: pctOf(seg.months) + '%' }"
+              ></div>
+            </div>
           </div>
-        </div>
-        <div class="pdf-tl-axis">
-          <div
-            v-for="(item, i) in fp.items"
-            :key="'ax'+i"
-            class="pdf-tl-tick"
-            :style="{ flex: tlWidth(item, i) }"
-          >{{ item.maturityMonths === 0 ? '즉시' : item.maturityMonths + '개월' }}</div>
+          <div class="pdf-gantt-axis">
+            <div class="pdf-gantt-axis-track">
+              <span
+                v-for="(t, i) in ticks"
+                :key="'t'+i"
+                :class="['pdf-gantt-tick', { last: i === ticks.length - 1 }]"
+                :style="{ left: pctOf(t) + '%' }"
+              >{{ t }}개월</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -142,6 +155,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { periodOf } from '@/utils/finance/portfolioAllocation'
+import { buildTimeline } from '@/utils/finance/horizonTimeline'
 
 const props = defineProps({
   report: {
@@ -180,18 +194,65 @@ function formatKRW(value) {
   return `${man.toLocaleString()}만원`
 }
 
+// 등급 기준은 관심매물 비교표(favorite/MainView.vue)와 동일하게 유지할 것
+function grade(score) {
+  if (score >= 61) return '우수'
+  if (score >= 41) return '보통'
+  return '미흡'
+}
+
+function gradeClass(score) {
+  const label = grade(score)
+  if (label === '우수') return 'grade--good'
+  if (label === '보통') return 'grade--normal'
+  return 'grade--weak'
+}
+
 function dotColor(item) {
   if (!item || item.maturityMonths === 0) return 'park'
   return periodOf(item.maturityMonths).css
 }
 
-function tlWidth(item, i) {
-  const items = fp.value.items
-  const from = item.maturityMonths || 0
-  const next = items[i + 1]
-  const to = next ? (next.maturityMonths || 0) : from + 30
-  return Math.max(to - from, 4)
+// 간트 데이터. horizon 화면과 같은 buildTimeline을 써서 두 화면의 구간이 어긋나지 않게 한다.
+const timeline = computed(() =>
+  buildTimeline(
+    (fp.value.items || []).map((it) => ({
+      name: it.name,
+      maturity: it.maturityMonths,
+      rate: it.rate,
+      afterTaxRate: it.afterTaxRate,
+      fixed: it.fixed,
+      invest: it.invest,
+      cssType: dotColor(it),
+    })),
+    fp.value.monthlyNeed,
+  ),
+)
+
+// 개월 수 → 전체 기간 대비 가로 비율(%)
+function pctOf(months) {
+  const span = timeline.value.span
+  return span === 0 ? 0 : (months / span) * 100
 }
+
+// 축 눈금: 0개월 + 각 구간이 끝나는 시점. 라벨이 겹치지 않게 너무 촘촘한 것은 솎아낸다.
+const MIN_TICK_GAP = 0.07 // 전체 기간 대비
+const ticks = computed(() => {
+  const { segs, span } = timeline.value
+  if (!span) return []
+  const all = [0, ...segs.map((s) => s.to)]
+  const last = all[all.length - 1]
+  const out = []
+  for (const t of all) {
+    const far = out.length === 0 || (t - out[out.length - 1]) / span >= MIN_TICK_GAP
+    if (t === last || far) out.push(t)
+  }
+  // 끝 눈금과 그 앞이 붙어 있으면 앞엣것을 버린다
+  if (out.length >= 2 && (last - out[out.length - 2]) / span < MIN_TICK_GAP) {
+    out.splice(out.length - 2, 1)
+  }
+  return out
+})
 
 function riskLabel(tag) {
   if (!tag) return ''
@@ -237,8 +298,13 @@ defineExpose({ pdfRoot })
 .pdf-sec1-left { min-width: 0; flex: 1; }
 .pdf-home-name { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
 .pdf-home-meta { font-size: 12px; color: var(--text-faint); margin-bottom: 8px; }
-.pdf-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-.pdf-tag { font-size: 11px; color: #065f46; background: #d1fae5; border-radius: 99px; padding: 2px 9px; font-weight: 600; }
+/* 등급 배지 — /favorite-home 비교표의 .grade 스타일을 PDF 크기에 맞춰 옮긴 것 */
+.pdf-grades { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.pdf-grade { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.pdf-grade i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.grade--good { background: #e5f5d9; color: #468733; }
+.grade--normal { background: #fff0c9; color: #a37113; }
+.grade--weak { background: #efeeec; color: #918d87; }
 .pdf-home-memo { font-size: 11.5px; color: #6b7280; background: #fefce8; border-radius: 8px; padding: 6px 10px; }
 .pdf-sec1-right { text-align: right; flex-shrink: 0; }
 .pdf-label-sm { font-size: 11px; color: var(--text-faint); margin-bottom: 3px; }
@@ -266,11 +332,22 @@ defineExpose({ pdfRoot })
 .pdf-product-pct { font-size: 11px; color: #f59e0b; font-weight: 700; }
 .pdf-timeline-wrap { background: #f8f7f3; border-radius: 10px; padding: 10px 13px; border: 1px solid #eeebe4; margin-bottom: 12px; }
 .pdf-tl-label { font-size: 10px; font-weight: 700; color: var(--text-faint); margin-bottom: 7px; }
-.pdf-tl-bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; gap: 2px; }
-.pdf-tl-seg { display: flex; align-items: center; justify-content: center; border-radius: 3px; min-width: 2px; overflow: hidden; }
-.pdf-tl-seg-text { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
-.pdf-tl-axis { display: flex; margin-top: 4px; }
-.pdf-tl-tick { font-size: 9px; color: #b0ab9f; min-width: 0; overflow: hidden; white-space: nowrap; }
+/* 간트차트 — horizon 화면(.gantt)을 PDF 폭·글자크기에 맞춰 옮긴 것 */
+.pdf-gantt-row { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 10px; padding: 3px 0; }
+.pdf-gantt-name { display: flex; flex-direction: column; min-width: 0; text-align: right; }
+.pdf-gantt-name-main { font-size: 11px; font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pdf-gantt-name-sub { font-size: 9px; color: #b0ab9f; }
+.pdf-gantt-track { position: relative; height: 12px; }
+/* 담당하지 않는 기간도 자리를 보이게 하는 바탕선 */
+.pdf-gantt-track::before { content: ""; position: absolute; inset: 5px 0; background: #eae7e0; border-radius: 99px; }
+.pdf-gantt-bar { position: absolute; top: 0; height: 12px; min-width: 3px; border-radius: 99px; }
+.pdf-gantt-axis { display: grid; grid-template-columns: 150px 1fr; gap: 10px; margin-top: 3px; }
+.pdf-gantt-axis-track { grid-column: 2; position: relative; height: 16px; border-top: 1px solid #ddd8cf; }
+.pdf-gantt-tick { position: absolute; top: 5px; font-size: 9px; color: #b0ab9f; white-space: nowrap; }
+.pdf-gantt-tick::before { content: ""; position: absolute; top: -5px; left: 0; width: 1px; height: 4px; background: #ddd8cf; }
+/* 마지막 눈금은 오른쪽 끝이라 라벨을 왼쪽으로 당긴다 */
+.pdf-gantt-tick.last { transform: translateX(-100%); }
+.pdf-gantt-tick.last::before { left: auto; right: 0; }
 .pdf-conclusion { background: #1f2937; color: #fff; border-radius: 10px; padding: 16px 20px; text-align: center; }
 .pdf-conclusion-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 3px; }
 .pdf-conclusion-value { font-size: 24px; font-weight: 800; color: #f5c518; }

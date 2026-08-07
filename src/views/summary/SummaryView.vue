@@ -194,6 +194,7 @@ import { authStore } from '@/stores/authStore'
 import { periodOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
 import { purchaseSummary } from '@/utils/house/purchaseCost'
+import { toPyeong } from '@/utils/area'
 import '@/styles/survey-tokens.css'
 
 const rec = useRecommendationStore()
@@ -228,12 +229,18 @@ const propertyResult = computed(() => {
     currentHome: { name: '', pyeong: null, estimatedSalePrice: survey.expectedSalePrice ?? 0 },
     newHome: {
       name: home?.houseName ?? '',
-      // PDF는 area를 "84.9㎡ · 26평" 형태로 함께 찍는다. 비어 있으면 " · 26평"이 된다.
-      area: home?.houseSize == null ? '' : `${Number(home.houseSize).toFixed(1)}㎡`,
-      pyeong: home?.houseSize == null ? null : Math.round(Number(home.houseSize) / 3.3058),
+      pyeong: toPyeong(home?.houseSize),
       fitScore: home?.totalScore ?? null,
       purchasePrice: buy.buyPrice,
-      tags: home?.houseLocation ? [home.houseLocation] : [],
+      location: home?.houseLocation ?? '',
+      // 관심매물 비교표(/favorite-home)와 같은 3개 항목·같은 등급 기준으로 보여준다.
+      grades: home
+        ? [
+            { label: '주거 안전', score: home.safetyScore },
+            { label: '생활 편의', score: home.convenienceScore },
+            { label: '자산 안정', score: home.assetScore },
+          ]
+        : [],
       memo: '',
     },
     costs,
