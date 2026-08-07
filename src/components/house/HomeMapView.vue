@@ -38,7 +38,9 @@ function loadKakaoMapScript() {
 // home.id → 카카오 LatLng. 선택된 매물로 지도를 이동시킬 때 다시 계산하지 않고 찾아 쓴다.
 const positionByHomeId = new Map()
 
-function renderMarkers() {
+// fitBounds: 전체 매물이 다 보이도록 범위를 다시 맞출지 여부.
+// 특정 매물을 확대해 둔 상태에서 찜만 눌렀는데 화면이 되돌아가면 안 되므로 나눠 뒀다.
+function renderMarkers(fitBounds = true) {
   if (!map) return;
 
   // 기존 마커 전부 지우기
@@ -92,10 +94,27 @@ function renderMarkers() {
   })
 
   // 매물들이 지도 기본 범위(분당) 밖에 있어도 전부 보이도록 범위를 맞춘다.
-  if (hasValidPosition) {
+  if (hasValidPosition && fitBounds) {
     map.setBounds(bounds)
   }
 }
+
+// 목록에서 매물 번호를 누르면 그 매물을 확대해서 보여준다.
+// level 이 작을수록 가깝다(기본 6 → 3이면 단지 주변이 보이는 정도).
+function focusHome(homeId, level = 3) {
+  if (!map) return
+  const position = positionByHomeId.get(homeId)
+  if (!position) return
+  map.setLevel(level)
+  map.panTo(position)
+}
+
+// 컨테이너 높이를 바꾼 뒤에는 지도에 새 크기를 알려줘야 한다.
+function relayout() {
+  if (map) map.relayout()
+}
+
+defineExpose({ focusHome, relayout })
 
 // 매물 카드를 선택하면 그 위치로 지도를 이동시킨다.
 function panToSelected() {
@@ -122,8 +141,10 @@ onMounted(async () => {
   renderMarkers()
 })
 
-watch(() => store.count, () => {
-  renderMarkers()
+// 찜 상태가 바뀌면 핀 색만 다시 칠한다.
+// count 로만 보면 하나 빼고 하나 담았을 때 개수가 같아 반영되지 않으므로 목록을 본다.
+watch(() => [...store.ids], () => {
+  renderMarkers(false)
 })
 
 // 추천 목록은 마운트 이후 비동기로 채워지므로, 도착하면 다시 그려준다.
