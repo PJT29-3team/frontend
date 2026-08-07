@@ -158,8 +158,10 @@ const props = defineProps({
   },
 })
 
-const pr = props.report.propertyResult
-const fp = props.report.financePlan
+// report는 부모의 computed라 값이 갱신될 때마다 새 객체가 온다.
+// setup에서 한 번 꺼내 두면 관심매물·배분 결과가 도착해도 옛 객체를 계속 그린다.
+const pr = computed(() => props.report.propertyResult)
+const fp = computed(() => props.report.financePlan)
 const pdfRoot = ref(null)
 
 const today = computed(() => {
@@ -184,7 +186,7 @@ function dotColor(item) {
 }
 
 function tlWidth(item, i) {
-  const items = fp.items
+  const items = fp.value.items
   const from = item.maturityMonths || 0
   const next = items[i + 1]
   const to = next ? (next.maturityMonths || 0) : from + 30

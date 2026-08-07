@@ -398,26 +398,36 @@ async function downloadPdf() {
   aiSummary.value = null
   let restoreCaptureStyle = () => {}
   try {
+    // pr·fp는 ref다. 템플릿과 달리 스크립트에서는 .value로 꺼내야 한다.
+    const property = propertyResult.value
+    const plan = financePlan.value
+
     // 1단계: 요약 문장을 먼저 만들고, OpenAI에는 그 문장에 대한 전문가 조언만 요청
-    const items = portfolioItems.value.length ? portfolioItems.value : fp.items
+    const items = portfolioItems.value.length ? portfolioItems.value : plan.items
+    if (!items.length) {
+      throw new Error('배분된 금융상품이 없어 보고서를 만들 수 없습니다.')
+    }
     const birthYear = authStore.state.user?.birthYear
     const userAge = birthYear
       ? Math.floor((new Date().getFullYear() - birthYear) / 10) * 10
       : 60
     const itemNames = items.map((i) => i.name).join(', ')
     const itemAmounts = items.map((i) => formatKRW(i.invest)).join(', ')
+    // 설문은 현재 집 이름을 저장하지 않는다. 비어 있으면 문장이 "살고 계신 을(를)"이 된다.
+    const currentHomeText = property.currentHome.name || '현재 집'
+    const newHomeText = property.newHome.name || '새 집'
     const dataTemplateText =
-      `현재 살고 계신 ${pr.currentHome.name}을(를) 팔고 관련 세금 및 주택담보 대출을 갚고 나면 ` +
-      `${formatKRW(pr.currentHome.estimatedSalePrice)}이 남고, ${pr.newHome.name}으(로) 이사를 가신다면 ` +
-      `${formatKRW(pr.netFund)}이 남습니다. 남는 돈을 ${itemNames}에 각각 ${itemAmounts}씩 투자하신다면, ` +
+      `현재 살고 계신 ${currentHomeText}을(를) 팔고 관련 세금 및 주택담보 대출을 갚고 나면 ` +
+      `${formatKRW(property.currentHome.estimatedSalePrice)}이 남고, ${newHomeText}으(로) 이사를 가신다면 ` +
+      `${formatKRW(property.netFund)}이 남습니다. 남는 돈을 ${itemNames}에 각각 ${itemAmounts}씩 투자하신다면, ` +
       `매달 추가로 ${formatKRW(portfolioMonthlyNeed.value)}씩을 ${fundedMonths.value} 동안 사용 가능합니다.`
 
     const generated = await generateActionPlan({
-      investable: fp.investable,
+      investable: plan.investable,
       monthlyNeed: portfolioMonthlyNeed.value,
       fundedMonths: fundedMonths.value,
       items,
-      propertyResult: pr,
+      propertyResult: property,
       userAge,
       profileCode: rec.riskLevel,
       dataTemplateText,
@@ -455,7 +465,8 @@ async function downloadPdf() {
     pdf.save('다운사이징_보고서.pdf')
   } catch (error) {
     console.error('PDF generation failed:', error)
-    window.alert('PDF 생성에 실패했습니다. 다시 시도해 주세요.')
+    // 원인을 감추면 "다시 시도"만 반복하게 된다. 실패 사유를 그대로 보여준다.
+    window.alert(`PDF 생성에 실패했습니다.\n\n${error?.message ?? error}`)
   } finally {
     aiLoading.value = false
     restoreCaptureStyle()
