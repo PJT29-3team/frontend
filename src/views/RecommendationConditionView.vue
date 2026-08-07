@@ -89,28 +89,40 @@ function submit() {
             국민연금 등 고정 수입 외에, <strong>이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?</strong>
           </p>
 
-          <div class="calc-row">
-            <div class="amount-input-row">
-              <input class="amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" />
-              <span class="amount-unit">만원</span>
-            </div>
-            <div class="calc-amount-group">
-              <div class="monthly-display">{{ formatKRW(rec.monthlyNeed) }} / 월</div>
-              <div class="runway-hero-display">
-                <span class="hero-label">기간별 나눠 담으면</span>
-                <strong class="hero-years">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
-                <span class="hero-diff-tag">(최소 +{{ rec.runwayAnalysis.diffText }} 연장!)</span>
+          <!-- 참조 사진 2 스타일: 대형 입력창 + 우측 월 한글 금액 -->
+          <div class="hero-input-card">
+            <div class="hero-input-row">
+              <div class="hero-input-left">
+                <input class="hero-amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" placeholder="0" />
+                <span class="hero-unit">만원</span>
+              </div>
+              <div class="hero-amount-right">
+                월 <strong>{{ formatKRW(rec.monthlyNeed) }}</strong>
               </div>
             </div>
-          </div>
-          <div class="quick-row">
-            <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
+            <!-- 퀵 추가 버튼 + 재설정 버튼 -->
+            <div class="quick-row hero-quick-row">
+              <div class="chips-left">
+                <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
+              </div>
+              <button type="button" class="quick-chip reset-btn" @click="rec.setMonthlyNeed(0)">재설정</button>
+            </div>
           </div>
 
-          <!-- 월 금액 바로 밑 안내 멘트 -->
-          <p class="bm-notice-simple">
-            현금 단순 보유 대비 원금 100% 보장 예금 예치 시 최저 기준 버팀 기간입니다.
-          </p>
+          <!-- 참조 사진 1 스타일: 평가손익 형태 2행 버팀 카드 -->
+          <div class="runway-photo1-card">
+            <div class="photo1-row main-row">
+              <span class="photo1-label">기간별 나눠 담으면</span>
+              <div class="photo1-val-wrap">
+                <strong class="photo1-val main">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
+                <span class="photo1-diff-badge">(최소 +{{ rec.runwayAnalysis.diffText }} 연장!)</span>
+              </div>
+            </div>
+            <div class="photo1-row sub-row">
+              <span class="photo1-label">현금 단순 보유 시</span>
+              <span class="photo1-val sub">약 {{ rec.runwayAnalysis.cashYearsText }} ({{ rec.runwayAnalysis.cashMonths }}개월)</span>
+            </div>
+          </div>
         </section>
 
         <!-- 자금 조정 질문 & 분기 버튼 2개 -->
@@ -291,52 +303,122 @@ function submit() {
 .quick-chip { padding: 8px 16px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--text-muted); cursor: pointer; }
 .quick-chip.reset { color: #999; }
 
-.calc-amount-group {
+/* 참조 사진 2 스타일 대형 금액 입력 박스 */
+.hero-input-card {
+  padding: 18px 22px;
+  background: #faf8f5;
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+.hero-input-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.hero-input-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.hero-amount-input {
+  width: 170px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-dark);
+  padding: 8px 14px;
+  border: 1.5px solid #c9c3bc;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: right;
+}
+.hero-unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.hero-amount-right {
+  font-size: 15px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.hero-amount-right strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.hero-quick-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+}
+.chips-left {
+  display: flex;
+  gap: 8px;
+}
+.quick-chip.reset-btn {
+  background: #ece8e1;
+  border-color: #dcd6cb;
+  color: #555;
+  font-weight: 700;
+}
+.quick-chip.reset-btn:hover {
+  background: #e0dad0;
+  color: #111;
+}
+
+/* 참조 사진 1 스타일 평가손익형 2행 요약 카드 */
+.runway-photo1-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  white-space: nowrap;
+  gap: 12px;
+  padding: 20px 22px;
+  background: #faf8f5;
+  border: 1.5px solid #eae5db;
+  border-radius: 16px;
 }
-.monthly-display {
+.photo1-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.photo1-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+}
+.photo1-val-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.photo1-val.main {
   font-size: 19px;
   font-weight: 800;
   color: var(--text-dark);
 }
-.runway-hero-display {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.hero-label {
-  font-size: 12.5px;
-  color: #666;
-  font-weight: 600;
-}
-.hero-years {
-  font-size: 19px;
-  font-weight: 800;
-  color: #1e6434;
-}
-.hero-diff {
+.photo1-diff-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
-  background: #2d7a44;
-  color: #ffffff;
-  font-size: 14.5px;
+  padding: 3px 10px;
+  background: #fff6cf;
+  color: #835f00;
+  border: 1px solid #ffe266;
+  font-size: 14px;
   font-weight: 800;
   border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(45, 122, 68, 0.2);
 }
-
-.bm-notice-simple {
-  margin: 14px 0 0;
-  font-size: 13.5px;
-  color: #5a5448;
-  border-top: 1px dashed #e2dcce;
+.photo1-row.sub-row {
   padding-top: 10px;
-  text-align: center;
+  border-top: 1px dashed #e4dfd4;
+}
+.photo1-val.sub {
+  font-size: 14.5px;
+  color: #777;
+  font-weight: 600;
 }
 
 /* 자금 조정 안내 박스 & 분기 버튼 */
