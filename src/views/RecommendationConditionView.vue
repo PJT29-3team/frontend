@@ -30,6 +30,21 @@ const immediateManwon = computed({
   set: (v) => rec.setImmediateExpense((Number(v) || 0) * 10000),
 })
 
+// 웰컴 히어로 지표. 관심매물을 거치지 않고 직접 들어오면 여유자금이 0이라
+// 계산할 게 없다. 그때만 ?로 두고, 값이 있으면 스티키 헤더와 같은 숫자를 보여준다.
+const heroRunway = computed(() => {
+  const r = rec.runwayAnalysis
+  if (rec.investAmount <= 0 || rec.monthlyNeed <= 0) {
+    return { app: '? 개월', appYears: '(?년 ?개월)', cash: '? 개월', cashYears: '(?년 ?개월)' }
+  }
+  return {
+    app: `${r.appMonths} 개월`,
+    appYears: `(${r.appYearsText})`,
+    cash: `${r.cashMonths} 개월`,
+    cashYears: `(${r.cashYearsText})`,
+  }
+})
+
 // 투자금 및 생활비 유효성 검증
 const validationError = computed(() => {
   const invest = rec.investAmount || 0
@@ -143,24 +158,26 @@ onUnmounted(() => {
           선택하신 위험도 위주로 추천하고 만기가 있는 상품만 보여드립니다.
         </p>
 
-        <!-- 첫 장 전면 웰컴 히어로의 지표는 항상 ? 개월 고정 -->
+        <!-- 여유자금이 들어와 있으면 실제 계산값, 없으면 ? -->
         <div class="welcome-stats-bar">
           <div class="w-stat">
             <span class="w-stat-label">4단계 예치 시 생활비 충당 기간</span>
-            <strong class="w-stat-val question">? 개월</strong>
-            <span class="w-stat-subtext">(?년 ?개월)</span>
+            <strong class="w-stat-val question">{{ heroRunway.app }}</strong>
+            <span class="w-stat-subtext">{{ heroRunway.appYears }}</span>
           </div>
           <div class="w-divider"></div>
           <div class="w-stat">
             <span class="w-stat-label">현금 단순 보유 충당 기간</span>
-            <strong class="w-stat-val">? 개월</strong>
-            <span class="w-stat-subtext">(?년 ?개월)</span>
+            <strong class="w-stat-val">{{ heroRunway.cash }}</strong>
+            <span class="w-stat-subtext">{{ heroRunway.cashYears }}</span>
           </div>
           <div class="w-divider"></div>
           <div class="w-stat">
             <span class="w-stat-label">실제 굴릴 투자금</span>
             <strong class="w-stat-val">{{ formatKRW(rec.fundingAmount) }}</strong>
-            <span class="w-stat-subtext">(관심 매물 차액 연동)</span>
+            <span class="w-stat-subtext">
+              {{ rec.fundingAmount > 0 ? '(관심 매물 차액 연동)' : '(관심 매물에서 집을 고르면 채워집니다)' }}
+            </span>
           </div>
         </div>
 
