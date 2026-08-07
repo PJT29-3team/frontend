@@ -226,7 +226,7 @@ defineExpose({ pdfRoot })
 .pdf-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
 .pdf-title { font-size: 30px; font-weight: 800; margin-bottom: 2px; }
 .pdf-subtitle { font-size: 16px; font-weight: 700; color: #f5c518; }
-.pdf-date-label { font-size: 11px; color: #9ca3af; text-align: right; }
+.pdf-date-label { font-size: 11px; color: var(--text-faint); text-align: right; }
 .pdf-date { font-size: 15px; font-weight: 700; text-align: right; }
 .pdf-header-line { height: 2px; background: #f5c518; margin-bottom: 20px; }
 .pdf-section { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
@@ -234,21 +234,21 @@ defineExpose({ pdfRoot })
 .pdf-sec1-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .pdf-sec1-left { min-width: 0; flex: 1; }
 .pdf-home-name { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
-.pdf-home-meta { font-size: 12px; color: #9ca3af; margin-bottom: 8px; }
+.pdf-home-meta { font-size: 12px; color: var(--text-faint); margin-bottom: 8px; }
 .pdf-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .pdf-tag { font-size: 11px; color: #065f46; background: #d1fae5; border-radius: 99px; padding: 2px 9px; font-weight: 600; }
 .pdf-home-memo { font-size: 11.5px; color: #6b7280; background: #fefce8; border-radius: 8px; padding: 6px 10px; }
 .pdf-sec1-right { text-align: right; flex-shrink: 0; }
-.pdf-label-sm { font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
+.pdf-label-sm { font-size: 11px; color: var(--text-faint); margin-bottom: 3px; }
 .pdf-amount-lg { font-size: 18px; font-weight: 800; }
 .pdf-sec2-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .pdf-highlight { font-size: 26px; font-weight: 800; color: #f59e0b; }
 .pdf-cost-row { display: flex; justify-content: space-between; font-size: 12px; color: #4b5563; padding: 3px 0; border-bottom: 1px solid #f3f4f6; }
 .pdf-neg { color: #ef4444; }
-.pdf-cost-note { font-size: 11px; color: #9ca3af; margin-top: 5px; }
+.pdf-cost-note { font-size: 11px; color: var(--text-faint); margin-top: 5px; }
 .pdf-sec3-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
 .pdf-invest-amount { font-size: 22px; font-weight: 800; }
-.pdf-invest-sub { font-size: 12px; color: #9ca3af; margin-left: auto; }
+.pdf-invest-sub { font-size: 12px; color: var(--text-faint); margin-left: auto; }
 .pdf-alloc-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; gap: 2px; margin-bottom: 12px; }
 .pdf-alloc-seg { border-radius: 2px; min-width: 2px; }
 .pdf-products { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
@@ -263,7 +263,7 @@ defineExpose({ pdfRoot })
 .pdf-product-amount { font-size: 13px; font-weight: 700; }
 .pdf-product-pct { font-size: 11px; color: #f59e0b; font-weight: 700; }
 .pdf-timeline-wrap { background: #f8f7f3; border-radius: 10px; padding: 10px 13px; border: 1px solid #eeebe4; margin-bottom: 12px; }
-.pdf-tl-label { font-size: 10px; font-weight: 700; color: #9ca3af; margin-bottom: 7px; }
+.pdf-tl-label { font-size: 10px; font-weight: 700; color: var(--text-faint); margin-bottom: 7px; }
 .pdf-tl-bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; gap: 2px; }
 .pdf-tl-seg { display: flex; align-items: center; justify-content: center; border-radius: 3px; min-width: 2px; overflow: hidden; }
 .pdf-tl-seg-text { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
@@ -273,11 +273,11 @@ defineExpose({ pdfRoot })
 .pdf-conclusion-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 3px; }
 .pdf-conclusion-value { font-size: 24px; font-weight: 800; color: #f5c518; }
 .pdf-conclusion-tail { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-.pdf-seg-park, .pdf-dot-park { background: #4F9A91; }
-.pdf-seg-short, .pdf-dot-short { background: #3B82F6; }
-.pdf-seg-mid, .pdf-dot-mid { background: #7C3AED; }
-.pdf-seg-mid2, .pdf-dot-mid2 { background: #D97706; }
-.pdf-seg-long, .pdf-dot-long { background: #1E1B4B; }
+.pdf-seg-park, .pdf-dot-park { background: var(--period-park); }
+.pdf-seg-short, .pdf-dot-short { background: var(--period-short); }
+.pdf-seg-mid, .pdf-dot-mid { background: var(--period-mid); }
+.pdf-seg-mid2, .pdf-dot-mid2 { background: var(--period-mid2); }
+.pdf-seg-long, .pdf-dot-long { background: var(--period-long); }
 
 /* ④ AI 행동 지침 섹션 */
 .pdf-ai-section { margin-top: 0; }
@@ -302,7 +302,7 @@ defineExpose({ pdfRoot })
 }
 .pdf-ai-placeholder {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
   padding: 12px 16px;
   background: #fafaf8;
   border-radius: 8px;

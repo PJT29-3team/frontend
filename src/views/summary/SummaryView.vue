@@ -12,7 +12,7 @@
     </p>
 
     <!-- ━━━ 선택결과 한눈에 보기 (매물 정리 결과 + 자금 운용 계획) ━━━ -->
-    <section class="result-card">
+    <section class="summary-card">
       <h2 class="card-heading">선택결과 한눈에 보기</h2>
 
       <p v-if="loadError" class="load-error">{{ loadError }}</p>
@@ -194,6 +194,7 @@ import { authStore } from '@/stores/authStore'
 import { periodOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
 import { purchaseSummary } from '@/utils/house/purchaseCost'
+import '@/styles/survey-tokens.css'
 
 const rec = useRecommendationStore()
 const survey = useSurveyStore()
@@ -469,7 +470,7 @@ async function downloadPdf() {
   margin: 0 auto;
   padding: 48px 20px 60px;
   font-family: "Pretendard", "Noto Sans KR", -apple-system, sans-serif;
-  color: #1f2937;
+  color: var(--text-dark);
 }
 
 .done-icon {
@@ -477,7 +478,7 @@ async function downloadPdf() {
   height: 56px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  background: #f5c518;
+  background: var(--kb-yellow);
   color: #fff;
   display: flex;
   align-items: center;
@@ -496,19 +497,19 @@ async function downloadPdf() {
 .done-sub {
   text-align: center;
   font-size: 15px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 4px;
 }
 
 .done-hint {
   text-align: center;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-faint);
   margin: 0 0 32px;
 }
 
 /* ── 결과 카드 공통 ── */
-.result-card {
+.summary-card {
   background: #fff;
   border-radius: 16px;
   padding: 28px 24px;
@@ -525,7 +526,7 @@ async function downloadPdf() {
 .card-subheading {
   font-size: 14px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 12px;
 }
 
@@ -539,7 +540,7 @@ async function downloadPdf() {
 
 .row-label {
   font-size: 15px;
-  color: #6b7280;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -554,7 +555,7 @@ async function downloadPdf() {
 
 .row-sub {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 /* 0원인 항목의 사유(비과세 등). 숨기면 계산이 빠진 것처럼 보인다 */
@@ -563,20 +564,20 @@ async function downloadPdf() {
   padding: 1px 6px;
   border-radius: 4px;
   background: #eef2f7;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 11.5px;
 }
 
 .cost-zero {
   font-size: 17px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 /* 아직 채워지지 않은 값 — 숫자 자리에 안내 문구가 들어간다 */
 .row-empty {
   font-size: 13px !important;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .load-error {
@@ -590,16 +591,16 @@ async function downloadPdf() {
 
 .sub-label {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .negative {
-  color: #ef4444;
+  color: var(--jh-danger);
 }
 
 .highlight-value {
   font-size: 20px;
-  color: #f59e0b;
+  color: var(--kb-yellow-deep);
 }
 
 .divider {
@@ -621,8 +622,8 @@ async function downloadPdf() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fefce8;
-  border: 1px solid #fde68a;
+  background: var(--kb-yellow-soft);
+  border: 1px solid var(--card-selected-border);
   border-radius: 12px;
   padding: 14px 18px;
   margin-top: 14px;
@@ -638,7 +639,7 @@ async function downloadPdf() {
   padding: 8px;
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -646,7 +647,7 @@ async function downloadPdf() {
 }
 
 .detail-toggle:hover {
-  color: #1f2937;
+  color: var(--text-dark);
 }
 
 .detail-section {
@@ -669,8 +670,8 @@ async function downloadPdf() {
   align-items: center;
   margin-bottom: 10px;
 }
-.pf-meta-label { font-size: 13px; font-weight: 700; color: #6b7280; }
-.pf-meta-monthly { font-size: 12px; color: #9ca3af; }
+.pf-meta-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.pf-meta-monthly { font-size: 12px; color: var(--text-faint); }
 .pf-meta-monthly b { color: #374151; font-weight: 700; }
 
 /* 배분 비율 바 */
@@ -704,15 +705,15 @@ async function downloadPdf() {
   flex-shrink: 0;
 }
 .pf-item-info { min-width: 0; }
-.pf-item-name { font-size: 13.5px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pf-item-tag { font-size: 11px; color: #9ca3af; }
+.pf-item-name { font-size: 13.5px; font-weight: 700; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-item-tag { font-size: 11px; color: var(--text-faint); }
 
 .pf-item-right { flex-shrink: 0; text-align: right; min-width: 130px; }
-.pf-item-bar-wrap { background: #e5e7eb; border-radius: 4px; height: 5px; margin-bottom: 5px; overflow: hidden; }
+.pf-item-bar-wrap { background: var(--card-border); border-radius: 4px; height: 5px; margin-bottom: 5px; overflow: hidden; }
 .pf-item-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 .pf-item-nums { display: flex; justify-content: flex-end; align-items: baseline; gap: 6px; }
-.pf-item-amount { font-size: 14px; font-weight: 700; color: #1f2937; }
-.pf-item-pct { font-size: 11.5px; font-weight: 700; color: #f59e0b; }
+.pf-item-amount { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+.pf-item-pct { font-size: 11.5px; font-weight: 700; color: var(--kb-yellow-deep); }
 
 /* 타임라인 바 */
 .pf-timeline {
@@ -721,7 +722,7 @@ async function downloadPdf() {
   padding: 12px 14px;
   border: 1px solid #eeebe4;
 }
-.pf-tl-title { font-size: 11px; font-weight: 700; color: #9ca3af; margin-bottom: 8px; letter-spacing: 0.03em; text-transform: uppercase; }
+.pf-tl-title { font-size: 11px; font-weight: 700; color: var(--text-faint); margin-bottom: 8px; letter-spacing: 0.03em; text-transform: uppercase; }
 .pf-tl-bar {
   display: flex;
   height: 32px;
@@ -759,11 +760,11 @@ async function downloadPdf() {
 .pf-tl-tick span { white-space: nowrap; }
 
 /* 색상 토큰 */
-.seg-park, .dot-park { background: #4F9A91; }
-.seg-short, .dot-short { background: #3B82F6; }
-.seg-mid, .dot-mid { background: #7C3AED; }
-.seg-mid2, .dot-mid2 { background: #D97706; }
-.seg-long, .dot-long { background: #1E1B4B; }
+.seg-park, .dot-park { background: var(--period-park); }
+.seg-short, .dot-short { background: var(--period-short); }
+.seg-mid, .dot-mid { background: var(--period-mid); }
+.seg-mid2, .dot-mid2 { background: var(--period-mid2); }
+.seg-long, .dot-long { background: var(--period-long); }
 
 /* ── 세로 타임라인 (기존, 미사용 가능) ── */
 .timeline {
@@ -793,16 +794,16 @@ async function downloadPdf() {
   box-shadow: 0 0 0 2px #d1d5db;
 }
 
-.tl-dot.park { background: #4F9A91; box-shadow: 0 0 0 2px #4F9A91; }
-.tl-dot.short { background: #3B82F6; box-shadow: 0 0 0 2px #3B82F6; }
-.tl-dot.mid { background: #7C3AED; box-shadow: 0 0 0 2px #7C3AED; }
-.tl-dot.mid2 { background: #D97706; box-shadow: 0 0 0 2px #D97706; }
-.tl-dot.long { background: #1E1B4B; box-shadow: 0 0 0 2px #1E1B4B; }
+.tl-dot.park { background: var(--period-park); box-shadow: 0 0 0 2px var(--period-park); }
+.tl-dot.short { background: var(--period-short); box-shadow: 0 0 0 2px var(--period-short); }
+.tl-dot.mid { background: var(--period-mid); box-shadow: 0 0 0 2px var(--period-mid); }
+.tl-dot.mid2 { background: var(--period-mid2); box-shadow: 0 0 0 2px var(--period-mid2); }
+.tl-dot.long { background: var(--period-long); box-shadow: 0 0 0 2px var(--period-long); }
 
 .tl-line {
   width: 2px;
   flex: 1;
-  background: #e5e7eb;
+  background: var(--card-border);
   min-height: 20px;
 }
 
@@ -827,7 +828,7 @@ async function downloadPdf() {
 
 .tl-period {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -844,9 +845,9 @@ async function downloadPdf() {
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: #8c5a1b;
-  background: #fbead0;
-  border: 1px solid #ffcc00;
+  color: var(--kb-yellow-deep);
+  background: var(--kb-yellow-soft);
+  border: 1px solid var(--kb-yellow);
   border-radius: 10px;
   padding: 1px 8px;
   width: fit-content;
@@ -858,18 +859,18 @@ async function downloadPdf() {
 
 .product-desc {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .product-percent {
   font-size: 13px;
-  color: #f59e0b;
+  color: var(--kb-yellow-deep);
   font-weight: 700;
 }
 
 /* ── 최종 결론 ── */
 .conclusion-box {
-  background: #1f2937;
+  background: var(--text-dark);
   color: #fff;
   border-radius: 14px;
   padding: 22px 24px;
@@ -887,7 +888,7 @@ async function downloadPdf() {
   display: block;
   font-size: 28px;
   font-weight: 800;
-  color: #f5c518;
+  color: var(--kb-yellow);
   margin: 6px 0 2px;
 }
 
@@ -901,11 +902,11 @@ async function downloadPdf() {
   margin: 20px 0 32px;
   font-size: 12.5px;
   line-height: 1.6;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .disclaimer-text strong {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 /* ── 완료 단계 ── */
@@ -925,7 +926,7 @@ async function downloadPdf() {
 
 .steps-sub {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-faint);
   margin: 0 0 16px;
 }
 
@@ -940,21 +941,21 @@ async function downloadPdf() {
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   background: #fff;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-dark);
   cursor: pointer;
 }
 
 .step-chip:hover {
-  background: #fefce8;
+  background: var(--kb-yellow-soft);
 }
 
 .step-check {
-  color: #f5c518;
+  color: var(--kb-yellow);
   font-weight: 800;
 }
 
@@ -978,13 +979,13 @@ async function downloadPdf() {
   gap: 4px;
   padding: 20px 12px;
   background: #f9f8f5;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   border-radius: 14px;
   cursor: pointer;
 }
 
 .action-card:hover {
-  background: #fefce8;
+  background: var(--kb-yellow-soft);
 }
 
 .action-icon {
@@ -997,7 +998,7 @@ async function downloadPdf() {
 
 .action-sub {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .pdf-btn {
@@ -1005,7 +1006,7 @@ async function downloadPdf() {
   padding: 18px;
   border: none;
   border-radius: 14px;
-  background: #f5c518;
+  background: var(--kb-yellow);
   color: #3a3326;
   font-size: 17px;
   font-weight: 800;
@@ -1016,7 +1017,7 @@ async function downloadPdf() {
 .pdf-hint {
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
   margin-top: 10px;
 }
 

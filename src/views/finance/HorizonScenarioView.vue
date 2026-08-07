@@ -376,11 +376,11 @@ async function handleContinue() {
   justify-content: center;
 }
 
-.pick-step.step-park { background: #4F9A91; color: #fff; }
-.pick-step.step-short { background: #3B82F6; color: #fff; }
-.pick-step.step-mid { background: #7C3AED; color: #fff; }
-.pick-step.step-mid2 { background: #D97706; color: #fff; }
-.pick-step.step-long { background: #1E1B4B; color: #fff; }
+.pick-step.step-park { background: var(--period-park); color: #fff; }
+.pick-step.step-short { background: var(--period-short); color: #fff; }
+.pick-step.step-mid { background: var(--period-mid); color: #fff; }
+.pick-step.step-mid2 { background: var(--period-mid2); color: #fff; }
+.pick-step.step-long { background: var(--period-long); color: #fff; }
 
 .pick-body {
   flex: 1;
@@ -559,11 +559,11 @@ async function handleContinue() {
   border-radius: 99px;
 }
 
-.gantt-bar.park, .tl-dot.park { background: #4F9A91; }
-.gantt-bar.short, .tl-dot.short { background: #3B82F6; }
-.gantt-bar.mid, .tl-dot.mid { background: #7C3AED; }
-.gantt-bar.mid2, .tl-dot.mid2 { background: #D97706; }
-.gantt-bar.long, .tl-dot.long { background: #1E1B4B; }
+.gantt-bar.park, .tl-dot.park { background: var(--period-park); }
+.gantt-bar.short, .tl-dot.short { background: var(--period-short); }
+.gantt-bar.mid, .tl-dot.mid { background: var(--period-mid); }
+.gantt-bar.mid2, .tl-dot.mid2 { background: var(--period-mid2); }
+.gantt-bar.long, .tl-dot.long { background: var(--period-long); }
 
 /* 시간 축 — 상품명 칸(168px + gap 12px)만큼 비우고 트랙에만 그린다 */
 .gantt-axis {
