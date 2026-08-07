@@ -286,6 +286,12 @@ function showProductDetail(product) {
           </div>
         </div>
 
+        <!-- 고른 위험도 상품이 이 구간에 없어 더 안전한 등급으로 채운 경우 -->
+        <p v-if="period.fallback && period.products?.length" class="period-fallback">
+          이 구간에는 <b>{{ riskBadge(rec.riskLevel) }}</b> 상품이 없어
+          <b>더 안전한 등급</b>으로 채웠어요. 위험도를 바꿔도 이 구간은 같은 상품이 보일 수 있습니다.
+        </p>
+
         <!-- 해당 구간에 추천 상품이 없을 때 비활성화 안내 박스 -->
         <div v-if="!period.products || period.products.length === 0" class="empty-period-box">
           <span class="empty-icon">📂</span>
