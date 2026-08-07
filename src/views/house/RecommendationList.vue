@@ -57,7 +57,7 @@
           />
         </div>
 
-        <div class="right-column">
+        <div class="right-column" :style="{ minHeight: panelMinHeight }">
           <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
         </div>
       </section>
@@ -159,6 +159,10 @@ const bottomBlock = ref(null);
 const viewHeight = ref('');
 // 이보다 좁아지면 내용이 뭉개져서 차라리 페이지가 스크롤되는 편이 낫다.
 const MIN_VIEW_HEIGHT = { list: 320, map: 320 };
+// 비용 계산 칸의 세로 길이. 화면 바닥까지 채운다.
+const panelMinHeight = ref('');
+// 이보다 짧아지면 항목 사이가 벌어져 봐야 소용이 없다.
+const MIN_PANEL_HEIGHT = 380;
 // 비용 패널이 계산 중인 매물. 목록/지도 어느 쪽에서 골라도 이 값 하나로 모인다.
 const selectedPropertyId = ref(null);
 // 지도에서 핀을 눌러 미니 카드로 띄운 매물. 선택과는 별개다.
@@ -204,6 +208,7 @@ function switchView(view) {
   // 스크롤이 내려간 채로 전환하면 높이 계산이 어긋나고 지도도 잘려 보인다.
   window.scrollTo({ top: 0 });
   fitViewHeight();
+  fitPanelHeight();
 }
 
 // 남는 세로 공간을 재서 지도에 그대로 준다.
@@ -225,6 +230,29 @@ async function fitViewHeight() {
   viewHeight.value = `${Math.max(floor, Math.round(available))}px`;
   await nextTick();
   if (currentView.value === 'map') mapRef.value?.relayout();
+}
+
+/**
+ * 비용 계산 칸의 세로 길이를 화면 바닥까지로 맞춘다.
+ *
+ * calc(100vh - …) 로 못 하는 이유가 있다. 이 칸은 sticky 라 스크롤 전에는
+ * 제 자리(화면 위에서 220px 즈음)에, 스크롤 후에는 top:16px 에 선다.
+ * 화면 높이를 그대로 주면 스크롤 전 상태에서 아래가 잘린다.
+ * 단계 표시줄 높이도 화면 높이에 따라 달라져 상수로 못 박을 수 없다.
+ */
+async function fitPanelHeight() {
+  await nextTick();
+  if (currentView.value !== 'list' || !viewSection.value) return;
+
+  const top = viewSection.value.getBoundingClientRect().top + window.scrollY;
+  const available = window.innerHeight - top - 8;
+  panelMinHeight.value = `${Math.max(MIN_PANEL_HEIGHT, Math.round(available))}px`;
+}
+
+// 창 크기가 바뀌면 지도와 비용 칸 높이를 함께 다시 잰다.
+function fitLayout() {
+  fitViewHeight();
+  fitPanelHeight();
 }
 
 // 핀을 누르면 목록으로 튕기지 않고 미니 카드만 갈아 끼운다.
@@ -271,11 +299,12 @@ onMounted(async () => {
   await loadRecommendations();
   // 목록이 기본 뷰라 불러온 직후부터 높이를 맞춰둬야 한다.
   await fitViewHeight();
-  window.addEventListener('resize', fitViewHeight);
+  await fitPanelHeight();
+  window.addEventListener('resize', fitLayout);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', fitViewHeight);
+  window.removeEventListener('resize', fitLayout);
 });
 </script>
 
@@ -465,12 +494,19 @@ onBeforeUnmount(() => {
   min-width: 0;
   position: sticky;
   top: 16px;
+  /* 세로 길이는 fitPanelHeight() 가 인라인으로 넣는다.
+     여기 값은 계산 전 한 프레임용 폴백. */
+  min-height: 380px;
 }
 
+/* 카드만 길어지고 속은 위쪽에 몰리면 어색하다.
+   남는 세로 공간을 항목 사이에 나눠 내용이 카드를 채우게 한다. */
 .right-column :deep(.summary-card) {
+  flex: 1;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   padding: 24px;
 }
 
