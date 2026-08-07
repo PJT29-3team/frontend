@@ -242,8 +242,8 @@ async function handleContinue() {
           <thead>
             <tr>
               <th>상품 · 담당 구간</th>
-              <th>만기에 필요한 돈</th>
               <th>지금 넣을 돈</th>
+              <th>만기에 필요한 돈</th>
             </tr>
           </thead>
           <tbody>
@@ -252,13 +252,17 @@ async function handleContinue() {
                 {{ seg.name }} · {{ seg.from }}~{{ seg.to }}개월차
                 <span v-if="seg.rate" class="tl-rate">연 {{ (seg.rate * 100).toFixed(2) }}%</span>
               </td>
-              <td>
-                <template v-if="seg.last">남은 돈 전액</template>
+              <td class="tl-invest">{{ formatKRW(seg.invest) }}</td>
+              <td class="tl-need">
+                <span class="tl-arrow">→</span>
+                <template v-if="seg.last">
+                  <span class="tl-need-sub">남은 돈 전액</span>
+                </template>
                 <template v-else>
-                  {{ seg.months }}개월 · {{ formatKRW(seg.months * monthlyNeed) }}
+                  <span class="tl-need-sub">{{ seg.months }}개월 ·</span>
+                  <b>{{ formatKRW(seg.months * monthlyNeed) }}</b>
                 </template>
               </td>
-              <td class="tl-invest">{{ formatKRW(seg.invest) }}</td>
             </tr>
           </tbody>
         </table>
@@ -544,9 +548,25 @@ async function handleContinue() {
   padding-left: 12px;
 }
 
-.tl-table td:nth-child(2) {
+/* 위치가 바뀌어도 스타일이 따라오도록 nth-child 대신 클래스로 지정 */
+/* 결론 칸: 금액만 진하게, 개월수·화살표는 보조 정보로 눌러둔다 */
+.tl-need {
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.tl-need b { font-weight: 800; }
+
+.tl-need-sub {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tl-arrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-right: 2px;
 }
 
 .tl-invest {
