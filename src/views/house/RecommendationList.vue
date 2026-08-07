@@ -244,7 +244,12 @@ async function fitPanelHeight() {
   await nextTick();
   if (currentView.value !== 'list' || !viewSection.value) return;
 
-  const top = viewSection.value.getBoundingClientRect().top + window.scrollY;
+  // 칸의 시작점은 .content 위가 아니라 그 padding-top 아래다. 이걸 빼먹으면
+  // 화면이 클수록(padding 이 vh 비례라) 패널 바닥이 화면 밖으로 밀린다.
+  // 칸 자체를 재지 않는 이유: sticky 라 스크롤된 상태에서는 top 이 16px 로 나온다.
+  const section = viewSection.value;
+  const paddingTop = parseFloat(getComputedStyle(section).paddingTop) || 0;
+  const top = section.getBoundingClientRect().top + window.scrollY + paddingTop;
   const available = window.innerHeight - top - 8;
   panelMinHeight.value = `${Math.max(MIN_PANEL_HEIGHT, Math.round(available))}px`;
 }
