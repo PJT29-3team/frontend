@@ -16,31 +16,46 @@ const error = ref(null);
 const periods = ref([]);
 
 // 스크롤 스파이: 상단 구간 버튼 ↔ 현재 보이는 구간 동기화
-const activeCode = ref('SHORT');
+const activeCode = ref('UNDER_12M');
 const sectionEls = {};
 function setSectionRef(code, el) {
   if (el) sectionEls[code] = el;
 }
 function scrollTo(code) {
   activeCode.value = code; // 클릭 즉시 활성화 표시
-  sectionEls[code]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const el = sectionEls[code];
+  if (el) {
+    const y = el.getBoundingClientRect().top + window.scrollY - 110;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  }
 }
 
 // sticky nav 아래 기준선(px)을 지나친 마지막 구간을 활성으로 판단
-const ACTIVE_LINE = 120;
 function updateActive() {
   const list = periods.value;
   if (!list.length) return;
+
+  // 스크롤이 최상단 영역이면 무조건 첫 번째 구간(1~12개월) 활성화
+  if (window.scrollY < 180) {
+    activeCode.value = list[0].code;
+    return;
+  }
+
+  // 페이지 최하단이면 마지막 구간 강제 활성
+  const atBottom =
+    window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 50;
+  if (atBottom) {
+    activeCode.value = list[list.length - 1].code;
+    return;
+  }
+
   let current = list[0].code;
   for (const p of list) {
     const el = sectionEls[p.code];
-    if (el && el.getBoundingClientRect().top <= ACTIVE_LINE) current = p.code;
+    if (el && el.getBoundingClientRect().top <= 160) {
+      current = p.code;
+    }
   }
-  // 페이지 최하단이면 마지막 구간 강제 활성
-  // (마지막 구간은 기준선까지 스크롤이 안 올라와 계산에서 누락되기 때문)
-  const atBottom =
-    window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-  if (atBottom) current = list[list.length - 1].code;
   activeCode.value = current;
 }
 
@@ -68,7 +83,7 @@ onMounted(async () => {
       }
     }
 
-    activeCode.value = periods.value[0]?.code ?? 'SHORT';
+    activeCode.value = periods.value[0]?.code ?? 'UNDER_12M';
 
     await nextTick();
     updateActive();
