@@ -118,12 +118,7 @@ function submit() {
 
 let observer = null
 
-onMounted(() => {
-  // 관심매물 페이지를 거치지 않은 경우 테스트 기본값(5000만원) 자동 세팅
-  if (!rec.fundingAmount || rec.fundingAmount <= 0) {
-    rec.setFundingAmount(0)
-  }
-
+onMounted(async () => {
   if (welcomeHeroRef.value) {
     observer = new IntersectionObserver(
       (entries) => {
@@ -134,6 +129,15 @@ onMounted(() => {
       { threshold: 0.1 }
     )
     observer.observe(welcomeHeroRef.value)
+  }
+
+  // 스토어는 메모리에만 있어서 새로고침이나 URL 직접 진입이면 비어 있다.
+  // 관심매물에서 방금 주입받았으면 그 값이 우선이고(restoreLatest가 건드리지 않는다),
+  // 아니면 서버에 저장된 마지막 조건을 불러온다.
+  try {
+    await rec.restoreLatest()
+  } catch {
+    // 못 불러오면 여유자금 0으로 남고 화면이 "관심 매물에서 고르면 채워집니다"를 띄운다.
   }
 })
 
