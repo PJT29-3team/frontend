@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
+import { useRecommendationStore, RISK_OPTIONS } from '@/stores/recommendation';
 import recommendationApi from '@/api/recommendation';
 import '@/styles/survey-tokens.css';
 
@@ -16,6 +16,47 @@ const detail = ref(null);
 const productType = route.params.productType;
 const kind = route.query.kind || 'account';
 
+let enterTime = Date.now();
+const isLiked = ref(false);
+
+function checkIsFavorited() {
+  return Object.values(rec.favorites).some((v) => v && v.productType === productType);
+}
+
+function termCodeOf(months) {
+  const m = months || 0;
+  if (m <= 11) return 'UNDER_12M';
+  if (m <= 23) return 'Y1_TO_2';
+  if (m <= 35) return 'Y2_TO_3';
+  return 'OVER_36M';
+}
+
+function toggleHeart(loc) {
+  const dwellTimeSec = Math.max(0, Math.floor((Date.now() - enterTime) / 1000));
+  
+  if (detail.value) {
+    const periodCode = termCodeOf(detail.value.termMonths || 0);
+    rec.toggleFavorite(periodCode, detail.value);
+  }
+
+  isLiked.value = checkIsFavorited();
+
+  // 노이즈 방어: 상단에서 3초 미만 빠른 찜 해제는 전송 안 함
+  if (loc === 'DETAIL_TOP' && dwellTimeSec < 3 && !isLiked.value) {
+    return;
+  }
+
+  const actionType = isLiked.value ? 'LIKE' : 'UNLIKE';
+
+  recommendationApi.logInteraction({
+    productType,
+    productKind: kind,
+    actionType,
+    location: loc,
+    dwellTimeSec,
+  }).catch(() => {});
+}
+
 function riskBadge(code) {
   return RISK_OPTIONS.find((o) => o.code === code)?.label ?? code;
 }
@@ -26,6 +67,24 @@ function riskTone(code) {
 
 function formatPercent(val) {
   return val == null ? '-' : Number(val).toFixed(2);
+}
+
+function evaluateVolatility(val) {
+  if (val == null) return '-';
+  const num = Number(val);
+  if (num === 0.0) return '0.00% (원금 안심형 - 시세 변동 없음)';
+  if (num < 5.0) return `${num.toFixed(2)}% (매우 안정적 - 예적금 수준)`;
+  if (num < 15.0) return `${num.toFixed(2)}% (보통 수준 - 완만한 가격 움직임)`;
+  return `${num.toFixed(2)}% (높은 흔들림 - 가격 변동폭이 큼)`;
+}
+
+function evaluateMDD(val) {
+  if (val == null) return '-';
+  const num = Math.abs(Number(val));
+  if (num === 0.0) return '0.00% (원금 보존형 - 하락 이력 없음)';
+  if (num < 3.0) return `-${num.toFixed(2)}% (매우 안전 - 하락 위험이 매우 적음)`;
+  if (num < 8.0) return `-${num.toFixed(2)}% (소폭 하락 경험 - 하락 후 빠르게 회복함)`;
+  return `-${num.toFixed(2)}% (큰 하락 경험 - 자산 가치가 눈에 띄게 떨어진 적 있음)`;
 }
 
 function formatDate(dateStr) {
@@ -52,6 +111,7 @@ function getCategoryLabel(cat) {
 }
 
 onMounted(async () => {
+  enterTime = Date.now();
   try {
     // 캐시 확인
     let cached = rec.getCachedDetail(kind, productType);
@@ -63,6 +123,16 @@ onMounted(async () => {
       detail.value = res;
       rec.setCachedDetail(kind, productType, res);
     }
+    isLiked.value = checkIsFavorited();
+
+    // VIEW 로그 송신
+    recommendationApi.logInteraction({
+      productType,
+      productKind: kind,
+      actionType: 'VIEW',
+      location: 'DETAIL_TOP',
+      dwellTimeSec: 0,
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to load product detail:', e);
     error.value = '상세정보를 불러오지 못했어요.';
@@ -83,7 +153,15 @@ function goBack() {
       <header class="pd-header">
         <button type="button" class="back-btn" @click="goBack">← 뒤로</button>
         <h1 class="pd-title">상품 정보</h1>
-        <div style="width: 40px"></div>
+        <button
+          type="button"
+          class="top-heart-btn"
+          :class="{ on: isLiked }"
+          :aria-label="isLiked ? '관심 해제' : '관심 등록'"
+          @click="toggleHeart('DETAIL_TOP')"
+        >
+          {{ isLiked ? '♥' : '♡' }}
+        </button>
       </header>
 
       <!-- 로딩 상태 -->
@@ -104,55 +182,53 @@ function goBack() {
             </div>
           </div>
           <div class="ph-rate">
-            <span class="ph-rate-label">금리</span>
-            <strong class="ph-rate-value">{{ formatPercent(detail.rate) }}%</strong>
+            <span class="ph-rate-label">{{ detail.kind === 'stock' ? '대표 수익률' : '최고 금리' }}</span>
+            <span class="ph-rate-value">연 {{ formatPercent(detail.rate) }}%</span>
           </div>
         </div>
 
-        <!-- 기본정보 섹션 -->
+        <!-- 기본 정보 섹션 -->
         <section class="pd-section">
-          <h2 class="pd-section-title">기본정보</h2>
+          <h2 class="pd-section-title">기본 정보</h2>
           <div class="info-table">
+            <div class="info-row">
+              <span class="info-label">상품 코드</span>
+              <span class="info-value">{{ detail.productType }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">상품 종류</span>
+              <span class="info-value">{{ detail.kind === 'stock' ? '채권/ETF/펀드' : '예적금/CMA' }}</span>
+            </div>
             <div class="info-row">
               <span class="info-label">카테고리</span>
               <span class="info-value">{{ getCategoryLabel(detail.category) }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">위험도</span>
-              <span class="info-value" :class="'tone-' + riskTone(detail.safetyLevel)">
+              <span class="info-label">안전 등급</span>
+              <span class="info-value" :class="`tone-${riskTone(detail.safetyLevel)}`">
                 {{ riskBadge(detail.safetyLevel) }}
               </span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">예치기간</span>
-              <span class="info-value">{{ detail.termMonths ?? '-' }}개월</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">만기일</span>
-              <span class="info-value">{{ formatDate(detail.maturityDate) }}</span>
             </div>
           </div>
         </section>
 
-        <!-- 수익률/금리 섹션 -->
+        <!-- 금리 및 수익률 정보 섹션 -->
         <section class="pd-section">
-          <h2 class="pd-section-title">수익률 · 금리</h2>
+          <h2 class="pd-section-title">금리 및 수익률 정보</h2>
           <div class="info-table">
-            <!-- Account 타입 -->
             <template v-if="detail.kind === 'account'">
               <div class="info-row">
-                <span class="info-label">기본금리</span>
+                <span class="info-label">기본 금리</span>
                 <span class="info-value">{{ formatPercent(detail.interestRate) }}%</span>
               </div>
               <div class="info-row">
-                <span class="info-label">최고우대금리</span>
-                <span class="info-value">{{ formatPercent(detail.maxInterestRate) }}%</span>
+                <span class="info-label">최고 우대 금리</span>
+                <span class="info-value tone-safe">{{ formatPercent(detail.maxInterestRate) }}%</span>
               </div>
             </template>
-            <!-- Stock 타입 -->
             <template v-else-if="detail.kind === 'stock'">
               <div class="info-row">
-                <span class="info-label">3년 수익률(연환산)</span>
+                <span class="info-label">3년 수익률</span>
                 <span class="info-value">{{ formatPercent(detail.returnRate) }}%</span>
               </div>
               <div class="info-row">
@@ -163,17 +239,36 @@ function goBack() {
           </div>
         </section>
 
-        <!-- 위험 지표 (Stock only) -->
-        <section v-if="detail.kind === 'stock'" class="pd-section">
-          <h2 class="pd-section-title">위험 지표</h2>
+        <!-- 기간 정보 섹션 -->
+        <section class="pd-section">
+          <h2 class="pd-section-title">기간 정보</h2>
           <div class="info-table">
             <div class="info-row">
-              <span class="info-label">최대낙폭(MDD)</span>
-              <span class="info-value">{{ formatPercent(detail.maxDrawdown) }}%</span>
+              <span class="info-label">예치 기간</span>
+              <span class="info-value">{{ detail.termMonths ?? '-' }}개월</span>
+            </div>
+            <div v-if="detail.maturityDate" class="info-row">
+              <span class="info-label">만기일</span>
+              <span class="info-value">{{ formatDate(detail.maturityDate) }}</span>
+            </div>
+            <div v-if="detail.remainingMonths" class="info-row">
+              <span class="info-label">남은 만기</span>
+              <span class="info-value">{{ detail.remainingMonths }}개월</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 위험 지표 섹션 (stock 전용) -->
+        <section v-if="detail.kind === 'stock'" class="pd-section">
+          <h2 class="pd-section-title">위험 및 기초 지표</h2>
+          <div class="info-table">
+            <div class="info-row">
+              <span class="info-label">최대 낙폭 (MDD)</span>
+              <span class="info-value" style="text-align: left; width: 100%;">{{ evaluateMDD(detail.maxDrawdown) }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">변동성</span>
-              <span class="info-value">{{ formatPercent(detail.volatility) }}%</span>
+              <span class="info-value" style="text-align: left; width: 100%;">{{ evaluateVolatility(detail.volatility) }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">원금손실 가능성</span>
@@ -186,17 +281,13 @@ function goBack() {
           </div>
         </section>
 
-        <!-- 추천정보 섹션 -->
+        <!-- 상품 상세 소개 섹션 -->
         <section class="pd-section">
-          <h2 class="pd-section-title">추천정보</h2>
+          <h2 class="pd-section-title">상품 상세 소개</h2>
           <div class="info-table">
-            <div class="info-row">
-              <span class="info-label">추천 이유</span>
-              <span class="info-value">{{ detail.recommendReason ?? '-' }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">추천 비중</span>
-              <span class="info-value">{{ formatPercent(detail.recommendedWeight) }}%</span>
+            <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <span class="info-label" style="font-weight: 700;">상품 설명 및 가입 조건</span>
+              <span class="info-value" style="text-align: left; white-space: pre-wrap; line-height: 1.6; font-size: 14px; width: 100%;">{{ detail.recommendReason ?? '-' }}</span>
             </div>
           </div>
         </section>
@@ -209,6 +300,25 @@ function goBack() {
             <li>본 서비스에서 제공하는 정보는 참고용이며, 투자의 최종 결정과 그 결과에 대한 책임은 이용자 본인에게 있습니다.</li>
             <li v-if="detail.lossRisk === 'Y'" class="important">원금 손실이 발생할 수 있으므로 신중하게 선택해주세요.</li>
           </ul>
+        </section>
+
+        <!-- 하단 정독 후 신중한 관심 등록 안내 섹션 -->
+        <section class="pd-section read-confirm-section">
+          <div class="read-confirm-card">
+            <h2 class="read-confirm-title">상품 안내를 모두 확인하셨나요?</h2>
+            <p class="read-confirm-sub">
+              위험도, 예상 금리, 주의사항까지 모두 확인하셨다면 관심 상품으로 등록해 보세요!
+            </p>
+            <button
+              type="button"
+              class="bottom-favorite-btn"
+              :class="{ on: isLiked }"
+              @click="toggleHeart('DETAIL_BOTTOM')"
+            >
+              <span class="heart-icon">{{ isLiked ? '♥' : '♡' }}</span>
+              <span>{{ isLiked ? '관심 등록 완료 (클릭 시 해제)' : '이 상품 관심 등록하기' }}</span>
+            </button>
+          </div>
         </section>
       </div>
 
@@ -260,6 +370,75 @@ function goBack() {
 
 .back-btn:hover {
   background: #f3f4f6;
+}
+
+.top-heart-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #d1d5db;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: transform 0.15s, color 0.15s;
+}
+.top-heart-btn.on {
+  color: #e11d48;
+}
+.top-heart-btn:active {
+  transform: scale(1.2);
+}
+
+.read-confirm-section {
+  margin-top: 24px;
+}
+.read-confirm-card {
+  background: #fffcf0;
+  border: 1.5px solid #ffe899;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+}
+.read-confirm-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #342e22;
+  margin: 0 0 8px;
+}
+.read-confirm-sub {
+  font-size: 13.5px;
+  color: #6b6354;
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+.bottom-favorite-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.bottom-favorite-btn.on {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+.bottom-favorite-btn:hover {
+  border-color: #ffbb08;
+}
+.heart-icon {
+  font-size: 18px;
 }
 
 .pd-title {

@@ -22,6 +22,25 @@ function formatPercent(val) {
   return val == null ? '-' : Number(val).toFixed(2);
 }
 
+function evaluateVolatility(val) {
+  if (val == null) return '-';
+  const num = Number(val);
+  if (num === 0.0) return '0.00% (원금 안심형 - 시세 변동 없음)';
+  if (num < 5.0) return `${num.toFixed(2)}% (매우 안정적 - 예적금 수준)`;
+  if (num < 15.0) return `${num.toFixed(2)}% (보통 수준 - 완만한 가격 움직임)`;
+  return `${num.toFixed(2)}% (높은 흔들림 - 가격 변동폭이 큼)`;
+}
+
+function evaluateMDD(val) {
+  if (val == null) return '-';
+  const num = Math.abs(Number(val));
+  if (num === 0.0) return '0.00% (원금 보존형 - 하락 이력 없음)';
+  if (num < 3.0) return `-${num.toFixed(2)}% (매우 안전 - 하락 위험이 매우 적음)`;
+  if (num < 8.0) return `-${num.toFixed(2)}% (소폭 하락 경험 - 하락 후 빠르게 회복함)`;
+  return `-${num.toFixed(2)}% (큰 하락 경험 - 자산 가치가 눈에 띄게 떨어진 적 있음)`;
+}
+
+
 function formatDate(dateStr) {
   if (!dateStr) return '-';
   const d = new Date(dateStr);
@@ -110,7 +129,7 @@ const categoryLabel = computed(() => {
             <!-- Stock 타입 -->
             <template v-else-if="detail.kind === 'stock'">
               <div class="info-item">
-                <span class="info-label">3년 수익률(연환산)</span>
+                <span class="info-label">최근 3년 평균 수익률 (연복리)</span>
                 <span class="info-value">{{ formatPercent(detail.returnRate) }}%</span>
               </div>
               <div class="info-item">
@@ -125,14 +144,15 @@ const categoryLabel = computed(() => {
         <section v-if="detail.kind === 'stock'" class="detail-section">
           <h3 class="section-title">위험 지표</h3>
           <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">최대낙폭(MDD)</span>
-              <span class="info-value">{{ formatPercent(detail.maxDrawdown) }}%</span>
+            <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 6px; grid-column: span 2;">
+              <span class="info-label" style="font-weight: 700;">최근 1년 최대 하락폭 (가장 많이 떨어진 비율)</span>
+              <span class="info-value" style="text-align: left; width: 100%;">{{ evaluateMDD(detail.maxDrawdown) }}</span>
             </div>
-            <div class="info-item">
-              <span class="info-label">변동성</span>
-              <span class="info-value">{{ formatPercent(detail.volatility) }}%</span>
+            <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 6px; grid-column: span 2;">
+              <span class="info-label" style="font-weight: 700;">최근 1개월 변동성 (가격 흔들림)</span>
+              <span class="info-value" style="text-align: left; width: 100%;">{{ evaluateVolatility(detail.volatility) }}</span>
             </div>
+
             <div class="info-item">
               <span class="info-label">원금손실 가능성</span>
               <span class="info-value">{{ detail.lossRisk === 'Y' ? '있음' : '없음' }}</span>
@@ -144,20 +164,17 @@ const categoryLabel = computed(() => {
           </div>
         </section>
 
-        <!-- 추천정보 -->
+        <!-- 상품 상세 소개 -->
         <section class="detail-section">
-          <h3 class="section-title">추천정보</h3>
+          <h3 class="section-title">상품 상세 소개</h3>
           <div class="info-block">
-            <div class="info-row">
-              <span class="info-label">추천 이유</span>
-              <span class="info-value">{{ detail.recommendReason ?? '-' }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">추천 비중</span>
-              <span class="info-value">{{ formatPercent(detail.recommendedWeight) }}%</span>
+            <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <span class="info-label" style="font-weight: 700;">상품 설명 및 가입 조건</span>
+              <span class="info-value" style="text-align: left; white-space: pre-wrap; line-height: 1.6; font-size: 14px; width: 100%;">{{ detail.recommendReason ?? '-' }}</span>
             </div>
           </div>
         </section>
+
 
         <!-- 안내문 -->
         <section class="detail-section notice">

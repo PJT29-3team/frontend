@@ -22,4 +22,7 @@ export default {
       })
       .then((res) => res.data);
   },
+  logInteraction(payload) {
+    return http.post('/api/finance/interactions', payload).then((res) => res.data);
+  },
 };
