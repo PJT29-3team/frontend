@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useRecommendationStore, afterTaxRate, PERIOD_OPTIONS } from '@/stores/recommendation';
+import { useRecommendationStore, PERIOD_OPTIONS } from '@/stores/recommendation';
 
 // 머니 로직: 투자금액 = 여유자금 − 즉시지출, 남길현금 = 여유자금 − 투자금액.
 describe('recommendation store 금액 계산', () => {
@@ -78,9 +78,9 @@ describe('recommendation store 금액 계산', () => {
     expect(rec.isAllSelected).toBe(false);
   });
 
-  it('세후 금리는 이자소득세 15.4%를 뗀 값이다', () => {
-    expect(afterTaxRate(3)).toBe(2.54);
-    rec.toggleFavorite('UNDER_12M', { productType: 'A', termMonths: 6, rate: 3 });
+  // 세후 금리는 서버가 계산해 내려준다. 스토어는 그 값을 그대로 들고만 있어야 한다.
+  it('찜한 상품은 서버가 준 세후 금리를 그대로 갖고 있는다', () => {
+    rec.toggleFavorite('UNDER_12M', { productType: 'A', termMonths: 6, rate: 3, afterTaxRate: 2.54 });
     expect(rec.favorites.UNDER_12M.afterTaxRate).toBe(2.54);
   });
 });

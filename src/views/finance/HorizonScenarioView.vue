@@ -28,15 +28,19 @@ onMounted(async () => {
     const items = await fetchFavoriteProducts();
     products.value = items
       .map((item) => {
-        // 우대금리 기준(추천 화면과 동일). stock은 maxAnnualRate가 없어 수익률로 떨어진다.
-        const rate = Number(item.maxAnnualRate ?? item.annualRate);
+        // 대표금리·세후금리는 서버가 정한다(우대금리 우선, stock은 수익률).
+        const rate = Number(item.rate);
+        const afterTax = item.afterTaxRate == null ? null : Number(item.afterTaxRate);
         return {
         favoriteId: item.favoriteId,
         name: item.productName,
         maturity: item.termMonths || 0,
         rate: rate / 100,
+        afterTaxRate: afterTax == null ? null : afterTax / 100,
         fixed: !!item.fixed,
-        meta: `${item.institutionName} · 연 ${rate.toFixed(1)}%`,
+        meta:
+          `${item.institutionName} · 연 ${rate.toFixed(1)}%` +
+          (afterTax == null ? "" : ` (세후 ${afterTax.toFixed(2)}%)`),
         tag:
           periodOf(item.termMonths).short +
           " · " +

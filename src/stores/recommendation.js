@@ -11,8 +11,8 @@ export { PERIOD_OPTIONS };
 // favorite/MainView.vue가 매물 선택 시 setFundingAmount()로 주입한다.
 // 그 화면을 거치지 않고 직접 들어오면 0이며, 0이면 각 화면이 안내를 띄운다.
 
-// 이자소득세 15.4% 차감 후 실수령 금리. 화면 표시와 계산이 어긋나지 않게 여기 한 곳에서만 정의한다.
-export const afterTaxRate = (rate) => Number(((Number(rate) || 0) * 0.846).toFixed(2));
+// 세후 금리(afterTaxRate)는 서버가 세전 금리에서 계산해 내려준다(백엔드 finance/domain/Tax.java).
+// 프론트에서 다시 계산하지 않는다 — 세율이 두 곳에 있으면 언젠가 어긋난다.
 
 // risk_tolerance 공통코드(VERY_LOW/LOW/MEDIUM) ↔ 화면 라벨/안내. grade는 명세 위험등급.
 export const RISK_OPTIONS = [
@@ -154,14 +154,9 @@ export const useRecommendationStore = defineStore('recommendation', {
     // 찜 토글: 같은 구간에서 다른 상품을 누르면 교체, 같은 상품을 다시 누르면 해제.
     toggleFavorite(periodCode, product) {
       const cur = this.favorites[periodCode];
-      if (cur && cur.productType === product.productType) {
-        this.favorites[periodCode] = null;
-      } else {
-        this.favorites[periodCode] = {
-          ...product,
-          afterTaxRate: afterTaxRate(product?.rate),
-        };
-      }
+      // 추천 응답이 세후 금리를 이미 달고 오므로 상품을 그대로 담는다.
+      this.favorites[periodCode] =
+        cur && cur.productType === product.productType ? null : product;
     },
     isFavorited(periodCode, productType) {
       return this.favorites[periodCode]?.productType === productType;

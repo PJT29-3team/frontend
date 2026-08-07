@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allocate, buildTimeline } from "./horizonTimeline";
+import { allocate, buildTimeline, effectiveRate } from "./horizonTimeline";
 
 const M = 1_000_000; // 월 100만원
 
@@ -9,6 +9,27 @@ const products = [
   { name: "만기매칭ETF", maturity: 12, rate: 0.04, fixed: true },
   { name: "만기매칭채권", maturity: 36, rate: 0.05, fixed: true },
 ];
+
+// 화면에 "세후 2.54%"라고 써놓고 계산은 세전으로 돌리면 안 된다.
+describe("effectiveRate (이자 계산에 쓰는 금리)", () => {
+  it("세후 금리가 있으면 그걸 쓰고, 없으면 세전으로 떨어진다", () => {
+    expect(effectiveRate({ rate: 0.03, afterTaxRate: 0.0254 })).toBe(0.0254);
+    expect(effectiveRate({ rate: 0.03 })).toBe(0.03);
+    expect(effectiveRate({ rate: 0.03, afterTaxRate: null })).toBe(0.03);
+  });
+
+  it("세후 금리로 계산하면 같은 생활비를 대려고 더 많이 투자해야 한다", () => {
+    const pre = allocate(products, M, 50_000_000);
+    const post = allocate(
+      products.map((p) => ({ ...p, afterTaxRate: p.rate * 0.846 })),
+      M,
+      50_000_000,
+    );
+    // 이자가 덜 붙으니 중간 상품의 역산 투자금이 커진다
+    expect(post.segments[1].invest).toBeGreaterThan(pre.segments[1].invest);
+    expect(post.segments[2].invest).toBeGreaterThan(pre.segments[2].invest);
+  });
+});
 
 describe("allocate (만기 사다리, 총액 고정)", () => {
   it("파킹 버킷 + 중간 상품은 만기갭을 이자로 역산, 마지막은 나머지 전액", () => {

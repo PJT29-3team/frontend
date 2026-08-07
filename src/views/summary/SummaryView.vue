@@ -210,14 +210,18 @@ onMounted(async () => {
     const allocated = favorites
       .filter((f) => f.amount != null)
       .map((f) => {
-        // horizon과 동일하게 우대금리 기준 (stock은 maxAnnualRate가 없어 수익률로 떨어진다)
-        const rate = Number(f.maxAnnualRate ?? f.annualRate)
+        // horizon과 동일하게 서버가 정한 대표금리·세후금리를 그대로 쓴다
+        const rate = Number(f.rate)
+        const afterTax = f.afterTaxRate == null ? null : Number(f.afterTaxRate)
         return {
           name: f.productName,
           tag: `${periodOf(f.termMonths).short} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
-          description: `${f.termMonths}개월 · 연 ${rate.toFixed(1)}%`,
+          description:
+            `${f.termMonths}개월 · 연 ${rate.toFixed(1)}%` +
+            (afterTax == null ? '' : ` (세후 ${afterTax.toFixed(2)}%)`),
           maturityMonths: f.termMonths || 0,
           rate: rate / 100,
+          afterTaxRate: afterTax == null ? null : afterTax / 100,
           fixed: !!f.fixed,
           invest: Number(f.amount),
           percent: Math.round(Number(f.percent)),
@@ -243,6 +247,7 @@ onMounted(async () => {
       portfolioItems.value.map((it) => ({
         maturity: it.maturityMonths,
         rate: it.rate,
+        afterTaxRate: it.afterTaxRate,
         fixed: it.fixed,
         invest: it.invest,
       })),
