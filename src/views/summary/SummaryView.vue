@@ -213,8 +213,11 @@ const propertyResult = computed(() => {
   else if (tax.amount === 0 && (survey.expectedSalePrice ?? 0) > 0) taxNote = '양도차익 없음'
 
   const costs = [
+    // 매도 쪽 — 서버가 net_proceeds_amount를 낼 때 이미 뺀 항목들이다.
     { label: '양도소득세', amount: tax.amount, note: taxNote },
     { label: '현재 집 중개수수료', amount: survey.brokerage?.amount ?? 0, note: '' },
+    { label: '주택담보대출 상환', amount: survey.mortgageRepayment ?? 0, note: '' },
+    // 매수 쪽
     { label: '새 집 취득세', amount: buy.purchaseCost.totalTax, note: '' },
     { label: '새 집 중개수수료', amount: buy.brokerage.brokerageFee + buy.brokerage.vat, note: '' },
   ].filter((c) => c.amount > 0 || c.note)
