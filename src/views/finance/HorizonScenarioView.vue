@@ -6,7 +6,6 @@ import { allocate, buildTimeline, dur } from "@/utils/finance/horizonTimeline";
 import { termGroupOf } from "@/utils/finance/portfolioAllocation";
 import { formatKRW } from "@/stores/survey";
 import { useRecommendationStore } from "@/stores/recommendation";
-import { authStore } from "@/stores/authStore";
 import "@/styles/survey-tokens.css";
 
 const router = useRouter();
@@ -26,9 +25,7 @@ const monthlyNeed = computed(() => (monthlyNeedMan.value || 0) * 10_000);
 
 onMounted(async () => {
   try {
-    // survey_id 컬럼에 userId를 임시로 사용 중
-    const surveyId = authStore.state.user?.userId ?? 0;
-    const items = await fetchFavoriteProducts(surveyId);
+    const items = await fetchFavoriteProducts();
     products.value = items
       .map((item) => {
         // 우대금리 기준(추천 화면과 동일). stock은 maxAnnualRate가 없어 수익률로 떨어진다.
@@ -141,7 +138,7 @@ async function handleContinue() {
         amount: s.invest,
         percent: Math.round((s.invest / totalFund.value) * 10000) / 100,
       }));
-    await saveAllocations(null, items);
+    await saveAllocations(items);
     router.push("/summary");
   } catch {
     saveMsg.value = "저장에 실패했습니다.";

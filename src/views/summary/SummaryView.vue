@@ -178,7 +178,6 @@ import { fitCanvasToA4 } from '@/utils/pdfLayout'
 import { generateActionPlan } from '@/utils/openaiSummary'
 import { fetchFavoriteProducts } from '@/api/financeApi'
 import { useRecommendationStore } from '@/stores/recommendation'
-import { authStore } from '@/stores/authStore'
 import { termGroupOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
 // TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
@@ -205,8 +204,7 @@ const fundedMonths = ref('')
 
 onMounted(async () => {
   try {
-    const surveyId = authStore.state.user?.userId ?? 0
-    const favorites = await fetchFavoriteProducts(surveyId)
+    const favorites = await fetchFavoriteProducts()
     const totalFund = rec.investAmount || fp.investable
     if (rec.monthlyNeed) portfolioMonthlyNeed.value = rec.monthlyNeed
 
