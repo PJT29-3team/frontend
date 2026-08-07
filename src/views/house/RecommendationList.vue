@@ -85,17 +85,15 @@
         </div>
 
         <div v-if="pinnedHome" class="pin-card">
-          <div class="pin-score" :class="pinnedHome.score >= 70 ? 'tier-high' : 'tier-mid'">
-            <strong>{{ pinnedHome.score }}</strong>
-            <span>점</span>
-          </div>
-          <div class="pin-info">
-            <p class="pin-label">나와 맞는 정도</p>
-            <p class="pin-name">{{ pinnedHome.name }}</p>
-            <p class="pin-meta">{{ formatPyeong(pinnedHome.size) }} · {{ pinnedHome.price }}</p>
-          </div>
-          <div class="pin-actions">
-            <button class="pin-open" type="button" @click="openInList(pinnedHome.id)">목록에서 보기</button>
+          <!-- 윗줄: 점수와 매물 정보. 찜은 이 카드에서 늘 오른쪽 끝이었다 -->
+          <div class="pin-head">
+            <div class="pin-score" :class="pinnedHome.score >= 70 ? 'tier-high' : 'tier-mid'">
+              <strong>{{ pinnedHome.score }}</strong>
+            </div>
+            <div class="pin-info">
+              <p class="pin-name">{{ pinnedHome.name }}</p>
+              <p class="pin-meta">{{ formatPyeong(pinnedHome.size) }} · {{ pinnedHome.price }}</p>
+            </div>
             <button
               class="pin-fav"
               :class="{ active: favStore.isFavorite(pinnedHome.id) }"
@@ -104,6 +102,16 @@
               @click="togglePinFavorite(pinnedHome.id)"
             >
               {{ favStore.isFavorite(pinnedHome.id) ? '♥' : '♡' }}
+            </button>
+          </div>
+
+          <!-- 아랫줄: 바깥 시세를 보러 가거나, 이 점수가 왜 나왔는지 보러 간다 -->
+          <div class="pin-actions">
+            <button class="pin-listing" type="button" @click="openPinListing(pinnedHome)">
+              매물 보러가기
+            </button>
+            <button class="pin-detail" type="button" @click="goToPinDetail(pinnedHome.id)">
+              점수 자세히 보기
             </button>
           </div>
         </div>
@@ -141,6 +149,7 @@ import { favoriteStore } from '@/stores/favoriteStore.js';
 import { useSurveyStore } from '@/stores/survey';
 import propertyRecommendationApi from '@/api/propertyRecommendation';
 import { formatPyeong } from '@/utils/area';
+import { openListing as openListingInNewTab } from '@/utils/listingUrl';
 
 const favStore = favoriteStore();
 const router = useRouter();
@@ -271,9 +280,14 @@ function focusHome(homeId) {
   mapRef.value?.focusHome(homeId);
 }
 
-function openInList(homeId) {
-  selectProperty(homeId);
-  switchView('list');
+/** 바깥 시세는 새 탭에서. 지도에서 보던 자리를 잃지 않게 한다. */
+function openPinListing(home) {
+  openListingInNewTab(home);
+}
+
+/** 카드의 '점수 자세히 보기'와 같은 곳으로 간다. */
+function goToPinDetail(homeId) {
+  router.push(`/recommend/${homeId}`);
 }
 
 async function togglePinFavorite(homeId) {
@@ -507,12 +521,16 @@ onBeforeUnmount(() => {
 
 /* 카드만 길어지고 속은 위쪽에 몰리면 어색하다.
    남는 세로 공간을 항목 사이에 나눠 내용이 카드를 채우게 한다. */
+/* 카드를 칸 높이에 맞춰 늘리면 남는 공간이 어딘가에서 빈틈으로 드러난다.
+   space-between 일 때는 항목 여덟 틈이 다 벌어졌고, 맨 아래로 몰아주니
+   이번엔 목표 금액과 취득세 안내 사이가 벌어졌다. 늘리지 않고 내용만큼만
+   쓰게 두면 빈틈이 생길 자리가 없어서, 그만큼 간격을 고르게 넉넉히 준다. */
 .right-column :deep(.summary-card) {
-  flex: 1;
+  flex: 0 1 auto;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: clamp(6px, 1.1vh, 14px);
   padding: 24px;
 }
 
@@ -696,7 +714,7 @@ onBeforeUnmount(() => {
   width: calc(100% - 32px);
   max-width: 340px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
   padding: 14px 16px;
   border-radius: 14px;
@@ -717,15 +735,20 @@ onBeforeUnmount(() => {
   }
 }
 
+.pin-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .pin-score {
   width: 52px;
   height: 52px;
   flex-shrink: 0;
   border-radius: 12px;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 1px;
   background: #eaf5ea;
   color: #2f7d32;
 }
@@ -735,26 +758,17 @@ onBeforeUnmount(() => {
   color: #c98a00;
 }
 
+/* 라벨을 뗀 만큼 숫자를 키워 이 칸이 무엇인지 크기로 알아보게 한다 */
 .pin-score strong {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-.pin-score span {
-  font-size: 10px;
-  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
 .pin-info {
   flex: 1;
   min-width: 0;
-}
-
-.pin-label {
-  font-size: 11px;
-  color: #9a9384;
-  margin: 0;
 }
 
 .pin-name {
@@ -773,27 +787,43 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
+/* 버튼 둘이 같은 폭을 나눠 갖게 해서 어느 쪽도 곁다리로 보이지 않게 한다 */
 .pin-actions {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
-.pin-open {
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: none;
-  background: #f5c518;
-  font-size: 12px;
+.pin-listing,
+.pin-detail {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: 10px;
+  font-size: 13px;
   font-weight: 700;
-  color: #4a3a00;
   white-space: nowrap;
   cursor: pointer;
 }
 
-.pin-open:hover {
+/* 지도에서 핀을 눌렀다면 다음 관심사는 대개 실제 매물이라 이쪽을 강조한다 */
+.pin-listing {
+  border: none;
+  background: #f5c518;
+  color: #4a3a00;
+}
+
+.pin-listing:hover {
   background: #e8b800;
+}
+
+.pin-detail {
+  border: 1px solid #e3dfd4;
+  background: #fff;
+  color: #5f5949;
+}
+
+.pin-detail:hover {
+  border-color: #c9c1ad;
+  background: #faf8f3;
 }
 
 .pin-fav {
