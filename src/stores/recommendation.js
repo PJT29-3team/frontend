@@ -54,10 +54,10 @@ export const PERIOD_OPTIONS = [
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
     fundingAmount: MOCK_FUNDING_AMOUNT,
-    // 목업 흐름: 즉시지출(당장 쓸 돈)을 빼면 나머지가 투자금액.
-    // 매달쓸돈은 인출 속도 — 찜/배분 페이지에서 "몇 달 쓸 수 있나" 계산의 입력값.
-    immediateExpense: 0,
-    monthlyNeed: 1_000_000, // 원. 목업 기본 100만원.
+    // 목업 흐름: 이사후 남은 돈 + 추가 합칠 돈 − 즉시지출 = 실제 굴릴 투자금액.
+    additionalDeposit: 0, // 원. 추가로 굴릴 돈(+)
+    immediateExpense: 0, // 원. 당장 쓸 긴급 돈(-)
+    monthlyNeed: 1_000_000, // 원. 목업 기본 100만원 (매달 꺼내 쓸 생활비).
     riskLevel: 'VERY_LOW',
     periodCode: 'UNDER_12M',
     // 찜: 4개 기간 구간(UNDER_12M/Y1_TO_2/Y2_TO_3/OVER_36M)당 상품 1개 슬롯 -> 최대 4개 보장.
@@ -67,11 +67,41 @@ export const useRecommendationStore = defineStore('recommendation', {
   }),
 
   getters: {
-    // 투자금액 = 여유자금 − 즉시지출(앞으로 굴릴 계획금액).
-    // ponytail: 찜 페이지에서 상품별 배분 합으로 정밀화 가능. 지금은 계획 pool로 충분.
-    investAmount: (s) => Math.max(0, s.fundingAmount - s.immediateExpense),
-    // 남길현금 = 여유자금 − 투자금액 (= 즉시지출).
-    remainingCash: (s) => s.fundingAmount - Math.max(0, s.fundingAmount - s.immediateExpense),
+    // 투자금액 = 여유자금 + 추가합칠돈 − 즉시지출.
+    investAmount: (s) => Math.max(0, s.fundingAmount + (s.additionalDeposit || 0) - (s.immediateExpense || 0)),
+    // 남길현금 = 즉시지출.
+    remainingCash: (s) => s.immediateExpense,
+    // 매달 꺼내 쓸 생활비 기반 우리 웹 4개 만기 최저 금리 벤치마크 버팀 연산.
+    runwayAnalysis() {
+      const inv = this.investAmount || 0;
+      const monthly = this.monthlyNeed || 0;
+      if (monthly <= 0 || inv <= 0) {
+        return { cashMonths: 0, appMonths: 0, diffMonths: 0, cashYearsText: '0개월', appYearsText: '0개월', diffText: '0개월' };
+      }
+      const cashMonths = Math.floor(inv / monthly);
+      // 우리 웹 매우 낮은 위험 4개 구간 최저 예금 금리 (1~11m: 2.0%, 12~23m: 2.5%, 24~35m: 2.8%, 36m+: 3.0%)
+      const weightedRate = 0.25 * 0.020 + 0.25 * 0.025 * 1.5 + 0.25 * 0.028 * 2.5 + 0.25 * 0.030 * 3.5;
+      const totalGrowth = inv * (1 + weightedRate);
+      const appMonths = Math.floor(totalGrowth / monthly);
+      const diffMonths = Math.max(0, appMonths - cashMonths);
+
+      const formatYm = (m) => {
+        const y = Math.floor(m / 12);
+        const rem = m % 12;
+        if (y > 0 && rem > 0) return `${y}년 ${rem}개월`;
+        if (y > 0) return `${y}년`;
+        return `${rem}개월`;
+      };
+
+      return {
+        cashMonths,
+        appMonths,
+        diffMonths,
+        cashYearsText: formatYm(cashMonths),
+        appYearsText: formatYm(appMonths),
+        diffText: formatYm(diffMonths),
+      };
+    },
     // 매달쓸돈으로 투자금액을 나눈 커버 개월수. 미입력(0)이면 제한 없음(Infinity).
     coveredMonths() {
       return this.monthlyNeed > 0 ? Math.floor(this.investAmount / this.monthlyNeed) : Infinity;
@@ -88,9 +118,11 @@ export const useRecommendationStore = defineStore('recommendation', {
     setFundingAmount(amount) {
       this.fundingAmount = Number(amount) || 0;
     },
+    setAdditionalDeposit(amount) {
+      this.additionalDeposit = Math.max(0, Number(amount) || 0);
+    },
     setImmediateExpense(amount) {
-      // 여유자금을 넘길 수 없음.
-      this.immediateExpense = Math.min(this.fundingAmount, Math.max(0, Number(amount) || 0));
+      this.immediateExpense = Math.max(0, Number(amount) || 0);
     },
     setMonthlyNeed(amount) {
       this.monthlyNeed = Math.max(0, Number(amount) || 0);
