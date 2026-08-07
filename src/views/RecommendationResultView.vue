@@ -233,10 +233,14 @@ function showProductDetail(product) {
             :key="period.code"
             type="button"
             class="pnav-btn"
-            :class="{ on: activeCode === period.code }"
-            @click="scrollTo(period.code)"
+            :class="{
+              on: activeCode === period.code,
+              disabled: !period.products || period.products.length === 0,
+            }"
+            :disabled="!period.products || period.products.length === 0"
+            @click="period.products && period.products.length > 0 && scrollTo(period.code)"
           >
-            {{ period.label }}
+            {{ period.label }} {{ (!period.products || period.products.length === 0) ? '(없음)' : '' }}
           </button>
         </div>
         <div class="pnav-counter">담기 {{ rec.favoriteCount }}/4</div>
@@ -263,8 +267,13 @@ function showProductDetail(product) {
           </div>
         </div>
 
+        <!-- 해당 구간에 추천 상품이 없을 때 비활성화 안내 박스 -->
+        <div v-if="!period.products || period.products.length === 0" class="empty-period-box">
+          <span class="empty-icon">📂</span>
+          <p>선택하신 위험도 조건에 해당하는 <strong>{{ period.label }}</strong> 만기 상품이 없습니다.</p>
+        </div>
 
-        <div class="card-grid">
+        <div v-else class="card-grid">
           <article
             v-for="(p, i) in period.products"
             :key="i"
@@ -487,12 +496,40 @@ function showProductDetail(product) {
   border-color: var(--text-dark);
   color: #fff;
 }
+.pnav-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+}
 .pnav-counter {
   flex: none;
   font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+/* 추천 상품 없을 때 안내 박스 */
+.empty-period-box {
+  padding: 36px 20px;
+  background: #faf9f6;
+  border: 1.5px dashed #e2ded6;
+  border-radius: 14px;
+  text-align: center;
+  color: #8c867a;
+  margin-top: 8px;
+}
+.empty-period-box .empty-icon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+}
+.empty-period-box p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* 기간 구간 */
