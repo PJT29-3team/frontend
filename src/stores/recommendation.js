@@ -44,10 +44,10 @@ export const RISK_OPTIONS = [
 
 // investment_period_code 4개 구간 ↔ 화면 라벨.
 export const PERIOD_OPTIONS = [
-  { code: 'UNDER_12M', label: '1~12개월', desc: '1년 안에 쓸 돈' },
-  { code: 'Y1_TO_2', label: '13~24개월', desc: '1~2년 뒤에 쓸 돈' },
-  { code: 'Y2_TO_3', label: '25~36개월', desc: '2~3년 뒤에 쓸 돈' },
-  { code: 'OVER_36M', label: '36개월 이상', desc: '3년 뒤에도 여유 있는 돈' },
+  { code: 'UNDER_12M', label: '1~11개월', desc: '1년 미만 단기자금' },
+  { code: 'Y1_TO_2', label: '12~23개월', desc: '1년 이상 2년 미만' },
+  { code: 'Y2_TO_3', label: '24~35개월', desc: '2년 이상 3년 미만' },
+  { code: 'OVER_36M', label: '36개월 이상', desc: '3년 이상 장기자금' },
 ];
 
 
