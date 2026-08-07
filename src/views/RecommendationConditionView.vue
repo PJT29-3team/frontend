@@ -74,15 +74,15 @@ function submit() {
       <header class="rec-head">
         <h1 class="rec-title">내게 맞는 4단계 금융상품 찾기</h1>
         <p class="rec-sub">
-          이사 후 남은 자금을 4개 만기 기간(1~11개월, 12~23개월, 24~35개월, 36개월 이상)에 나누어 가장 안전하고 스마트하게 굴려드립니다.
+          이사 후 남은 자금을 4개 만기 기간(1~11개월, 12~23개월, 24~35개월, 36개월 이상)에 나누어 가장 안전하게 배치해 드립니다.
         </p>
       </header>
 
       <div class="survey-card">
-        <!-- 💡 Step 1: 매달 꺼내 쓸 생활비 정하기 -->
+        <!-- Step 1: 매달 꺼내 쓸 생활비 정하기 -->
         <section class="block step-block">
           <div class="block-head-wrap">
-            <span class="step-badge">💡 Step 1</span>
+            <span class="step-badge">Step 1</span>
             <h2 class="block-title">매달 꺼내 쓸 생활비 정하기</h2>
           </div>
           <p class="block-desc">
@@ -97,9 +97,9 @@ function submit() {
             <div class="calc-amount-group">
               <div class="monthly-display">{{ formatKRW(rec.monthlyNeed) }} / 월</div>
               <div class="runway-hero-display">
-                <span class="hero-label">예금 굴림 시</span>
+                <span class="hero-label">4단계 예치 시</span>
                 <strong class="hero-years">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
-                <span class="hero-diff">(+{{ rec.runwayAnalysis.diffText }} 더!)</span>
+                <span class="hero-diff-tag">+{{ rec.runwayAnalysis.diffText }} 더</span>
               </div>
             </div>
           </div>
@@ -109,28 +109,28 @@ function submit() {
 
           <!-- 월 금액 바로 밑 안내 멘트 -->
           <p class="bm-notice-simple">
-            🛡️ 현금 보유 대비 원금 100% 보장 예금으로 굴렸을 때의 <strong>최소 버팀 기간</strong>입니다.
+            현금 단순 보유 대비 원금 100% 보장 예금 예치 시 최저 기준 버팀 기간입니다.
           </p>
         </section>
 
         <!-- 자금 조정 질문 & 분기 버튼 2개 -->
         <div class="adjust-decision-box">
-          <p class="adjust-question">잠깐! 당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</p>
+          <p class="adjust-question">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</p>
           <div class="adjust-buttons">
             <button type="button" class="btn-decision primary" @click="skipAdjust">
-              ⚡ 아니오, 남은 돈 그대로 전액 굴릴래요
+              아니오, 남은 돈 그대로 전액 굴리기
             </button>
             <button type="button" class="btn-decision secondary" @click="openAdjustForm">
-              🙋‍♂️ 예, 조정할 자금이 있어요 (+/-)
+              예, 조정할 자금 입력 (+/-)
             </button>
           </div>
         </div>
 
-        <!-- ⚖️ Step 2: 자금 조정 3단 계산기 (기본 접힘/Hidden) -->
+        <!-- Step 2: 자금 조정 3단 계산기 (기본 접힘/Hidden) -->
         <section v-if="showAdjustForm" ref="adjustSectionRef" class="block step-block adjust-section">
           <div class="block-head-wrap">
-            <span class="step-badge">⚖️ Step 2</span>
-            <h2 class="block-title">자금 조정하기 (3단 자동 계산기)</h2>
+            <span class="step-badge">Step 2</span>
+            <h2 class="block-title">자금 조정하기</h2>
           </div>
           <p class="block-desc">이사 후 남은 돈에서 추가로 더할 돈이나, 미리 뺄 긴급 지출이 있다면 입력해 주세요.</p>
 
@@ -181,10 +181,10 @@ function submit() {
 
         <hr class="divider" />
 
-        <!-- 🎯 Step 3: 위험도 선택 & 맞춤 상품 특징 -->
+        <!-- Step 3: 위험도 선택 & 맞춤 상품 특징 -->
         <section ref="riskSectionRef" class="block step-block">
           <div class="block-head-wrap">
-            <span class="step-badge">🎯 Step 3</span>
+            <span class="step-badge">Step 3</span>
             <h2 class="block-title">위험도 선택하기</h2>
           </div>
           <p class="block-desc">
@@ -215,16 +215,15 @@ function submit() {
             <p class="board-desc">{{ rec.selectedRisk.helperBody }}</p>
             <div class="board-features">
               <span class="feat-tag">포함되는 주요 상품 성격:</span>
-              <strong v-if="rec.riskLevel === 'VERY_LOW'" class="feat-name">🏦 시중/저축은행 정기예금·적금 (원금 100% 보존)</strong>
-              <strong v-else-if="rec.riskLevel === 'LOW'" class="feat-name">🛡️ 단기채·국공채 ETF / 펀드 (원금손실 최소화)</strong>
-              <strong v-else class="feat-name">📈 회사채·만기매칭형 ETF / 펀드 (수익과 위험의 균형)</strong>
+              <strong v-if="rec.riskLevel === 'VERY_LOW'" class="feat-name">시중/저축은행 정기예금·적금 (원금 100% 보존)</strong>
+              <strong v-else-if="rec.riskLevel === 'LOW'" class="feat-name">단기채·국공채 ETF / 펀드 (원금손실 최소화)</strong>
+              <strong v-else class="feat-name">회사채·만기매칭형 ETF / 펀드 (수익과 위험의 균형)</strong>
             </div>
           </div>
         </section>
 
         <!-- 4개 만기 기간 안내 팁 박스 -->
         <div class="period-notice-tip">
-          <span class="tip-icon">💡</span>
           <p class="tip-text">
             추천 상품은 <strong>1~11개월 / 12~23개월 / 24~35개월 / 36개월 이상</strong> 4개 만기 구간으로 나누어 제공되며, 결과 페이지에서 <strong>각 구간별로 상품을 1개씩(총 4개) 모두 선택</strong>해 주셔야 합니다.
           </p>
@@ -233,7 +232,7 @@ function submit() {
       </div>
 
       <div class="submit-row">
-        <button class="primary-btn" @click="submit">🚀 4단계 만기 추천 상품 보기 →</button>
+        <button class="primary-btn" @click="submit">4단계 만기 추천 상품 보기 →</button>
       </div>
     </div>
 
@@ -271,13 +270,12 @@ function submit() {
 .step-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  background: var(--kb-yellow);
-  color: #3a3215;
-  font-size: 12.5px;
+  padding: 3px 9px;
+  background: var(--text-dark);
+  color: #ffffff;
+  font-size: 12px;
   font-weight: 800;
-  border-radius: 999px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  border-radius: 6px;
 }
 .block-title { font-weight: 800; font-size: 20px; margin: 0; }
 .block-desc { color: var(--text-muted); font-size: 14px; margin: 0 0 16px; }
