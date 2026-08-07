@@ -66,7 +66,8 @@ function canNavigate(key) {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 42px 56px 36px;
+  /* 화면이 낮으면 여백부터 줄여 본문이 스크롤 없이 들어가게 한다. */
+  padding: clamp(12px, 2.4vh, 42px) 56px clamp(10px, 2vh, 36px);
 }
 
 .step {
@@ -86,8 +87,8 @@ function canNavigate(key) {
 .step.done:disabled { opacity: 1; }
 
 .step-circle {
-  width: 60px;
-  height: 60px;
+  width: clamp(38px, 6vh, 60px);
+  height: clamp(38px, 6vh, 60px);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -96,7 +97,7 @@ function canNavigate(key) {
   border: 3px solid #ddd;
   color: #bbb;
   background: white;
-  margin-bottom: 10px;
+  margin-bottom: clamp(5px, 0.9vh, 10px);
 }
 
 .step-label {
@@ -104,12 +105,14 @@ function canNavigate(key) {
   font-weight: 500;
   margin: 0;
   color: #333;
+  line-height: 1.3;
 }
 
 .step-status {
   font-size: 13px;
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #bbb;
+  line-height: 1.3;
 }
 
 /* 완료 상태 */
@@ -131,6 +134,57 @@ function canNavigate(key) {
   color: #fff;
   font-size: 28px;
   font-weight: 900;
+  /* 지금 어느 단계인지 한눈에 보이도록 테두리가 은은하게 퍼졌다 사라진다. */
+  animation: step-pulse 1.8s ease-out infinite;
+}
+
+@keyframes step-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(245, 197, 24, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 197, 24, 0);
+  }
+}
+
+/* 노트북처럼 세로가 짧은 화면에서는 상태 문구를 접어 본문 공간을 남긴다.
+   현재 단계는 원의 색과 반짝임으로 이미 구분된다. */
+@media (max-height: 940px) {
+  .step-status {
+    display: none;
+  }
+  .step-label {
+    font-size: 13.5px;
+  }
+}
+
+/* 13인치 노트북(뷰포트 730~790px)에서는 단계 표시줄을 한 번 더 접는다.
+   여기서 확보한 높이가 추천 카드 5장을 스크롤 없이 담는 데 그대로 쓰인다. */
+@media (max-height: 860px) {
+  .step-indicator {
+    padding: clamp(10px, 1.6vh, 42px) 56px clamp(8px, 1.3vh, 36px);
+  }
+  .step-circle {
+    width: clamp(36px, 4.8vh, 60px);
+    height: clamp(36px, 4.8vh, 60px);
+    font-size: 19px;
+    border-width: 2.5px;
+    margin-bottom: clamp(3px, 0.6vh, 10px);
+  }
+  .step-line {
+    margin-top: clamp(16px, 2.4vh, 29px);
+  }
+}
+
+/* 움직임에 민감한 사용자는 애니메이션을 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  .step.active .step-circle {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.35);
+  }
 }
 
 .step.active .step-label {

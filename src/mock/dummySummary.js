@@ -36,7 +36,7 @@ export const dummySummary = {
     immediateTotal: 2800_0000,
     investable: 12_850_0000,       // 순 여유자금 - 즉시지출
     monthlyNeed: 100_0000,         // 매달 더 필요한 돈
-    fundedMonths: '8년 6개월 ~ 10년 2개월',
+    // fundedMonths는 SummaryView가 실제 배분으로 계산해 PdfReport에 넘긴다(목업 제거)
     items: [
       {
         name: '파킹통장·CMA',

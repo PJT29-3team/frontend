@@ -37,15 +37,12 @@ function submit() {
 
 <template>
   <div>
-    <h2 class="step-title">
-      이사하고 나서 최소<br />얼마 정도는 남아있으면 될까요?
-    </h2>
+    <h2 class="step-title">이사 후 생활자금은 얼마 필요하신가요?</h2>
 
     <AmountField
       v-model="reserveAmount"
       input-id="survey-reserve-amount"
       label="이사후 남기고싶은 금액"
-      equals
       chips
       :error="shownError"
       @enter="submit"

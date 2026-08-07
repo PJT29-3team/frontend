@@ -42,9 +42,10 @@ const props = defineProps({
 
 const expanded = ref(false);
 
+// 등급은 미흡 · 보통 · 우수 세 단계다 (백엔드 toGrade, 경계 40 / 70).
 const gradeClass = computed(() => {
-  if (['매우우수', '우수'].includes(props.grade)) return 'grade-good';
-  if (['미흡', '부족'].includes(props.grade)) return 'grade-bad';
+  if (props.grade === '우수') return 'grade-good';
+  if (props.grade === '미흡') return 'grade-bad';
   return 'grade-normal';
 });
 </script>

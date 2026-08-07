@@ -81,7 +81,33 @@ describe("SurveyStep7", () => {
       .map((b) => b.text().replace(/[0-9]/g, ""));
 
     // 송파구(999) > 노원구(500) > 강남구(342)지만 이름순이 우선이다.
-    expect(names).toEqual(["강남구", "노원구", "송파구"]);
+    expect(names.slice(0, 3)).toEqual(["강남구", "강동구", "강북구"]);
+    expect(names.indexOf("강남구")).toBeLessThan(names.indexOf("송파구"));
+  });
+
+  it("매물이 0개인 지역도 목록에 남기되 고를 수 없게 한다", async () => {
+    const wrapper = mount(SurveyStep7);
+    await flushPromises();
+
+    // REGION_COUNTS 에 없는 서울 구들은 0건이다.
+    const soldOut = chipByName(wrapper, "구로구");
+    expect(soldOut).toBeDefined();
+    expect(soldOut.classes()).toContain("sold-out");
+    expect(soldOut.attributes("disabled")).toBeDefined();
+
+    await soldOut.trigger("click");
+    expect(survey.desiredRegions).toHaveLength(0);
+  });
+
+  it("매물이 있는 지역은 그대로 고를 수 있다", async () => {
+    const wrapper = mount(SurveyStep7);
+    await flushPromises();
+
+    const available = chipByName(wrapper, "강남구");
+    expect(available.classes()).not.toContain("sold-out");
+
+    await available.trigger("click");
+    expect(survey.desiredRegions).toHaveLength(1);
   });
 
   it("시도를 바꾸면 시군구 목록이 갈린다", async () => {

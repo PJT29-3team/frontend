@@ -8,7 +8,6 @@ const props = defineProps({
   label: { type: String, default: "" },
   error: { type: String, default: "" },
   chips: { type: Boolean, default: false },
-  equals: { type: Boolean, default: false },
 });
 
 // enter: 입력을 마치고 엔터를 눌렀을 때. 다음 칸으로 넘어갈지 제출할지는 부모가 정한다.
@@ -22,11 +21,9 @@ const display = computed(() =>
   hasValue.value ? Number(props.modelValue).toLocaleString("ko-KR") : "",
 );
 
-const helpLine = computed(() => {
-  if (!hasValue.value) return "";
-  const won = formatKRW(props.modelValue);
-  return props.equals ? `= ${won}` : won;
-});
+const helpLine = computed(() =>
+  hasValue.value ? formatKRW(props.modelValue) : "",
+);
 
 function onInput(event) {
   const digits = event.target.value.replace(/[^0-9]/g, "");
@@ -66,11 +63,13 @@ function addAmount(amount) {
       <span class="input-group-text amount-unit">원</span>
     </div>
 
+    <!-- 환산 금액은 입력칸 오른쪽 끝에 맞춰 숫자가 세로로 정렬되게 한다.
+         오류 문구가 함께 뜨면 그쪽이 왼쪽을 차지한다. -->
     <div class="d-flex justify-content-between align-items-start gap-2">
-      <span class="field-help">{{ helpLine }}</span>
-      <span v-if="error" class="invalid-feedback d-block text-end mt-1">
+      <span v-if="error" class="invalid-feedback d-block mt-1">
         {{ error }}
       </span>
+      <span class="field-help ms-auto text-end">{{ helpLine }}</span>
     </div>
 
     <div v-if="chips" class="chip-row">

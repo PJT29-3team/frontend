@@ -2,7 +2,6 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
-import { authStore } from '@/stores/authStore';
 import recommendationApi from '@/api/recommendation';
 import '@/styles/survey-tokens.css';
 
@@ -158,7 +157,6 @@ async function goFavorites() {
   try {
     const payload = {
       surveyId: null,
-      userId: authStore.state.user?.userId ?? null,
       favorites: Object.entries(rec.favorites)
         .filter(([, v]) => Boolean(v))
         .map(([periodCode, v]) => ({

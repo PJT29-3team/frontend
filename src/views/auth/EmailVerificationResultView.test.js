@@ -41,7 +41,7 @@ describe('EmailVerificationResultView', () => {
       email: 'senior@example.com',
       signupCompletionToken: 'completion-token',
     })
-    expect(wrapper.get('[data-member-header]').text()).toContain('작은둥지')
+    expect(wrapper.get('[data-member-header]').text()).toContain('홀家분')
     expect(wrapper.text()).toContain('회원정보 입력하기')
     expect(wrapper.get('.primary-link').attributes('data-to')).toBe('/signup')
   })
