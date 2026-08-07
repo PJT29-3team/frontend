@@ -16,8 +16,9 @@ const RISK_LABELS = { VERY_LOW: "매우 낮은 위험", LOW: "낮은 위험", ME
 
 const products = ref([]);
 const loadError = ref("");
-// ponytail: 총 투자금액은 앞 페이지(DB)에서 넘어올 예정. 지금은 스토어 목업.
-const totalFund = computed(() => rec.investAmount || 50_000_000);
+// 총 투자금액은 관심매물 화면이 setFundingAmount()로 넣은 여유자금에서 나온다.
+// 그 화면을 안 거치면 0이고, 0이면 배분할 게 없으므로 지어내지 말고 안내를 띄운다.
+const totalFund = computed(() => rec.investAmount);
 const monthlyNeedMan = ref(rec.monthlyNeed ? rec.monthlyNeed / 10_000 : 100);
 
 const monthlyNeed = computed(() => (monthlyNeedMan.value || 0) * 10_000);
@@ -140,7 +141,6 @@ const interestMonths = computed(() => {
 const saving = ref(false);
 const saveMsg = ref("");
 
-// TODO: 금융상품 추천페이지로 연결 필요
 function handleBack() {
   router.push("/recommendation/result");
 }
@@ -170,8 +170,11 @@ async function handleContinue() {
 <template>
   <div class="hz-shell">
     <p v-if="loadError" class="notice error">{{ loadError }}</p>
+    <p v-else-if="totalFund <= 0" class="notice error">
+      투자할 여유자금이 없습니다. 관심매물에서 집을 고르면 남는 금액이 여기로 넘어옵니다.
+    </p>
 
-    <template v-if="products.length">
+    <template v-if="products.length && totalFund > 0">
       <!-- 선택 상품 + 입력 -->
       <div class="survey-card">
         <h1 class="step-title" style="text-align:left;margin-top:0">얼마를 어디에 투자할까요?</h1>

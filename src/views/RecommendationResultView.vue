@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { useRecommendationStore, RISK_OPTIONS } from '@/stores/recommendation';
+import { useRecommendationStore, RISK_OPTIONS, afterTaxRate } from '@/stores/recommendation';
 import { formatKRW } from '@/stores/survey';
 import recommendationApi from '@/api/recommendation';
 import { PERIOD_OPTIONS } from '@/utils/finance/portfolioAllocation';
@@ -17,7 +17,7 @@ const error = ref(null);
 const periods = ref([]);
 
 // 스크롤 스파이: 상단 구간 버튼 ↔ 현재 보이는 구간 동기화
-const activeCode = ref('UNDER_12M');
+const activeCode = ref(PERIOD_OPTIONS[0].code);
 const sectionEls = {};
 function setSectionRef(code, el) {
   if (el) sectionEls[code] = el;
@@ -97,7 +97,7 @@ onMounted(async () => {
       .map((p) => p.code);
     rec.setEmptyPeriods(emptyPeriodCodes);
 
-    activeCode.value = periods.value[0]?.code ?? 'UNDER_12M';
+    activeCode.value = periods.value[0]?.code ?? PERIOD_OPTIONS[0].code;
 
     await nextTick();
     updateActive();
@@ -132,9 +132,7 @@ function rateText(p) {
   return p.rate == null ? '-' : Number(p.rate).toFixed(2);
 }
 function afterTaxRateText(p) {
-  if (p.rate == null) return '-';
-  const raw = Number(p.rate) || 0;
-  return (raw * 0.846).toFixed(2);
+  return p.rate == null ? '-' : afterTaxRate(p.rate).toFixed(2);
 }
 function maturityText(p) {
   const t = p.termMonths ?? 0;

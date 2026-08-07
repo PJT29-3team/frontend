@@ -5,17 +5,17 @@ const M = 1_000_000; // 월 100만원
 
 // 만기 6/12/36개월 상품 (금액 없음 — allocate가 역산)
 const products = [
-  { name: "적금", maturity: 6, rate: 0.03, fixed: true },
+  { name: "단기예금", maturity: 6, rate: 0.03, fixed: true },
   { name: "만기매칭ETF", maturity: 12, rate: 0.04, fixed: true },
   { name: "만기매칭채권", maturity: 36, rate: 0.05, fixed: true },
 ];
 
 describe("allocate (만기 사다리, 총액 고정)", () => {
   it("파킹 버킷 + 중간 상품은 만기갭을 이자로 역산, 마지막은 나머지 전액", () => {
-    // F = 5000만. 파킹 600(이자 없음) / 적금 600÷1.015 / ETF 2400÷1.04 / 채권 나머지
+    // F = 5000만. 파킹 600(이자 없음) / 단기예금 600÷1.015 / ETF 2400÷1.04 / 채권 나머지
     const { segments } = allocate(products, M, 50_000_000);
     expect(segments[0]).toMatchObject({ cssType: "park", invest: 6_000_000 });
-    expect(segments[1]).toMatchObject({ name: "적금", invest: 5_911_331 });
+    expect(segments[1]).toMatchObject({ name: "단기예금", invest: 5_911_331 });
     expect(segments[2]).toMatchObject({ name: "만기매칭ETF", invest: 23_076_924 });
     expect(segments[3]).toMatchObject({ name: "만기매칭채권", invest: 15_011_745 });
   });
@@ -39,10 +39,10 @@ describe("allocate (만기 사다리, 총액 고정)", () => {
   });
 
   it("F가 부족하면 이른 구간부터 채우고 뒤는 0", () => {
-    // F = 1000만: 파킹 600 다 채우고, 적금에 400만 남음(필요액 미만) → ETF/채권 0
+    // F = 1000만: 파킹 600 다 채우고, 단기예금에 400만 남음(필요액 미만) → ETF/채권 0
     const { segments } = allocate(products, M, 10_000_000);
     expect(segments[0].invest).toBe(6_000_000); // 파킹
-    expect(segments[1].invest).toBe(4_000_000); // 적금(부족)
+    expect(segments[1].invest).toBe(4_000_000); // 단기예금(부족)
     expect(segments[2].invest).toBe(0);
     expect(segments[3].invest).toBe(0);
   });
@@ -52,7 +52,7 @@ describe("allocate + buildTimeline", () => {
   it("충분한 총액이면 끊기지 않고 이어진다", () => {
     const { segments } = allocate(products, M, 50_000_000);
     const { funded } = buildTimeline(segments, M);
-    // 파킹6 + 적금6 + ETF24 + 채권17(이자 반영) = 53개월
+    // 파킹6 + 단기예금6 + ETF24 + 채권17(이자 반영) = 53개월
     expect(funded).toBe(53);
   });
 
@@ -65,7 +65,7 @@ describe("allocate + buildTimeline", () => {
   it("중간 상품은 자기 만기부터 다음 만기까지 정확히 이어진다", () => {
     const { segments } = allocate(products, M, 50_000_000);
     const { segs } = buildTimeline(segments, M);
-    expect(segs.find((s) => s.name === "적금")).toMatchObject({ from: 7, to: 12 });
+    expect(segs.find((s) => s.name === "단기예금")).toMatchObject({ from: 7, to: 12 });
     expect(segs.find((s) => s.name === "만기매칭ETF")).toMatchObject({ from: 13, to: 36 });
   });
 
