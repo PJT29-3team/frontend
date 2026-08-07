@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { formatKRW } from '@/stores/survey';
 import recommendationApi from '@/api/recommendation';
+import { fetchFavoriteProducts } from '@/api/financeApi';
 import { PERIOD_OPTIONS } from '@/utils/finance/portfolioAllocation';
 
 export { PERIOD_OPTIONS };
@@ -180,6 +181,38 @@ export const useRecommendationStore = defineStore('recommendation', {
     },
     isFavorited(periodCode, productType) {
       return this.favorites[periodCode]?.productType === productType;
+    },
+    /**
+     * 서버에 저장된 찜을 되살린다. 찜은 "다음"을 눌러야 저장되므로, 그 전에
+     * 새로고침하면 하트가 전부 풀린다.
+     *
+     * 저장된 쪽에는 상품코드만 있고 금리·추천사유는 없다. 그래서 방금 받은
+     * 추천 목록에서 같은 코드를 찾아 그 상품 객체를 그대로 담는다. 하트를
+     * 눌렀을 때와 완전히 같은 모양이 된다.
+     *
+     * @param periods 추천 응답의 기간 구간 배열
+     * @returns {Promise<number>} 되살린 개수
+     */
+    async restoreFavorites(periods) {
+      if (this.favoriteCount > 0) return this.favoriteCount; // 이 세션에서 이미 고른 게 있으면 둔다
+      let saved;
+      try {
+        saved = await fetchFavoriteProducts();
+      } catch {
+        return 0; // 못 불러와도 화면은 그대로 쓴다
+      }
+      const savedTypes = new Set((saved ?? []).map((f) => f.productType).filter(Boolean));
+      if (!savedTypes.size) return 0;
+
+      let restored = 0;
+      for (const period of periods ?? []) {
+        const hit = (period.products ?? []).find((p) => savedTypes.has(p.productType));
+        if (hit) {
+          this.favorites[period.code] = hit;
+          restored += 1;
+        }
+      }
+      return restored;
     },
     // financial_product_preference로 저장될 조건 페이로드.
     conditionPayload() {

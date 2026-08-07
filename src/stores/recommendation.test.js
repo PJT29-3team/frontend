@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRecommendationStore, PERIOD_OPTIONS } from '@/stores/recommendation';
 import recommendationApi from '@/api/recommendation';
+import * as financeApi from '@/api/financeApi';
 
 // 머니 로직: 투자금액 = 여유자금 − 즉시지출, 남길현금 = 여유자금 − 투자금액.
 describe('recommendation store 금액 계산', () => {
@@ -112,6 +113,46 @@ describe('recommendation store 금액 계산', () => {
 
       await expect(rec.restoreLatest()).resolves.toBe(false);
       expect(rec.investAmount).toBe(0);
+      spy.mockRestore();
+    });
+  });
+
+  // 찜은 "다음"을 눌러야 저장된다. 그 전에 새로고침하면 하트가 풀리므로 되살린다.
+  describe('restoreFavorites', () => {
+    const periods = [
+      { code: 'UNDER_12M', products: [{ productType: 'A', termMonths: 6 }, { productType: 'B', termMonths: 6 }] },
+      { code: 'Y1_TO_2', products: [{ productType: 'C', termMonths: 12 }] },
+      { code: 'Y2_TO_3', products: [] },
+    ];
+
+    it('저장된 상품코드로 추천 목록에서 찾아 담는다', async () => {
+      const spy = vi.spyOn(financeApi, 'fetchFavoriteProducts')
+        .mockResolvedValue([{ productType: 'B' }, { productType: 'C' }]);
+
+      await expect(rec.restoreFavorites(periods)).resolves.toBe(2);
+      // 하트를 눌렀을 때와 같은 상품 객체가 들어가야 한다
+      expect(rec.favorites.UNDER_12M).toEqual({ productType: 'B', termMonths: 6 });
+      expect(rec.favorites.Y1_TO_2).toEqual({ productType: 'C', termMonths: 12 });
+      expect(rec.favorites.Y2_TO_3).toBeNull();
+      spy.mockRestore();
+    });
+
+    it('이 세션에서 이미 고른 게 있으면 서버를 부르지 않는다', async () => {
+      const spy = vi.spyOn(financeApi, 'fetchFavoriteProducts');
+      rec.toggleFavorite('UNDER_12M', { productType: 'A', termMonths: 6 });
+
+      await expect(rec.restoreFavorites(periods)).resolves.toBe(1);
+      expect(spy).not.toHaveBeenCalled();
+      expect(rec.favorites.UNDER_12M.productType).toBe('A');
+      spy.mockRestore();
+    });
+
+    it('조회가 실패해도 화면을 막지 않는다', async () => {
+      const spy = vi.spyOn(financeApi, 'fetchFavoriteProducts')
+        .mockRejectedValue(new Error('network'));
+
+      await expect(rec.restoreFavorites(periods)).resolves.toBe(0);
+      expect(rec.favoriteCount).toBe(0);
       spy.mockRestore();
     });
   });

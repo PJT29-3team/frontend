@@ -101,6 +101,10 @@ onMounted(async () => {
       .map((p) => p.code);
     rec.setEmptyPeriods(emptyPeriodCodes);
 
+    // 찜은 "다음"을 눌러야 서버에 저장된다. 그 전에 새로고침하면 스토어가 비어
+    // 하트가 전부 풀린다. 저장돼 있던 것이 있으면 방금 받은 목록에서 되찾는다.
+    await rec.restoreFavorites(periods.value);
+
     activeCode.value = periods.value[0]?.code ?? PERIOD_OPTIONS[0].code;
 
     await nextTick();
