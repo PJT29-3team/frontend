@@ -37,7 +37,7 @@ function submit() {
       <header class="rec-head">
         <h1 class="rec-title">내게 맞는 금융상품 찾기</h1>
         <p class="rec-sub">
-          이사 후 남은 자금에서 당장 쓸 돈과 매달 쓸 돈만 정하면, 기간별로 어울리는 상품을 보여드립니다.
+          이사 후 남은 자금에서 당장 쓸 돈과 매달 쓸 돈만 정하면, 4개 만기 기간(1~12개월, 13~24개월, 25~36개월, 36개월 이상)에 어울리는 최적의 상품을 추천해 드립니다.
         </p>
       </header>
 
@@ -128,6 +128,14 @@ function submit() {
           </div>
         </section>
 
+        <!-- 4개 만기 기간 안내 팁 박스 -->
+        <div class="period-notice-tip">
+          <span class="tip-icon">💡</span>
+          <p class="tip-text">
+            추천 상품은 <strong>1~12개월 / 13~24개월 / 25~36개월 / 36개월 이상</strong> 4개 만기 구간으로 나누어 제공되며, 결과 페이지에서 <strong>각 구간별로 상품을 1개씩(총 4개) 모두 선택</strong>해 주셔야 합니다.
+          </p>
+        </div>
+
       </div>
 
       <div class="submit-row">
@@ -205,6 +213,27 @@ function submit() {
 .risk-helper.tone-safe { background: #eef8f1; border-color: #2d7a44; color: #245c36; }
 .risk-helper.tone-caution { background: #fff6e6; border-color: #b5760a; color: #8a5a08; }
 .risk-helper.tone-warn { background: #fdeeeb; border-color: #c0442e; color: #93331f; }
+
+.period-notice-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: #fffcf0;
+  border: 1.5px solid #ffe899;
+  border-radius: 12px;
+}
+.period-notice-tip .tip-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.period-notice-tip .tip-text {
+  margin: 0;
+  font-size: 13.5px;
+  color: #4b4435;
+  line-height: 1.55;
+}
 
 .submit-row { display: flex; justify-content: flex-end; margin-top: 22px; }
 .submit-row .primary-btn { width: auto; min-width: 240px; margin: 0; padding: 15px 32px; }

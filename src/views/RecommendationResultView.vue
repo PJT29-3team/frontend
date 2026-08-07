@@ -129,7 +129,7 @@ function highlightCompareText(text) {
 const showEmptyModal = ref(false);
 
 async function goFavorites() {
-  if (rec.favoriteCount === 0) {
+  if (!rec.isAllSelected) {
     showEmptyModal.value = true;
     return;
   }
@@ -172,8 +172,8 @@ function showProductDetail(product) {
           <h1 class="r-title">기간별 추천 금융상품</h1>
           <p class="r-sub">
             투자 금액 <b>{{ formatKRW(rec.investAmount) }}</b>을 언제 쓸 돈인지에 따라
-            <b>1년 미만 · 1~3년 · 3년 이상</b>으로 나눠 담았어요.
-            구간마다 마음에 드는 상품을 관심에 담아보세요.
+            <b>1~12개월 · 13~24개월 · 25~36개월 · 36개월 이상</b> 4개 구간으로 나눠 담았어요.
+            각 구간마다 마음에 드는 상품을 1개씩(총 4개) 모두 선택해 주세요.
           </p>
           <p class="r-note">
             선택하신 위험도 <b>{{ riskBadge(rec.riskLevel) }}</b> 위주로 추천하고, 해당 기간에
@@ -224,15 +224,15 @@ function showProductDetail(product) {
             {{ period.label }}
           </button>
         </div>
-        <div class="pnav-counter">담기 {{ rec.favoriteCount }}/3</div>
+        <div class="pnav-counter">담기 {{ rec.favoriteCount }}/4</div>
       </nav>
 
-      <!-- 빈 상태 (첫 찜 전) -->
-      <p v-if="!loading && !error && rec.favoriteCount === 0" class="empty-hint">
-        기간별 하나씩, 최대 3개 담아보세요
+      <!-- 빈 상태 (4개 미만 찜) -->
+      <p v-if="!loading && !error && !rec.isAllSelected" class="empty-hint">
+        4개 기간 구간에서 각각 1개씩, 총 4개 상품을 담아보세요 (현재 {{ rec.favoriteCount }}/4)
       </p>
 
-      <!-- 기간 구간별 3줄 -->
+      <!-- 기간 구간별 4줄 -->
       <section
         v-for="period in periods"
         v-show="!loading && !error"
@@ -334,13 +334,13 @@ function showProductDetail(product) {
       </div>
     </footer>
 
-    <!-- 찜 0개 경고 모달 (매물 찜 모달 스타일 통일) -->
+    <!-- 구간별 1개씩 4개 선택 강제 모달 -->
     <div v-if="showEmptyModal" class="modal-backdrop" @click.self="showEmptyModal = false">
       <div class="remove-modal">
         <button class="modal-close" type="button" @click="showEmptyModal = false">✕</button>
         <div class="modal-heart">♡</div>
-        <h2>상품을 1개 이상 담아주세요</h2>
-        <p>추천된 기간별 상품 중 마음에 드는 상품의 하트(♡)를 클릭하여 관심 등록 후 이동해 주세요.</p>
+        <h2>모든 기간 구간에서 상품을 1개씩 담아주세요</h2>
+        <p>1~12개월 / 13~24개월 / 25~36개월 / 36개월 이상 4개 구간에서 각각 마음에 드는 상품의 하트(♡)를 클릭하여 총 4개를 모두 담아주세요. (현재 {{ rec.favoriteCount }}/4개 담김)</p>
         <div class="modal-actions">
           <button class="confirm-removal" type="button" @click="showEmptyModal = false">확인</button>
         </div>

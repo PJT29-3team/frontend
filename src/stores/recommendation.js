@@ -42,11 +42,12 @@ export const RISK_OPTIONS = [
   },
 ];
 
-// investment_period_code 공통코드(SHORT/MEDIUM/LONG) ↔ 화면 라벨.
+// investment_period_code 4개 구간 ↔ 화면 라벨.
 export const PERIOD_OPTIONS = [
-  { code: 'SHORT', label: '단기', desc: '1년 안에 쓸 돈' },
-  { code: 'MEDIUM', label: '중기', desc: '1~3년 뒤에 쓸 돈' },
-  { code: 'LONG', label: '장기', desc: '3년 뒤에도 여유 있는 돈' },
+  { code: 'UNDER_12M', label: '1~12개월', desc: '1년 안에 쓸 돈' },
+  { code: 'Y1_TO_2', label: '13~24개월', desc: '1~2년 뒤에 쓸 돈' },
+  { code: 'Y2_TO_3', label: '25~36개월', desc: '2~3년 뒤에 쓸 돈' },
+  { code: 'OVER_36M', label: '36개월 이상', desc: '3년 뒤에도 여유 있는 돈' },
 ];
 
 
@@ -58,9 +59,9 @@ export const useRecommendationStore = defineStore('recommendation', {
     immediateExpense: 0,
     monthlyNeed: 1_000_000, // 원. 목업 기본 100만원.
     riskLevel: 'VERY_LOW',
-    periodCode: 'SHORT',
-    // 찜: 기간(SHORT/MEDIUM/LONG)당 상품 1개 슬롯 → 슬롯 구조라 최대 3개 자동 보장.
-    favorites: { SHORT: null, MEDIUM: null, LONG: null },
+    periodCode: 'UNDER_12M',
+    // 찜: 4개 기간 구간(UNDER_12M/Y1_TO_2/Y2_TO_3/OVER_36M)당 상품 1개 슬롯 -> 최대 4개 보장.
+    favorites: { UNDER_12M: null, Y1_TO_2: null, Y2_TO_3: null, OVER_36M: null },
     // 상품 상세정보 캐시: key = `${kind}:${productType}`, value = ProductDetailResponse
     productDetailCache: {},
   }),
@@ -77,9 +78,10 @@ export const useRecommendationStore = defineStore('recommendation', {
     },
     selectedRisk: (s) => RISK_OPTIONS.find((o) => o.code === s.riskLevel) ?? null,
     selectedPeriod: (s) => PERIOD_OPTIONS.find((o) => o.code === s.periodCode) ?? null,
-    // 찜한 상품 목록(빈 슬롯 제외) + 개수.
+    // 찜한 상품 목록(빈 슬롯 제외) + 개수 + 4개 완전선택 여부.
     favoriteList: (s) => Object.values(s.favorites).filter(Boolean),
     favoriteCount: (s) => Object.values(s.favorites).filter(Boolean).length,
+    isAllSelected: (s) => Object.values(s.favorites).every(Boolean),
   },
 
   actions: {

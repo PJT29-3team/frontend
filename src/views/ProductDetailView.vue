@@ -24,9 +24,11 @@ function checkIsFavorited() {
 }
 
 function termCodeOf(months) {
-  if (months < 12) return 'SHORT';
-  if (months < 36) return 'MEDIUM';
-  return 'LONG';
+  const m = months || 0;
+  if (m <= 12) return 'UNDER_12M';
+  if (m <= 24) return 'Y1_TO_2';
+  if (m <= 36) return 'Y2_TO_3';
+  return 'OVER_36M';
 }
 
 function toggleHeart(loc) {
