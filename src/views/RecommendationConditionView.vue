@@ -97,9 +97,9 @@ function submit() {
             <div class="calc-amount-group">
               <div class="monthly-display">{{ formatKRW(rec.monthlyNeed) }} / 월</div>
               <div class="runway-hero-display">
-                <span class="hero-label">4단계 예치 시</span>
+                <span class="hero-label">기간별 나눠 담으면</span>
                 <strong class="hero-years">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
-                <span class="hero-diff-tag">+{{ rec.runwayAnalysis.diffText }} 더</span>
+                <span class="hero-diff-tag">(최소 +{{ rec.runwayAnalysis.diffText }} 연장!)</span>
               </div>
             </div>
           </div>
