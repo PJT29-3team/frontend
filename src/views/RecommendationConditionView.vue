@@ -94,16 +94,23 @@ function submit() {
               <input class="amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" />
               <span class="amount-unit">만원</span>
             </div>
-            <span class="calc-amount">{{ formatKRW(rec.monthlyNeed) }} / 월</span>
+            <div class="calc-amount-group">
+              <div class="monthly-display">{{ formatKRW(rec.monthlyNeed) }} / 월</div>
+              <div class="runway-hero-display">
+                <span class="hero-label">예금 굴림 시</span>
+                <strong class="hero-years">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
+                <span class="hero-diff">(+{{ rec.runwayAnalysis.diffText }} 더!)</span>
+              </div>
+            </div>
           </div>
           <div class="quick-row">
             <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
           </div>
 
-          <!-- 월 금액 바로 밑에 붙는 자연스러운 버팀 안내 텍스트 (무거운 박스 제거) -->
-          <div class="runway-simple-text">
-            💡 매달 <strong>{{ monthlyManwon }}만원</strong>씩 꺼내 쓰시면 단순 보유 시 총 <strong>{{ rec.runwayAnalysis.cashYearsText }}</strong> 사용 가능하며, 예금만 굴려도 <strong>{{ rec.runwayAnalysis.appYearsText }}</strong> <span class="diff-tag">(+{{ rec.runwayAnalysis.diffText }} 더!)</span> 오래 꺼내 쓰실 수 있습니다.
-          </div>
+          <!-- 월 금액 바로 밑 안내 멘트 -->
+          <p class="bm-notice-simple">
+            🛡️ 현금 보유 대비 원금 100% 보장 예금으로 굴렸을 때의 <strong>최소 버팀 기간</strong>입니다.
+          </p>
         </section>
 
         <!-- 자금 조정 질문 & 분기 버튼 2개 -->
@@ -286,31 +293,52 @@ function submit() {
 .quick-chip { padding: 8px 16px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--text-muted); cursor: pointer; }
 .quick-chip.reset { color: #999; }
 
-/* 월 금액 바로 밑에 자연스럽게 붙는 한 줄 팁 안내 */
-.runway-simple-text {
-  margin-top: 18px;
-  padding: 14px 18px;
-  background: #fbf9f4;
-  border-left: 4px solid var(--kb-yellow-deep);
-  border-radius: 10px;
-  font-size: 14.5px;
-  color: #3d3932;
-  line-height: 1.6;
+.calc-amount-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  white-space: nowrap;
 }
-.runway-simple-text strong {
-  color: #111;
+.monthly-display {
+  font-size: 19px;
   font-weight: 800;
+  color: var(--text-dark);
 }
-.runway-simple-text .diff-tag {
+.runway-hero-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-label {
+  font-size: 12.5px;
+  color: #666;
+  font-weight: 600;
+}
+.hero-years {
+  font-size: 19px;
+  font-weight: 800;
+  color: #1e6434;
+}
+.hero-diff {
   display: inline-flex;
   align-items: center;
-  margin-left: 4px;
-  padding: 2px 8px;
+  padding: 3px 8px;
   background: #2d7a44;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 800;
   border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(45, 122, 68, 0.2);
+}
+
+.bm-notice-simple {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  color: #5a5448;
+  border-top: 1px dashed #e2dcce;
+  padding-top: 10px;
+  text-align: center;
 }
 
 /* 자금 조정 안내 박스 & 분기 버튼 */
