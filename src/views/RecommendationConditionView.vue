@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router'
 import {
   useRecommendationStore,
   RISK_OPTIONS,
-  formatKRW,
 } from '@/stores/recommendation'
+import { formatKRW } from '@/stores/survey'
 
 const router = useRouter()
 const rec = useRecommendationStore()
@@ -30,16 +30,42 @@ const immediateManwon = computed({
   set: (v) => rec.setImmediateExpense((Number(v) || 0) * 10000),
 })
 
+// 투자금 및 생활비 유효성 검증
+const validationError = computed(() => {
+  const invest = rec.investAmount || 0
+  const monthly = (monthlyManwon.value || 0) * 10000
+
+  if (invest <= 0) {
+    return '긴급 지출이 여유 자금을 초과했습니다. 실제 굴릴 총 투자금이 최소 1만원 이상이어야 금융 추천을 진행할 수 있습니다.'
+  }
+  if (monthly <= 0) {
+    return '매달 꺼내 쓸 생활비를 최소 1만원 이상 입력해 주세요.'
+  }
+  if (monthly > invest) {
+    return '매달 꺼내 쓸 생활비가 총 투자금보다 큽니다. 실제 굴릴 총 투자금 이내로 생활비를 설정해 주세요.'
+  }
+  return null
+})
+
 function addMonthly(manwon) {
   rec.setMonthlyNeed((rec.monthlyNeed || 0) + manwon * 10000)
+}
+function resetMonthly() {
+  rec.setMonthlyNeed(0)
 }
 
 function addAdditional(manwon) {
   rec.setAdditionalDeposit((rec.additionalDeposit || 0) + manwon * 10000)
 }
+function resetAdditional() {
+  rec.setAdditionalDeposit(0)
+}
 
 function addImmediate(manwon) {
   rec.setImmediateExpense((rec.immediateExpense || 0) + manwon * 10000)
+}
+function resetImmediate() {
+  rec.setImmediateExpense(0)
 }
 
 const step3BackText = computed(() => {
@@ -68,12 +94,21 @@ function handleStep3Back() {
 }
 
 function submit() {
+  if (validationError.value) {
+    alert(validationError.value)
+    return
+  }
   router.push('/recommendation/result')
 }
 
 let observer = null
 
 onMounted(() => {
+  // 관심매물 페이지를 거치지 않은 경우 테스트 기본값(5000만원) 자동 세팅
+  if (!rec.fundingAmount || rec.fundingAmount <= 0) {
+    rec.setFundingAmount(0)
+  }
+
   if (welcomeHeroRef.value) {
     observer = new IntersectionObserver(
       (entries) => {
@@ -129,23 +164,33 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- 쉬운 연산 원리 설명 카드 (3단계 카피라이팅) -->
+        <!-- '4단계 예치란?' 안내 박스 (한 줄 요약 1:1 반영) -->
         <div class="easy-calc-explain-box">
-          <div class="explain-title">💡 4단계 예치 수명 연산 원리 안내</div>
-          <ul class="explain-steps">
-            <li class="explain-step-item">
-              <span class="explain-step-num">STEP 1</span>
-              <p class="explain-step-text">집을 옮기고 남은 여유 자금에서 <b>매달 쓰실 생활비</b>를 나눕니다.</p>
-            </li>
-            <li class="explain-step-item">
-              <span class="explain-step-num">STEP 2</span>
-              <p class="explain-step-text">1년 미만·1~2년·2~3년·3년 이상 <b>4개 만기 금융상품</b>에 나누어 담아 수익을 더합니다.</p>
-            </li>
-            <li class="explain-step-item">
-              <span class="explain-step-num">STEP 3</span>
-              <p class="explain-step-text">만기 시점이 릴레이처럼 이어져 <b>생활비가 비지 않도록 안전하게 몇 개월 더 꺼내 쓰실 수 있는지</b> 계산합니다.</p>
-            </li>
-          </ul>
+          <div class="explain-title">💡 '4단계 예치'란 무엇인가요?</div>
+          <p class="explain-intro-text">
+            '4단계'는 <b>1~11개월 · 12~23개월 · 24~35개월 · 36개월 이상</b> 4개의 만기 기간을 의미하며, 아래 ① ➔ ② ➔ ③ 순서대로 시뮬레이션이 진행됩니다.
+          </p>
+
+          <div class="explain-flow-container">
+            <div class="flow-step-card">
+              <span class="flow-num">① 생활비 설정</span>
+              <p class="flow-text">매달 꺼내 쓸 생활비를 정합니다.</p>
+            </div>
+
+            <div class="flow-arrow">➔</div>
+
+            <div class="flow-step-card">
+              <span class="flow-num">② 4개 만기 분할</span>
+              <p class="flow-text">찾아 쓸 시기별 4개 만기에 나누어 둡니다.</p>
+            </div>
+
+            <div class="flow-arrow">➔</div>
+
+            <div class="flow-step-card">
+              <span class="flow-num">③ 연장 기간 계산</span>
+              <p class="flow-text">이자가 더해져 몇 개월 더 쓰는지 계산합니다.</p>
+            </div>
+          </div>
         </div>
 
         <!-- 히어로 진입 버튼 -->
@@ -189,9 +234,15 @@ onUnmounted(() => {
 
     <!-- 3. 메인 1자 수직 쉘 -->
     <div class="rec-shell">
-      <!-- STEP 1 카드: 생활비 설정 -->
+      <!-- 붉은색 검증 안내 박스 (오류 발생 시 상단 노출) -->
+      <div v-if="validationError" class="validation-error-board">
+        <span class="error-icon">⚠️</span>
+        <span class="error-msg">{{ validationError }}</span>
+      </div>
+
+      <!-- STEP 1 카드: 생활비 설정 (카테고리 배지 적용) -->
       <div class="step-card" id="stepCard1">
-        <span class="step-badge-chip">STEP 1</span>
+        <span class="step-badge-chip">생활비 설정</span>
         <h2 class="step-question-title">매달 꺼내 쓸 생활비 정하기</h2>
         <p class="step-question-desc">국민연금 등 고정 수입 외에, 이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?</p>
 
@@ -200,7 +251,7 @@ onUnmounted(() => {
           <strong class="base-funding-val">{{ formatKRW(rec.fundingAmount) }}</strong>
         </div>
 
-        <div class="toss-input-wrap">
+        <div class="toss-input-wrap" :class="{ 'input-error': validationError && monthlyManwon <= 0 }">
           <span class="toss-prefix">매달</span>
           <input
             type="number"
@@ -217,30 +268,32 @@ onUnmounted(() => {
           <button type="button" class="chip" @click="addMonthly(10)">+10만원</button>
           <button type="button" class="chip" @click="addMonthly(50)">+50만원</button>
           <button type="button" class="chip" @click="addMonthly(100)">+100만원</button>
+          <button type="button" class="chip chip-reset" @click="resetMonthly">재설정</button>
         </div>
 
         <div class="adjust-question-wrap">
           <div class="adjust-question-text">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</div>
         </div>
 
+        <!-- Step 1: 하단 우측 정렬 2개 분기 버튼 (가로 배치 + 깔끔한 우측 밀착) -->
         <div class="btn-row-step1">
-          <button type="button" class="secondary-btn" @click="scrollToStep(2, true)">
+          <button type="button" class="step1-option-btn secondary" @click="scrollToStep(2, true)">
             예, 자금 조정하기 (+/-) ↓
           </button>
-          <button type="button" class="primary-btn" @click="scrollToStep(3, false)">
+          <button type="button" class="step1-option-btn primary" @click="scrollToStep(3, false)">
             아니오, 그대로 위험도 선택 ↓
           </button>
         </div>
       </div>
 
-      <!-- STEP 2 카드: 자금 조정 -->
+      <!-- STEP 2 카드: 자금 조정 (카테고리 배지 적용) -->
       <div class="step-card" id="stepCard2">
-        <span class="step-badge-chip">STEP 2</span>
+        <span class="step-badge-chip">자금 조정</span>
         <h2 class="step-question-title">자금 조정하기</h2>
         <p class="step-question-desc">선택 매물 남은 돈에서 더할 돈이나, 미리 뺄 지출이 있다면 입력해 주세요.</p>
 
         <div class="adjust-field-group">
-          <label class="adjust-field-label plus-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</label>
+          <label class="adjust-field-label plus-label">+ 추가로 합칠 돈 (퇴직금·만기 예금 등)</label>
           <div class="toss-input-wrap">
             <input
               type="number"
@@ -256,12 +309,13 @@ onUnmounted(() => {
             <button type="button" class="chip" @click="addAdditional(100)">+100만원</button>
             <button type="button" class="chip" @click="addAdditional(500)">+500만원</button>
             <button type="button" class="chip" @click="addAdditional(1000)">+1000만원</button>
+            <button type="button" class="chip chip-reset" @click="resetAdditional">재설정</button>
           </div>
         </div>
 
         <div class="adjust-field-group">
           <label class="adjust-field-label minus-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
-          <div class="toss-input-wrap">
+          <div class="toss-input-wrap" :class="{ 'input-error': validationError && rec.investAmount <= 0 }">
             <input
               type="number"
               class="toss-amount-input"
@@ -276,6 +330,7 @@ onUnmounted(() => {
             <button type="button" class="chip" @click="addImmediate(100)">+100만원</button>
             <button type="button" class="chip" @click="addImmediate(500)">+500만원</button>
             <button type="button" class="chip" @click="addImmediate(1000)">+1000만원</button>
+            <button type="button" class="chip chip-reset" @click="resetImmediate">재설정</button>
           </div>
         </div>
 
@@ -289,9 +344,9 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- STEP 3 카드: 위험도 선택 -->
+      <!-- STEP 3 카드: 위험도 선택 (카테고리 배지 적용) -->
       <div class="step-card" id="stepCard3">
-        <span class="step-badge-chip">STEP 3</span>
+        <span class="step-badge-chip">위험도 선택</span>
         <h2 class="step-question-title">위험도 선택하기</h2>
         <p class="step-question-desc">선택하신 위험도 위주로 4개 만기 기간에 배치해 드립니다.</p>
 
@@ -321,7 +376,12 @@ onUnmounted(() => {
           <button type="button" class="secondary-btn" @click="handleStep3Back">
             {{ step3BackText }}
           </button>
-          <button type="button" class="primary-btn submit-btn" @click="submit">
+          <button
+            type="button"
+            class="primary-btn submit-btn"
+            :class="{ disabled: validationError }"
+            @click="submit"
+          >
             4단계 만기 추천 상품 보기 →
           </button>
         </div>
@@ -357,11 +417,28 @@ onUnmounted(() => {
   line-height: 1.55;
 }
 
+/* 유효성 오류 알림 보드 */
+.validation-error-board {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fdeeeb;
+  border: 1.5px solid #c0442e;
+  color: #722718;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  animation: fadeIn 0.2s ease-in;
+}
+.error-icon { font-size: 18px; }
+
 /* 1. 첫 진입 전면 웰컴 히어로 캔버스 */
 .hero-welcome-canvas {
   background: #fff;
   border-bottom: 1.5px solid #e9e6df;
-  padding: 40px 0 32px;
+  padding: 34px 0 26px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
 }
 .welcome-container {
@@ -377,79 +454,98 @@ onUnmounted(() => {
   background: #fffcf0;
   color: #8a6a20;
   border: 1.2px solid #ffe899;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
-  padding: 5px 12px;
+  padding: 4px 11px;
   border-radius: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .welcome-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 900;
   color: #2f2d29;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   letter-spacing: -0.5px;
 }
 .welcome-sub {
-  font-size: 14.5px;
+  font-size: 13.5px;
   color: var(--text-muted, #777267);
-  margin: 0 0 8px;
-  max-width: 760px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.6;
+  margin: 0 auto 6px;
+  max-width: 780px;
+  line-height: 1.55;
+  white-space: nowrap;
 }
 .welcome-sub b {
   color: var(--text-dark, #2f2d29);
   font-weight: 800;
 }
 .welcome-note {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #888;
-  margin: 0 0 24px;
+  margin: 0 0 20px;
 }
 
 .welcome-stats-bar {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 36px;
+  gap: 30px;
   background: #faf8f5;
   border: 1.5px solid #eae5db;
-  border-radius: 18px;
-  padding: 18px 32px;
-  margin: 0 auto 24px;
-  max-width: 820px;
+  border-radius: 16px;
+  padding: 15px 28px;
+  margin: 0 auto 20px;
+  max-width: 920px;
 }
 .w-stat { text-align: center; }
-.w-stat-label { font-size: 12.5px; color: var(--text-muted, #777267); font-weight: 700; display: block; margin-bottom: 4px; }
-.w-stat-val { font-size: 24px; font-weight: 900; color: #2f2d29; }
+.w-stat-label { font-size: 12px; color: var(--text-muted, #777267); font-weight: 700; display: block; margin-bottom: 3px; }
+.w-stat-val { font-size: 22px; font-weight: 900; color: #2f2d29; }
 .w-stat-val.question { color: var(--kb-yellow-deep, #d4a000); }
-.w-stat-subtext { font-size: 12px; color: #777; font-weight: 700; display: block; margin-top: 2px; }
-.w-divider { width: 1px; height: 36px; background: #e0dad0; }
+.w-stat-subtext { font-size: 11.5px; color: #777; font-weight: 700; display: block; margin-top: 2px; }
+.w-divider { width: 1px; height: 32px; background: #e0dad0; }
 
+/* '4단계 예치란?' 안내 박스 스타일 */
 .easy-calc-explain-box {
   background: #fffcf0;
   border: 1.5px solid #ffe899;
-  border-radius: 16px;
-  padding: 18px 24px;
-  max-width: 820px;
-  margin: 0 auto 28px;
+  border-radius: 15px;
+  padding: 16px 22px;
+  max-width: 920px;
+  margin: 0 auto 22px;
   text-align: left;
 }
-.explain-title { font-size: 14.5px; font-weight: 800; color: #8a6a20; margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
-.explain-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0; padding: 0; list-style: none; }
-.explain-step-item { background: #ffffff; padding: 12px 14px; border-radius: 10px; border: 1px solid #f0e6c8; }
-.explain-step-num { font-size: 11.5px; font-weight: 800; color: var(--kb-yellow-deep, #d4a000); display: block; margin-bottom: 2px; }
-.explain-step-text { font-size: 12.5px; color: #444; margin: 0; line-height: 1.45; font-weight: 600; }
-.explain-step-text b { color: var(--text-dark, #2f2d29); font-weight: 800; }
+.explain-title { font-size: 14px; font-weight: 900; color: #8a6a20; margin: 0 0 6px; }
+.explain-intro-text { font-size: 12.5px; color: #555; margin: 0 0 14px; line-height: 1.5; }
+.explain-intro-text b { color: #2f2d29; font-weight: 800; }
+
+.explain-flow-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.flow-step-card {
+  flex: 1;
+  background: #ffffff;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid #f0e6c8;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.flow-num { font-size: 12px; font-weight: 800; color: var(--kb-yellow-deep, #d4a000); display: block; margin-bottom: 3px; white-space: nowrap; }
+.flow-text { font-size: 12px; color: #444; margin: 0; line-height: 1.4; font-weight: 600; white-space: nowrap; }
+.flow-text b { color: var(--text-dark, #2f2d29); font-weight: 800; }
+.flow-arrow { font-size: 15px; font-weight: 900; color: #d4a000; flex-shrink: 0; }
 
 .hero-enter-btn {
-  padding: 16px 44px;
-  border-radius: 14px;
+  padding: 14px 40px;
+  border-radius: 13px;
   background: var(--kb-yellow, #fabb08);
   color: #342e22;
-  font-size: 16.5px;
+  font-size: 15.5px;
   font-weight: 900;
   border: none;
   cursor: pointer;
@@ -507,7 +603,7 @@ onUnmounted(() => {
 
 /* 3. 메인 1자 수직 쉘 */
 .rec-shell {
-  max-width: 820px;
+  max-width: 920px;
   margin: 32px auto 64px;
   padding: 0 20px;
 }
@@ -562,6 +658,10 @@ onUnmounted(() => {
   border-color: var(--kb-yellow-deep, #d4a000);
   box-shadow: 0 0 0 3px rgba(250, 187, 8, 0.25);
 }
+.toss-input-wrap.input-error {
+  border-color: #c0442e;
+  box-shadow: 0 0 0 3px rgba(192, 68, 46, 0.2);
+}
 .toss-prefix { font-weight: 700; font-size: 16.5px; color: #333; }
 .toss-amount-input { flex: 1; font-size: 24px; font-weight: 800; color: var(--text-dark, #2f2d29); border: none; outline: none; text-align: right; background: transparent; }
 .toss-amount-unit { font-size: 15px; font-weight: 700; color: #555; margin-left: 8px; }
@@ -569,6 +669,8 @@ onUnmounted(() => {
 .quick-chips { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
 .chip { padding: 7px 14px; border-radius: 8px; border: 1.4px solid var(--card-border, #e2ded6); background: #fff; font-weight: 700; font-size: 13px; color: var(--text-muted, #777267); cursor: pointer; }
 .chip:hover { background: #f5f3ee; color: #333; }
+.chip-reset { color: #888; border-color: #d9d4cc; background: #f5f3ee; }
+.chip-reset:hover { background: #ece9e3; color: #444; }
 
 .adjust-question-wrap { margin-top: 24px; }
 .adjust-question-text { font-size: 15px; font-weight: 800; color: #2c2a26; margin-bottom: 6px; }
@@ -578,14 +680,49 @@ onUnmounted(() => {
 .adjust-field-label.plus-label { color: #2d7a44; }
 .adjust-field-label.minus-label { color: #c0442e; }
 
+/* 🔥 Step 1: 하단 우측 정렬 2개 분기 버튼 (Side-by-Side 우측 밀착 + 동일 형태) */
 .btn-row-step1 {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-top: 24px;
-  padding-top: 18px;
+  padding-top: 20px;
   border-top: 1px solid #eee;
+}
+
+.step1-option-btn {
+  height: 52px;
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.step1-option-btn.secondary {
+  background: #ffffff;
+  border: 1.5px solid #d9d4cc;
+  color: #555;
+}
+.step1-option-btn.secondary:hover {
+  background: #f7f5f0;
+  color: #222;
+}
+.step1-option-btn.primary {
+  background: var(--kb-yellow, #fabb08);
+  border: none;
+  color: #342e22;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+.step1-option-btn.primary:hover {
+  background: #f0b000;
+  transform: translateY(-1px);
 }
 
 .btn-row {
@@ -598,7 +735,8 @@ onUnmounted(() => {
 }
 
 .primary-btn {
-  padding: 15px 32px;
+  height: 52px;
+  padding: 0 32px;
   border-radius: 12px;
   background: var(--kb-yellow, #fabb08);
   color: #342e22;
@@ -608,11 +746,16 @@ onUnmounted(() => {
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0,0,0,0.06);
   transition: background 0.15s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .primary-btn:hover { background: #f0b000; transform: translateY(-1px); }
+.primary-btn.disabled { opacity: 0.6; cursor: not-allowed; }
 
 .secondary-btn {
-  padding: 15px 24px;
+  height: 52px;
+  padding: 0 24px;
   border-radius: 12px;
   background: #ffffff;
   border: 1.5px solid #d9d4cc;
@@ -621,6 +764,9 @@ onUnmounted(() => {
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .secondary-btn:hover { background: #f7f5f0; }
 
@@ -637,7 +783,7 @@ onUnmounted(() => {
 .board-header { font-size: 14.5px; font-weight: 800; margin-bottom: 4px; }
 .board-desc { font-size: 13px; margin: 0; line-height: 1.5; }
 
-.submit-btn { padding: 15px 36px; }
+.submit-btn { padding: 0 36px; }
 
 .rec-footer { background: #46413a; color: #cdc7bc; margin-top: 48px; }
 .footer-inner { max-width: 1140px; margin: 0 auto; padding: 30px 32px 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
@@ -647,8 +793,11 @@ onUnmounted(() => {
 @media (max-width: 600px) {
   .welcome-stats-bar { flex-direction: column; gap: 16px; }
   .w-divider { width: 100%; height: 1px; }
-  .explain-steps { grid-template-columns: 1fr; }
+  .explain-flow-container { flex-direction: column; gap: 10px; }
+  .flow-arrow { transform: rotate(90deg); }
   .risk-cards { grid-template-columns: 1fr; }
   .footer-inner { grid-template-columns: 1fr; gap: 20px; }
+  .btn-row-step1 { flex-direction: column; width: 100%; }
+  .step1-option-btn { width: 100%; }
 }
 </style>

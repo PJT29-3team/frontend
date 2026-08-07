@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
+import { useRecommendationStore, RISK_OPTIONS } from '@/stores/recommendation';
+import { formatKRW } from '@/stores/survey';
 import recommendationApi from '@/api/recommendation';
 import '@/styles/survey-tokens.css';
 
@@ -89,6 +90,12 @@ onMounted(async () => {
       }
     }
 
+    // 빈 기간(상품 0개) 감지 → 스토어에 저장
+    const emptyPeriodCodes = rawPeriods
+      .filter((p) => !p.products || p.products.length === 0)
+      .map((p) => p.code);
+    rec.setEmptyPeriods(emptyPeriodCodes);
+
     activeCode.value = periods.value[0]?.code ?? 'UNDER_12M';
 
     await nextTick();
@@ -105,7 +112,7 @@ onBeforeUnmount(() => {
 });
 
 const CATEGORY_LABEL = {
-  DEPOSIT: '예금', SAVINGS: '적금', CMA: 'CMA',
+  DEPOSIT: '예금', CMA: 'CMA',
   BOND_ETF: '만기 채권ETF', BOND: '채권', BOND_FUND: '펀드',
 };
 function categoryLabel(cat) {
@@ -122,6 +129,11 @@ function logoText(name) {
 }
 function rateText(p) {
   return p.rate == null ? '-' : Number(p.rate).toFixed(2);
+}
+function afterTaxRateText(p) {
+  if (p.rate == null) return '-';
+  const raw = Number(p.rate) || 0;
+  return (raw * 0.846).toFixed(2);
 }
 function maturityText(p) {
   const t = p.termMonths ?? 0;
@@ -248,12 +260,12 @@ function showProductDetail(product) {
             {{ period.label }} {{ (!period.products || period.products.length === 0) ? '(없음)' : '' }}
           </button>
         </div>
-        <div class="pnav-counter">담기 {{ rec.favoriteCount }}/4</div>
+        <div class="pnav-counter">담기 {{ rec.favoriteCount }}/{{ rec.selectablePeriodCount }}</div>
       </nav>
 
       <!-- 빈 상태 (4개 미만 찜) -->
       <p v-if="!loading && !error && !rec.isAllSelected" class="empty-hint">
-        4개 기간 구간에서 각각 1개씩, 총 4개 상품을 담아보세요 (현재 {{ rec.favoriteCount }}/4)
+        {{ rec.selectablePeriodCount }}개 기간 구간에서 각각 1개씩, 총 {{ rec.selectablePeriodCount }}개 상품을 담아보세요 (현재 {{ rec.favoriteCount }}/{{ rec.selectablePeriodCount }})
       </p>
 
       <!-- 기간 구간별 4줄 -->
@@ -307,6 +319,7 @@ function showProductDetail(product) {
             </div>
             <div class="p-rate">
               금리 연 <b>{{ rateText(p) }}%</b>
+              <span class="after-tax-rate">(세후 {{ afterTaxRateText(p) }}%)</span>
             </div>
             <div class="p-maturity">
               예치기간 {{ p.termMonths }}개월 · {{ maturityText(p) }}
@@ -368,8 +381,8 @@ function showProductDetail(product) {
       <div class="remove-modal">
         <button class="modal-close" type="button" @click="showEmptyModal = false">✕</button>
         <div class="modal-heart">♡</div>
-        <h2>모든 기간 구간에서 상품을 1개씩 담아주세요</h2>
-        <p>1~11개월 / 12~23개월 / 24~35개월 / 36개월 이상 4개 구간에서 각각 마음에 드는 상품의 하트(♡)를 클릭하여 총 4개를 모두 담아주세요. (현재 {{ rec.favoriteCount }}/4개 담김)</p>
+        <h2>상품이 있는 기간 구간에서 각각 1개씩 담아주세요</h2>
+        <p>상품이 없는 기간은 자동으로 건너뛰니다. 나머지 기간에서 마음에 드는 상품의 하트(♡)를 클릭하여 총 {{ rec.selectablePeriodCount }}개를 모두 담아주세요. (현재 {{ rec.favoriteCount }}/{{ rec.selectablePeriodCount }}개 담김)</p>
         <div class="modal-actions">
           <button class="confirm-removal" type="button" @click="showEmptyModal = false">확인</button>
         </div>
@@ -602,8 +615,8 @@ function showProductDetail(product) {
 }
 .p-inst { display: block; font-size: 11.5px; color: var(--text-muted); }
 .p-name { font-size: 15.5px; font-weight: 800; }
-.p-rate { font-size: 14px; color: var(--text-muted); }
-.p-rate b { color: var(--kb-yellow-deep); font-size: 18px; font-weight: 800; }
+.p-rate b { font-size: 26px; color: #1c1b18; }
+.after-tax-rate { font-size: 14px; color: #78746d; font-weight: 500; margin-left: 6px; }
 .p-maturity { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); }
 .p-reason-wrap {
   margin: 12px 0 14px;

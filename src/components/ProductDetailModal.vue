@@ -26,7 +26,7 @@ function evaluateVolatility(val) {
   if (val == null) return '-';
   const num = Number(val);
   if (num === 0.0) return '0.00% (원금 안심형 - 시세 변동 없음)';
-  if (num < 5.0) return `${num.toFixed(2)}% (매우 안정적 - 예적금 수준)`;
+  if (num < 5.0) return `${num.toFixed(2)}% (매우 안정적 - 예금 수준)`;
   if (num < 15.0) return `${num.toFixed(2)}% (보통 수준 - 완만한 가격 움직임)`;
   return `${num.toFixed(2)}% (높은 흔들림 - 가격 변동폭이 큼)`;
 }
@@ -54,7 +54,6 @@ const logoText = computed(() => {
 const categoryLabel = computed(() => {
   const labels = {
     DEPOSIT: '예금',
-    SAVINGS: '적금',
     CMA: 'CMA',
     BOND_ETF: '만기 채권ETF',
     BOND: '채권',
