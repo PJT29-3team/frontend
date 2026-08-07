@@ -70,7 +70,14 @@ onMounted(async () => {
       monthlyNeed: rec.monthlyNeed,
       safetyLevel: rec.riskLevel,
     });
-    periods.value = res.periods ?? [];
+    const PERIOD_ORDER = ['UNDER_12M', 'Y1_TO_2', 'Y2_TO_3', 'OVER_36M'];
+    const rawPeriods = res.periods ?? [];
+    rawPeriods.sort((a, b) => {
+      const idxA = PERIOD_ORDER.indexOf(a.code);
+      const idxB = PERIOD_ORDER.indexOf(b.code);
+      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+    });
+    periods.value = rawPeriods;
     
     // 추천 상품들의 상세 필드를 스토어 캐시에 선제적으로 보관하여 상세페이지 이동 시 API 호출 차단 (성능 극대화)
     if (periods.value) {
