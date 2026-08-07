@@ -68,7 +68,9 @@ onMounted(async () => {
   try {
     const res = await recommendationApi.submit({
       surveyId: null,
-      fundingAmount: rec.fundingAmount,
+      // 서버는 fundingAmount - immediateExpense를 투자금액으로 저장한다.
+      // 추가로 굴릴 돈을 빼고 보내면 저장값이 화면에 찍힌 투자금액과 어긋난다.
+      fundingAmount: rec.fundingAmount + rec.additionalDeposit,
       immediateExpense: rec.immediateExpense,
       monthlyNeed: rec.monthlyNeed,
       safetyLevel: rec.riskLevel,

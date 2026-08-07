@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { formatKRW } from '@/stores/survey';
+import recommendationApi from '@/api/recommendation';
 import { PERIOD_OPTIONS } from '@/utils/finance/portfolioAllocation';
 
 export { PERIOD_OPTIONS };
@@ -130,6 +131,25 @@ export const useRecommendationStore = defineStore('recommendation', {
   actions: {
     setFundingAmount(amount) {
       this.fundingAmount = Number(amount) || 0;
+    },
+    /**
+     * 이 스토어는 메모리에만 있어서 새로고침이나 /summary 직접 진입이면 비어 있다.
+     * 그때 서버에 저장된 마지막 조건으로 되살린다. 이미 값이 있으면 건드리지 않는다.
+     * @returns {Promise<boolean>} 되살릴 조건이 있었는지
+     */
+    async restoreLatest() {
+      if (this.investAmount > 0) return true;
+      const pref = await recommendationApi.getLatestPreference();
+      if (!pref) return false;
+      // 서버는 투자금액(= 여유자금 - 즉시지출)만 갖고 있다. 여유자금을 역산해 넣으면
+      // investAmount 게터가 저장 당시와 같은 값을 돌려준다.
+      const immediate = Number(pref.immediateExpense) || 0;
+      this.immediateExpense = immediate;
+      this.additionalDeposit = 0;
+      this.fundingAmount = (Number(pref.investAmount) || 0) + immediate;
+      this.monthlyNeed = Number(pref.monthlyNeed) || 0;
+      if (pref.safetyLevel) this.setRisk(pref.safetyLevel);
+      return true;
     },
     setAdditionalDeposit(amount) {
       this.additionalDeposit = Math.max(0, Number(amount) || 0);

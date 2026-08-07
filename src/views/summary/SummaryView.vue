@@ -312,6 +312,12 @@ onMounted(async () => {
       // 복원 실패는 매도 관련 금액만 비게 만든다. 나머지는 그대로 보여준다.
     }
   }
+  // 추천 조건도 메모리에만 있다. 비어 있으면 서버에 저장된 마지막 조건을 되살린다.
+  try {
+    await rec.restoreLatest()
+  } catch {
+    // 조건을 못 살리면 투자 관련 금액만 0으로 남는다. 매물 정리 결과는 그대로 보여준다.
+  }
   try {
     await loadSelectedHome()
   } catch (e) {

@@ -24,6 +24,13 @@ const monthlyNeedMan = ref(rec.monthlyNeed ? rec.monthlyNeed / 10_000 : 100);
 const monthlyNeed = computed(() => (monthlyNeedMan.value || 0) * 10_000);
 
 onMounted(async () => {
+  // 새로고침이면 스토어가 비어 여유자금이 0이 된다. 저장된 조건으로 되살린다.
+  try {
+    await rec.restoreLatest();
+    if (rec.monthlyNeed) monthlyNeedMan.value = rec.monthlyNeed / 10_000;
+  } catch {
+    // 못 살려도 아래 안내 문구가 뜨므로 화면은 계속 그린다.
+  }
   try {
     const items = await fetchFavoriteProducts();
     products.value = items

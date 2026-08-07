@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRecommendationStore, PERIOD_OPTIONS } from '@/stores/recommendation';
+import recommendationApi from '@/api/recommendation';
 
 // 머니 로직: 투자금액 = 여유자금 − 즉시지출, 남길현금 = 여유자금 − 투자금액.
 describe('recommendation store 금액 계산', () => {
@@ -76,6 +77,43 @@ describe('recommendation store 금액 계산', () => {
     rec.setEmptyPeriods(PERIOD_OPTIONS.map((o) => o.code));
     expect(rec.selectablePeriodCount).toBe(0);
     expect(rec.isAllSelected).toBe(false);
+  });
+
+  // 새로고침·요약 직접 진입이면 스토어가 비어 있다. 서버에 저장된 조건으로 되살린다.
+  describe('restoreLatest', () => {
+    it('저장된 조건에서 여유자금을 역산해 투자금액을 복원한다', async () => {
+      const spy = vi.spyOn(recommendationApi, 'getLatestPreference').mockResolvedValue({
+        investAmount: 150_000_000,
+        immediateExpense: 20_000_000,
+        monthlyNeed: 1_500_000,
+        safetyLevel: 'LOW',
+      });
+      rec.setFundingAmount(0); // 새로고침 직후 상태
+
+      await expect(rec.restoreLatest()).resolves.toBe(true);
+      // 저장 당시와 같은 투자금액이 나와야 한다
+      expect(rec.investAmount).toBe(150_000_000);
+      expect(rec.immediateExpense).toBe(20_000_000);
+      expect(rec.monthlyNeed).toBe(1_500_000);
+      expect(rec.riskLevel).toBe('LOW');
+      spy.mockRestore();
+    });
+
+    it('이미 조건이 있으면 서버를 부르지 않는다', async () => {
+      const spy = vi.spyOn(recommendationApi, 'getLatestPreference');
+      await expect(rec.restoreLatest()).resolves.toBe(true); // beforeEach가 1억을 넣어 둠
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('저장된 조건이 없으면 false를 주고 값을 건드리지 않는다', async () => {
+      const spy = vi.spyOn(recommendationApi, 'getLatestPreference').mockResolvedValue(null);
+      rec.setFundingAmount(0);
+
+      await expect(rec.restoreLatest()).resolves.toBe(false);
+      expect(rec.investAmount).toBe(0);
+      spy.mockRestore();
+    });
   });
 
   // 세후 금리는 서버가 계산해 내려준다. 스토어는 그 값을 그대로 들고만 있어야 한다.
