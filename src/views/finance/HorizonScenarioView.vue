@@ -2,11 +2,10 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { fetchFavoriteProducts, saveAllocations } from "@/api/financeApi";
-import { allocate, buildTimeline } from "@/utils/finance/horizonTimeline";
+import { allocate, buildTimeline, dur } from "@/utils/finance/horizonTimeline";
 import { termGroupOf } from "@/utils/finance/portfolioAllocation";
 import { formatKRW } from "@/stores/survey";
 import { useRecommendationStore } from "@/stores/recommendation";
-import { authStore } from "@/stores/authStore";
 import "@/styles/survey-tokens.css";
 
 const router = useRouter();
@@ -21,28 +20,29 @@ const loadError = ref("");
 // ponytail: 총 투자금액은 앞 페이지(DB)에서 넘어올 예정. 지금은 스토어 목업.
 const totalFund = computed(() => rec.investAmount || 50_000_000);
 const monthlyNeedMan = ref(rec.monthlyNeed ? rec.monthlyNeed / 10_000 : 100);
-const optimistic = ref(false);
 
 const monthlyNeed = computed(() => (monthlyNeedMan.value || 0) * 10_000);
 
 onMounted(async () => {
   try {
-    // survey_id 컬럼에 userId를 임시로 사용 중
-    const surveyId = authStore.state.user?.userId ?? 0;
-    const items = await fetchFavoriteProducts(surveyId);
+    const items = await fetchFavoriteProducts();
     products.value = items
-      .map((item) => ({
+      .map((item) => {
+        // 우대금리 기준(추천 화면과 동일). stock은 maxAnnualRate가 없어 수익률로 떨어진다.
+        const rate = Number(item.maxAnnualRate ?? item.annualRate);
+        return {
         favoriteId: item.favoriteId,
         name: item.productName,
         maturity: item.termMonths || 0,
-        rate: Number(item.annualRate) / 100,
+        rate: rate / 100,
         fixed: !!item.fixed,
-        meta: `${item.institutionName} · 연 ${Number(item.annualRate).toFixed(1)}%`,
+        meta: `${item.institutionName} · 연 ${rate.toFixed(1)}%`,
         tag:
           TERM_LABELS[termGroupOf(item.termMonths || 0)] +
           " · " +
           (RISK_LABELS[item.productRiskGrade] || item.productRiskGrade || ""),
-      }))
+        };
+      })
       .sort((a, b) => a.maturity - b.maturity);
   } catch {
     loadError.value = "관심 금융상품을 불러오지 못했습니다.";
@@ -57,17 +57,7 @@ const allocation = computed(() => {
 
 const timeline = computed(() => {
   if (!allocation.value) return null;
-  return buildTimeline(allocation.value.segments, monthlyNeed.value, optimistic.value);
-});
-
-const timelineBase = computed(() => {
-  if (!allocation.value) return null;
-  return buildTimeline(allocation.value.segments, monthlyNeed.value, false);
-});
-
-const timelineOpt = computed(() => {
-  if (!allocation.value) return null;
-  return buildTimeline(allocation.value.segments, monthlyNeed.value, true);
+  return buildTimeline(allocation.value.segments, monthlyNeed.value);
 });
 
 // 파킹/CMA 버킷 (있으면)
@@ -83,15 +73,6 @@ const investByFavoriteId = computed(() => {
   }
   return map;
 });
-
-function dur(m) {
-  if (m >= 600) return "50년 이상";
-  const y = Math.floor(m / 12);
-  const mo = m % 12;
-  if (y === 0) return `${mo}개월`;
-  if (mo === 0) return `${y}년`;
-  return `${y}년 ${mo}개월`;
-}
 
 function investOf(favoriteId) {
   return investByFavoriteId.value.get(favoriteId) || 0;
@@ -110,6 +91,32 @@ function segPct(seg) {
   if (!timeline.value || timeline.value.span === 0) return 0;
   return Math.max(2, Math.round((seg.months / timeline.value.span) * 100));
 }
+
+// 카드1 태그용 — favoriteId → "5~19개월차"
+const periodByFavoriteId = computed(() => {
+  const map = new Map();
+  for (const seg of timeline.value?.segs ?? []) {
+    if (seg.favoriteId) map.set(seg.favoriteId, `${seg.from}~${seg.to}개월차`);
+  }
+  return map;
+});
+
+// 파킹 버킷 담당 구간 (총액이 월 필요금액에 못 미치면 세그먼트 자체가 없다)
+const parkingPeriod = computed(() => {
+  const seg = timeline.value?.segs.find((s) => s.cssType === "park");
+  return seg ? `${seg.from}~${seg.to}개월차` : "";
+});
+
+// 총 투자금이 모자라 배분받지 못한 상품이 있는지
+const underfunded = computed(() =>
+  (allocation.value?.segments ?? []).some((s) => s.favoriteId && s.invest === 0),
+);
+
+// 이자로 늘어난 생활비 개월 수 (소수 1자리)
+const interestMonths = computed(() => {
+  if (!timeline.value || monthlyNeed.value <= 0) return 0;
+  return Math.round((timeline.value.interest / monthlyNeed.value) * 10) / 10;
+});
 
 const saving = ref(false);
 const saveMsg = ref("");
@@ -131,7 +138,7 @@ async function handleContinue() {
         amount: s.invest,
         percent: Math.round((s.invest / totalFund.value) * 10000) / 100,
       }));
-    await saveAllocations(null, items);
+    await saveAllocations(items);
     router.push("/summary");
   } catch {
     saveMsg.value = "저장에 실패했습니다.";
@@ -159,6 +166,7 @@ async function handleContinue() {
               <div class="pick-head">
                 <span class="pick-tag">파킹통장·CMA</span>
                 <span class="pick-name">통장</span>
+                <span v-if="parkingPeriod" class="pick-period">{{ parkingPeriod }} 담당</span>
               </div>
               <div class="pick-meta">
                 첫 상품 만기({{ products[0].maturity }}개월) 전까지 쓸 돈은
@@ -179,6 +187,9 @@ async function handleContinue() {
               <div class="pick-head">
                 <span class="pick-tag">{{ p.tag }}</span>
                 <span class="pick-name">{{ p.name }}</span>
+                <span v-if="periodByFavoriteId.get(p.favoriteId)" class="pick-period">
+                  {{ periodByFavoriteId.get(p.favoriteId) }} 담당
+                </span>
               </div>
               <div class="pick-meta">{{ p.meta }} · 만기 {{ p.maturity }}개월</div>
               <div class="pick-bar-track">
@@ -196,21 +207,11 @@ async function handleContinue() {
       <!-- 타임라인 -->
       <div v-if="timeline" class="survey-card" style="margin-top: 28px">
         <h2 class="tl-title">시기별로 어디서 돈이 나오는지</h2>
-        <p v-if="timelineBase && timelineOpt" class="tl-sub">
+        <p class="tl-sub">
           총 투자금액 <b>{{ formatKRW(totalFund) }}</b>으로
-          <b v-if="timelineBase.funded === timelineOpt.funded">{{ dur(timelineBase.funded) }}</b>
-          <b v-else>{{ dur(timelineBase.funded) }} ~ {{ dur(timelineOpt.funded) }}</b>
-          사용 가능
-          <span class="tl-sub-note">(보수적 기준 ~ 이자 반영 기준)</span>
+          <b>{{ dur(timeline.funded) }}</b> 사용 가능
+          <span class="tl-sub-note">(이자 반영 기준)</span>
         </p>
-        <div class="toggle-row tl-toggle">
-          <button class="toggle" :class="{ active: !optimistic }" @click="optimistic = false">
-            보수적 계산
-          </button>
-          <button class="toggle" :class="{ active: optimistic }" @click="optimistic = true">
-            이자 반영
-          </button>
-        </div>
         <div class="legend">
           <span class="l-park">파킹·CMA</span>
           <span class="l-short">단기</span>
@@ -230,19 +231,52 @@ async function handleContinue() {
           </div>
         </div>
 
+        <p class="tl-basis">
+          각 상품은 자기가 맡은 기간의 생활비가 <b>만기에 딱 나오도록</b> 금액을 역산했어요.
+        </p>
+
         <table class="tl-table">
-          <tr v-for="(seg, i) in timeline.segs" :key="i">
-            <td>{{ seg.name }} ({{ seg.from }}~{{ seg.to }}개월차)</td>
-            <td>{{ formatKRW(seg.amount) }}</td>
-          </tr>
+          <thead>
+            <tr>
+              <th>상품 · 담당 구간</th>
+              <th>지금 넣을 돈</th>
+              <th>만기에 필요한 돈</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(seg, i) in timeline.segs" :key="i">
+              <td>
+                {{ seg.name }} · {{ seg.from }}~{{ seg.to }}개월차
+                <span v-if="seg.rate" class="tl-rate">연 {{ (seg.rate * 100).toFixed(2) }}%</span>
+              </td>
+              <td class="tl-invest">{{ formatKRW(seg.invest) }}</td>
+              <td class="tl-need">
+                <span class="tl-arrow">→</span>
+                <template v-if="seg.last">
+                  <span class="tl-need-sub">남은 돈 전액</span>
+                </template>
+                <template v-else>
+                  <span class="tl-need-sub">{{ seg.months }}개월 ·</span>
+                  <b>{{ formatKRW(seg.months * monthlyNeed) }}</b>
+                </template>
+              </td>
+            </tr>
+          </tbody>
         </table>
 
+        <p v-if="timeline.interest > 0" class="tl-gain">
+          이자로 <b>{{ formatKRW(timeline.interest) }}</b>이 더 생겨,
+          약 <b>{{ interestMonths }}개월치</b> 생활비를 더 씁니다.
+        </p>
+
+        <p v-if="underfunded" class="tl-warn">
+          총 투자금이 모자라 일부 상품에는 배분되지 않았어요. 그만큼 뒤쪽 기간이 비어 있습니다.
+        </p>
+
         <p class="footnote">
-          {{
-            optimistic
-              ? "예금·적금 등 확정금리 상품에 기본금리를 반영한 낙관적 계산입니다. 변동금리 상품은 원금 그대로 계산했습니다."
-              : "이자 없이 원금만 쓴다고 가정한 일반적인(보수적) 계산입니다."
-          }}
+          예금·적금·만기매칭 ETF의 우대금리를 단리로 반영한 계산입니다.
+          각 상품은 만기 시점에 해당 구간 생활비가 나오도록 투자금액을 역산했습니다.
+          실제 수령액은 우대조건 충족 여부와 세금에 따라 달라질 수 있습니다.
         </p>
       </div>
 
@@ -313,6 +347,7 @@ async function handleContinue() {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .pick-bar-track {
@@ -344,6 +379,13 @@ async function handleContinue() {
 .pick-name {
   font-weight: 700;
   font-size: 15px;
+}
+
+.pick-period {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .pick-meta {
@@ -412,34 +454,6 @@ async function handleContinue() {
   color: var(--text-muted);
 }
 
-.toggle-row {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.toggle {
-  border: 1.5px solid var(--card-border);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 13.5px;
-  font-weight: 700;
-  padding: 9px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-}
-
-.toggle.active {
-  background: var(--kb-yellow);
-  color: var(--btn-text);
-  border-color: var(--kb-yellow);
-}
-
-.tl-toggle {
-  margin-bottom: 12px;
-}
-
 /* 타임라인 */
 .tl-title {
   font-weight: 800;
@@ -495,10 +509,27 @@ async function handleContinue() {
 .l-long::before { background: #1e1b4b; }
 
 /* 테이블 */
+.tl-basis {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 14px 0 2px;
+}
+
+.tl-basis b { color: var(--text-dark); }
+
 .tl-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 6px;
+}
+
+.tl-table th {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: left;
 }
 
 .tl-table td {
@@ -507,11 +538,65 @@ async function handleContinue() {
   font-size: 14px;
 }
 
-.tl-table td:last-child {
+.tl-table th:not(:first-child),
+.tl-table td:not(:first-child) {
   text-align: right;
-  font-weight: 700;
   white-space: nowrap;
+  padding-left: 12px;
 }
+
+/* 위치가 바뀌어도 스타일이 따라오도록 nth-child 대신 클래스로 지정 */
+/* 결론 칸: 금액만 진하게, 개월수·화살표는 보조 정보로 눌러둔다 */
+.tl-need {
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.tl-need b { font-weight: 800; }
+
+.tl-need-sub {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tl-arrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+.tl-invest {
+  font-weight: 800;
+  color: var(--kb-yellow-deep);
+}
+
+.tl-rate {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tl-gain {
+  margin: 12px 0 0;
+  padding: 10px 13px;
+  border-radius: 8px;
+  background: var(--kb-yellow-soft);
+  font-size: 13.5px;
+  color: var(--text-dark);
+}
+
+.tl-gain b { color: var(--kb-yellow-deep); font-weight: 800; }
+
+.tl-warn {
+  margin: 10px 0 0;
+  padding: 10px 13px;
+  border-radius: 8px;
+  background: #ffe9e0;
+  font-size: 13px;
+  color: #9b3b3b;
+}
+
 
 .notice {
   padding: 12px 14px;

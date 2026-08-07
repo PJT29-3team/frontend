@@ -117,9 +117,14 @@
       <!-- 결론 박스 -->
       <div class="pdf-conclusion">
         <div class="pdf-conclusion-label">매달 {{ formatKRW(fp.monthlyNeed) }}씩</div>
-        <div class="pdf-conclusion-value">{{ fp.fundedMonths }}</div>
+        <div class="pdf-conclusion-value">{{ fundedMonths }}</div>
         <div class="pdf-conclusion-tail">더 사용 가능</div>
       </div>
+      <p class="pdf-rate-note">
+        예금·적금·만기매칭 ETF의 우대금리를 단리로 반영한 계산입니다.
+        각 상품은 만기 시점에 해당 구간 생활비가 나오도록 투자금액을 역산했습니다.
+        실제 수령액은 우대조건 충족 여부와 세금에 따라 달라질 수 있습니다.
+      </p>
     </div>
 
     <!-- ④ AI 행동 지침 -->
@@ -183,6 +188,11 @@ const props = defineProps({
   aiLoading: {
     type: Boolean,
     default: false,
+  },
+  // 이자 반영 기준 지속 기간 ("8년 6개월") — SummaryView가 실제 배분으로 계산해 넘긴다
+  fundedMonths: {
+    type: String,
+    default: '',
   },
 })
 
@@ -299,6 +309,7 @@ defineExpose({ pdfRoot })
 .pdf-conclusion-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 3px; }
 .pdf-conclusion-value { font-size: 24px; font-weight: 800; color: #f5c518; }
 .pdf-conclusion-tail { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.pdf-rate-note { font-size: 9px; line-height: 1.5; color: #6b7280; margin: 6px 0 0; }
 .pdf-seg-park, .pdf-dot-park { background: #0d9488; }
 .pdf-seg-short, .pdf-dot-short { background: #2563eb; }
 .pdf-seg-mid, .pdf-dot-mid { background: #4f46e5; }

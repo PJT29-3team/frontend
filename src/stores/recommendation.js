@@ -42,53 +42,87 @@ export const RISK_OPTIONS = [
   },
 ];
 
-// investment_period_code 공통코드(SHORT/MEDIUM/LONG) ↔ 화면 라벨.
+// investment_period_code 4개 구간 ↔ 화면 라벨.
 export const PERIOD_OPTIONS = [
-  { code: 'SHORT', label: '단기', desc: '1년 안에 쓸 돈' },
-  { code: 'MEDIUM', label: '중기', desc: '1~3년 뒤에 쓸 돈' },
-  { code: 'LONG', label: '장기', desc: '3년 뒤에도 여유 있는 돈' },
+  { code: 'UNDER_12M', label: '1~11개월', desc: '1년 미만 단기자금' },
+  { code: 'Y1_TO_2', label: '12~23개월', desc: '1년 이상 2년 미만' },
+  { code: 'Y2_TO_3', label: '24~35개월', desc: '2년 이상 3년 미만' },
+  { code: 'OVER_36M', label: '36개월 이상', desc: '3년 이상 장기자금' },
 ];
 
 
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
     fundingAmount: MOCK_FUNDING_AMOUNT,
-    // 목업 흐름: 즉시지출(당장 쓸 돈)을 빼면 나머지가 투자금액.
-    // 매달쓸돈은 인출 속도 — 찜/배분 페이지에서 "몇 달 쓸 수 있나" 계산의 입력값.
-    immediateExpense: 0,
-    monthlyNeed: 1_000_000, // 원. 목업 기본 100만원.
+    // 목업 흐름: 이사후 남은 돈 + 추가 합칠 돈 − 즉시지출 = 실제 굴릴 투자금액.
+    additionalDeposit: 0, // 원. 추가로 굴릴 돈(+)
+    immediateExpense: 0, // 원. 당장 쓸 긴급 돈(-)
+    monthlyNeed: 1_000_000, // 원. 목업 기본 100만원 (매달 꺼내 쓸 생활비).
     riskLevel: 'VERY_LOW',
-    periodCode: 'SHORT',
-    // 찜: 기간(SHORT/MEDIUM/LONG)당 상품 1개 슬롯 → 슬롯 구조라 최대 3개 자동 보장.
-    favorites: { SHORT: null, MEDIUM: null, LONG: null },
+    periodCode: 'UNDER_12M',
+    // 찜: 4개 기간 구간(UNDER_12M/Y1_TO_2/Y2_TO_3/OVER_36M)당 상품 1개 슬롯 -> 최대 4개 보장.
+    favorites: { UNDER_12M: null, Y1_TO_2: null, Y2_TO_3: null, OVER_36M: null },
     // 상품 상세정보 캐시: key = `${kind}:${productType}`, value = ProductDetailResponse
     productDetailCache: {},
   }),
 
   getters: {
-    // 투자금액 = 여유자금 − 즉시지출(앞으로 굴릴 계획금액).
-    // ponytail: 찜 페이지에서 상품별 배분 합으로 정밀화 가능. 지금은 계획 pool로 충분.
-    investAmount: (s) => Math.max(0, s.fundingAmount - s.immediateExpense),
-    // 남길현금 = 여유자금 − 투자금액 (= 즉시지출).
-    remainingCash: (s) => s.fundingAmount - Math.max(0, s.fundingAmount - s.immediateExpense),
+    // 투자금액 = 여유자금 + 추가합칠돈 − 즉시지출.
+    investAmount: (s) => Math.max(0, s.fundingAmount + (s.additionalDeposit || 0) - (s.immediateExpense || 0)),
+    // 남길현금 = 즉시지출.
+    remainingCash: (s) => s.immediateExpense,
+    // 매달 꺼내 쓸 생활비 기반 우리 웹 4개 만기 최저 금리 벤치마크 버팀 연산.
+    runwayAnalysis() {
+      const inv = this.investAmount || 0;
+      const monthly = this.monthlyNeed || 0;
+      if (monthly <= 0 || inv <= 0) {
+        return { cashMonths: 0, appMonths: 0, diffMonths: 0, cashYearsText: '0개월', appYearsText: '0개월', diffText: '0개월' };
+      }
+      const cashMonths = Math.floor(inv / monthly);
+      // 우리 웹 매우 낮은 위험 4개 구간 최저 예금 금리 (1~11m: 2.0%, 12~23m: 2.5%, 24~35m: 2.8%, 36m+: 3.0%)
+      const weightedRate = 0.25 * 0.020 + 0.25 * 0.025 * 1.5 + 0.25 * 0.028 * 2.5 + 0.25 * 0.030 * 3.5;
+      const totalGrowth = inv * (1 + weightedRate);
+      const appMonths = Math.floor(totalGrowth / monthly);
+      const diffMonths = Math.max(0, appMonths - cashMonths);
+
+      const formatYm = (m) => {
+        const y = Math.floor(m / 12);
+        const rem = m % 12;
+        if (y > 0 && rem > 0) return `${y}년 ${rem}개월`;
+        if (y > 0) return `${y}년`;
+        return `${rem}개월`;
+      };
+
+      return {
+        cashMonths,
+        appMonths,
+        diffMonths,
+        cashYearsText: formatYm(cashMonths),
+        appYearsText: formatYm(appMonths),
+        diffText: formatYm(diffMonths),
+      };
+    },
     // 매달쓸돈으로 투자금액을 나눈 커버 개월수. 미입력(0)이면 제한 없음(Infinity).
     coveredMonths() {
       return this.monthlyNeed > 0 ? Math.floor(this.investAmount / this.monthlyNeed) : Infinity;
     },
     selectedRisk: (s) => RISK_OPTIONS.find((o) => o.code === s.riskLevel) ?? null,
     selectedPeriod: (s) => PERIOD_OPTIONS.find((o) => o.code === s.periodCode) ?? null,
-    // 찜한 상품 목록(빈 슬롯 제외) + 개수.
+    // 찜한 상품 목록(빈 슬롯 제외) + 개수 + 4개 완전선택 여부.
     favoriteList: (s) => Object.values(s.favorites).filter(Boolean),
     favoriteCount: (s) => Object.values(s.favorites).filter(Boolean).length,
+    isAllSelected: (s) => Object.values(s.favorites).every(Boolean),
   },
 
   actions: {
     setFundingAmount(amount) {
       this.fundingAmount = Number(amount) || 0;
     },
+    setAdditionalDeposit(amount) {
+      this.additionalDeposit = Math.max(0, Number(amount) || 0);
+    },
     setImmediateExpense(amount) {
-      // 여유자금을 넘길 수 없음.
-      this.immediateExpense = Math.min(this.fundingAmount, Math.max(0, Number(amount) || 0));
+      this.immediateExpense = Math.max(0, Number(amount) || 0);
     },
     setMonthlyNeed(amount) {
       this.monthlyNeed = Math.max(0, Number(amount) || 0);
