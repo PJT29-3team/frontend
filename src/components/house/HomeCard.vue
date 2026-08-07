@@ -84,6 +84,7 @@ import { computed } from 'vue';
 import { favoriteStore } from '@/stores/favoriteStore';
 import { useRouter } from 'vue-router';
 import { formatPyeong } from '@/utils/area';
+import { openListing as openListingInNewTab } from '@/utils/listingUrl';
 
 const props = defineProps(['home', 'isSelected']);
 const emit = defineEmits(['select']);
@@ -107,21 +108,9 @@ const neighborhood = computed(() => {
   return parts.slice(0, 3).join(' ');
 });
 
-/**
- * 네이버페이 부동산에서 이 매물 위치를 연다. 새 탭이라 추천 목록을 잃지 않는다.
- *
- * 좌표로 지도를 직접 연다. 이름으로 검색하면 "삼익3차"처럼 같은 이름이
- * 전국에 여럿이라 다른 지역이 섞인다. 줌 19 — 17이면 주변 마커가 10개 넘게
- * 깔려 어느 것이 이 매물인지 알아보기 어렵다.
- */
+/** 네이버페이 부동산에서 이 매물 위치를 연다. 지도 미니 카드와 같은 규칙을 쓴다. */
 function openListing() {
-  const { latitude, longitude } = props.home;
-  const parts = (props.home.jibunAddress || '').split(' ');
-  const fallback = `${parts.slice(1, 3).join(' ')} ${props.home.name || ''}`.trim();
-  const url = latitude && longitude
-    ? `https://new.land.naver.com/complexes?ms=${latitude},${longitude},19`
-    : `https://new.land.naver.com/search?sk=${encodeURIComponent(fallback)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  openListingInNewTab(props.home);
 }
 
 // 안전/편의/자산 점수는 아직 목록 API에 없다. 내려오기 시작하면 그때만 노출한다.
