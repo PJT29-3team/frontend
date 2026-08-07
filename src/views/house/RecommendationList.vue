@@ -43,13 +43,10 @@
         <button class="empty-btn" type="button" @click="changeConditions">조건 바꾸러 가기 →</button>
       </div>
 
-      <!-- 목록 뷰: 카드 + 상시 비용 패널 -->
-      <section
-        v-else-if="currentView === 'list'"
-        ref="viewSection"
-        class="content"
-        :style="{ height: viewHeight }"
-      >
+      <!-- 목록 뷰: 카드 + 상시 비용 패널.
+           높이를 고정하지 않는다. 카드가 화면보다 길어지면 카드 칸이 아니라
+           페이지가 스크롤되게 두는 편이 조작이 익숙하다. -->
+      <section v-else-if="currentView === 'list'" ref="viewSection" class="content">
         <div class="left-panel">
           <HomeCard
             v-for="home in displayedHomes"
@@ -209,11 +206,11 @@ function switchView(view) {
   fitViewHeight();
 }
 
-// 남는 세로 공간을 재서 본문 영역에 그대로 준다.
-// 목록은 카드 영역이 그 안에서 스크롤되고, 지도는 지도 자체가 줄어든다.
+// 남는 세로 공간을 재서 지도에 그대로 준다.
+// 목록 뷰는 높이를 재지 않는다. 카드가 길어지면 페이지가 스크롤되면 된다.
 async function fitViewHeight() {
   await nextTick();
-  if (!viewSection.value) return;
+  if (currentView.value !== 'map' || !viewSection.value) return;
 
   // 페이지가 스크롤된 상태에서 재도 어긋나지 않게 문서 기준으로 환산한다.
   const top = viewSection.value.getBoundingClientRect().top + window.scrollY;
@@ -290,46 +287,20 @@ onBeforeUnmount(() => {
   padding: 0 40px;
 }
 
-/* 높이는 fitViewHeight() 가 인라인으로 넣는다. 여기 값은 계산 전 한 프레임용 폴백. */
+/* 목록 뷰는 높이를 두지 않는다. 카드 수만큼 자라고, 넘치면 페이지가 스크롤된다. */
 .content {
   display: flex;
   gap: 32px;
   /* 세로가 짧은 화면에서 카드 영역을 넓히려고 상단 여백을 줄인다. */
   padding: clamp(8px, 1.4vh, 32px) 0 0;
-  align-items: stretch;
-  height: calc(100vh - 220px);
-  min-height: 320px;
+  align-items: flex-start;
 }
 
-/* 카드가 넘치면 페이지가 아니라 이 영역만 스크롤된다.
-   min-height:0 이 없으면 flex 자식이 안 줄어들어 스크롤이 페이지로 새어나간다. */
 .left-panel {
   flex: 2;
   min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  /* 스크롤바가 카드 그림자를 덮지 않게 */
-  padding-right: 8px;
-  overscroll-behavior: contain;
-}
-
-.left-panel::-webkit-scrollbar {
-  width: 8px;
-}
-
-.left-panel::-webkit-scrollbar-thumb {
-  background: #ddd8cc;
-  border-radius: 999px;
-}
-
-.left-panel::-webkit-scrollbar-thumb:hover {
-  background: #c9c1ad;
-}
-
-.left-panel::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 
@@ -482,29 +453,22 @@ onBeforeUnmount(() => {
 
 }
 
-/* 오른쪽 패널: 비용 계산 전용. 왼쪽 카드 5장 높이에 맞춰 늘어난다. */
+/* 오른쪽 패널: 비용 계산 전용.
+   페이지를 내려 카드를 훑는 동안에도 금액이 계속 보여야 비교가 되므로
+   화면에 붙여 둔다. 카드 높이에 맞춰 늘리지 않고 내용만큼만 차지한다. */
 .right-column {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  /* 비용 항목이 많은 매물에서도 페이지가 아니라 이 칸만 스크롤되게 */
-  min-height: 0;
-  overflow-y: auto;
+  position: sticky;
+  top: 16px;
 }
 
-.right-column :deep(.right-panel) {
-  flex: 1;
-}
-
-/* 카드만 늘어나고 속은 비면 어색하다.
-   남는 세로 공간을 항목 사이에 고르게 나눠 내용이 카드를 채우게 한다. */
 .right-column :deep(.summary-card) {
-  flex: 1;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 24px;
 }
 
