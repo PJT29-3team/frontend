@@ -147,9 +147,9 @@ function submit() {
               <span class="calc-amount">{{ formatKRW(rec.fundingAmount) }}</span>
             </div>
 
-            <!-- 추가로 합칠 돈 + (Step 1과 100% 동일한 순백 스타일) -->
+            <!-- 추가로 합칠 돈 + (초록색 800 굵기 반영) -->
             <div class="calc-group-block">
-              <label class="calc-group-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</label>
+              <label class="calc-group-label plus-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</label>
               <div class="toss-input-wrap">
                 <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="additionalManwon" aria-label="추가로 합칠 돈(만원)" placeholder="0" />
                 <span class="toss-amount-unit">만원</span>
@@ -160,9 +160,9 @@ function submit() {
               </div>
             </div>
 
-            <!-- 당장 쓸 긴급 돈 - (Step 1과 100% 동일한 순백 스타일) -->
+            <!-- 당장 쓸 긴급 돈 - (빨간색 800 굵기 반영) -->
             <div class="calc-group-block">
-              <label class="calc-group-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
+              <label class="calc-group-label minus-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
               <div class="toss-input-wrap">
                 <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 긴급 돈(만원)" placeholder="0" />
                 <span class="toss-amount-unit">만원</span>
@@ -359,6 +359,23 @@ function submit() {
   background: #ffffff;
   border: 1.5px solid var(--card-border);
   border-radius: 16px;
+}
+.calc-group-block {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.calc-group-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+.calc-group-label.plus-label {
+  color: #2d7a44;
+}
+.calc-group-label.minus-label {
+  color: #c0442e;
 }
 .toss-input-flex {
   display: flex;
