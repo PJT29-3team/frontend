@@ -19,6 +19,7 @@ const showServiceProgress = computed(
 const currentStep = computed(() => {
   if (route.path.startsWith('/survey')) return 'survey'
   if (route.path === PATHS.recommendedProperty) return 'recommend'
+  if (route.path.startsWith('/recommendation')) return 'finance-recommend'
   if (route.path === PATHS.financeHorizon) return 'finance-manage'
   if (route.path === PATHS.summary) return 'result'
   return 'favorite'

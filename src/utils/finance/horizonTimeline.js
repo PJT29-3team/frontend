@@ -1,13 +1,20 @@
-import { termGroupOf } from "./portfolioAllocation";
+import { periodOf } from "./portfolioAllocation";
 
-const TERM_CSS = { UNDER_1Y: "short", Y1_TO_3: "mid", OVER_3Y: "long" };
+/**
+ * 이자 계산에 쓰는 금리. 실제로 손에 쥐는 건 세후이므로 세후금리가 있으면 그걸 쓰고,
+ * 없으면(구버전 서버 응답) 세전으로 떨어진다. 화면 표시도 이 함수를 거쳐야
+ * 표에 적힌 금리와 계산 결과가 어긋나지 않는다.
+ */
+export function effectiveRate(p) {
+  return p.afterTaxRate ?? p.rate;
+}
 
 /**
  * 만기 시 원리금 배수(단리). 변동금리·파킹 버킷은 1(원금 그대로).
  * allocate는 이 값으로 나눠 투자금을 역산하고, buildTimeline은 곱해 되돌린다.
  */
 function growth(p) {
-  return p.fixed ? 1 + (p.rate * p.maturity) / 12 : 1;
+  return p.fixed ? 1 + (effectiveRate(p) * p.maturity) / 12 : 1;
 }
 
 /**
@@ -91,7 +98,7 @@ export function buildTimeline(products, monthlyNeed) {
       // invest·rate·maturity·favoriteId·last를 그대로 실어 화면이 산정 근거를 조인 없이 읽게 한다
       segs.push({
         ...p,
-        type: p.cssType || TERM_CSS[termGroupOf(p.maturity)] || "long",
+        type: p.cssType || periodOf(p.maturity).css,
         from: cursor + 1,
         to: cursor + months,
         months,

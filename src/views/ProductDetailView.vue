@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS } from '@/stores/recommendation';
 import recommendationApi from '@/api/recommendation';
+import { periodOf } from '@/utils/finance/portfolioAllocation';
 import '@/styles/survey-tokens.css';
 
 const router = useRouter();
@@ -23,19 +24,12 @@ function checkIsFavorited() {
   return Object.values(rec.favorites).some((v) => v && v.productType === productType);
 }
 
-function termCodeOf(months) {
-  const m = months || 0;
-  if (m <= 11) return 'UNDER_12M';
-  if (m <= 23) return 'Y1_TO_2';
-  if (m <= 35) return 'Y2_TO_3';
-  return 'OVER_36M';
-}
 
 function toggleHeart(loc) {
   const dwellTimeSec = Math.max(0, Math.floor((Date.now() - enterTime) / 1000));
   
   if (detail.value) {
-    const periodCode = termCodeOf(detail.value.termMonths || 0);
+    const periodCode = periodOf(detail.value.termMonths).code;
     rec.toggleFavorite(periodCode, detail.value);
   }
 
@@ -73,7 +67,7 @@ function evaluateVolatility(val) {
   if (val == null) return '-';
   const num = Number(val);
   if (num === 0.0) return '0.00% (원금 안심형 - 시세 변동 없음)';
-  if (num < 5.0) return `${num.toFixed(2)}% (매우 안정적 - 예적금 수준)`;
+  if (num < 5.0) return `${num.toFixed(2)}% (매우 안정적 - 예금 수준)`;
   if (num < 15.0) return `${num.toFixed(2)}% (보통 수준 - 완만한 가격 움직임)`;
   return `${num.toFixed(2)}% (높은 흔들림 - 가격 변동폭이 큼)`;
 }
@@ -99,7 +93,6 @@ function logoText(name) {
 
 const categoryLabel = {
   DEPOSIT: '예금',
-  SAVINGS: '적금',
   CMA: 'CMA',
   BOND_ETF: '만기 채권ETF',
   BOND: '채권',
@@ -197,7 +190,7 @@ function goBack() {
             </div>
             <div class="info-row">
               <span class="info-label">상품 종류</span>
-              <span class="info-value">{{ detail.kind === 'stock' ? '채권/ETF/펀드' : '예적금/CMA' }}</span>
+              <span class="info-value">{{ detail.kind === 'stock' ? '채권/ETF/펀드' : '예금/CMA' }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">카테고리</span>

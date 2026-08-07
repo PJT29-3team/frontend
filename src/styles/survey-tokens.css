@@ -10,8 +10,18 @@
   --card-border: #e7e9ec;
   --text-dark: #1f2937;
   --text-muted: #6b7280;
+  /* 보조 설명·단위처럼 muted보다 한 단계 더 물러나는 글자 */
+  --text-faint: #9ca3af;
   --btn-text: #545045;
   --btn-shadow: 0 12px 22px -8px rgba(140, 90, 27, 0.55);
+
+  /* 기간 구간 색. portfolioAllocation.js의 PERIOD_OPTIONS[].css 값과 이름이 1:1로 맞는다.
+     horizon 간트·요약 배분바·PDF가 같은 색을 써야 해서 여기 한 곳에만 둔다. */
+  --period-park: #4f9a91; /* 파킹통장·CMA (만기 없음) */
+  --period-short: #3b82f6; /* 1~11개월 */
+  --period-mid: #7c3aed; /* 12~23개월 */
+  --period-mid2: #d97706; /* 24~35개월 */
+  --period-long: #1e1b4b; /* 36개월 이상 */
 }
 
 .survey-shell {

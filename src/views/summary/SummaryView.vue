@@ -12,15 +12,20 @@
     </p>
 
     <!-- ━━━ 선택결과 한눈에 보기 (매물 정리 결과 + 자금 운용 계획) ━━━ -->
-    <section class="result-card">
+    <section class="summary-card">
       <h2 class="card-heading">선택결과 한눈에 보기</h2>
+
+      <p v-if="loadError" class="load-error">{{ loadError }}</p>
 
       <h3 class="card-subheading">매물 정리 결과</h3>
       <div class="row-between">
         <span class="row-label">새 집</span>
         <div class="row-value-group">
-          <strong>{{ pr.newHome.name }} · {{ pr.newHome.pyeong }}평</strong>
-          <span class="row-sub">{{ pr.newHome.fitScore }}점</span>
+          <strong v-if="pr.newHome.name">
+            {{ pr.newHome.name }}<template v-if="pr.newHome.pyeong"> · {{ pr.newHome.pyeong }}평</template>
+          </strong>
+          <strong v-else class="row-empty">관심 매물에서 집을 고르면 표시됩니다</strong>
+          <span v-if="pr.newHome.fitScore != null" class="row-sub">{{ pr.newHome.fitScore }}점</span>
         </div>
       </div>
 
@@ -38,7 +43,9 @@
           <span class="row-label">현재 집 매도 예상가</span>
           <div class="row-value-group">
             <strong>{{ formatKRW(pr.currentHome.estimatedSalePrice) }}</strong>
-            <span class="row-sub">{{ pr.currentHome.name }} · {{ pr.currentHome.pyeong }}평</span>
+            <span v-if="pr.currentHome.name" class="row-sub">
+              {{ pr.currentHome.name }}<template v-if="pr.currentHome.pyeong"> · {{ pr.currentHome.pyeong }}평</template>
+            </span>
           </div>
         </div>
         <div class="row-between">
@@ -46,8 +53,12 @@
           <strong class="negative">-{{ formatKRW(pr.newHome.purchasePrice) }}</strong>
         </div>
         <div v-for="cost in pr.costs" :key="cost.label" class="row-between cost-row">
-          <span class="row-label">{{ cost.label }}</span>
-          <strong class="negative">-{{ formatKRW(cost.amount) }}</strong>
+          <span class="row-label">
+            {{ cost.label }}
+            <span v-if="cost.note" class="cost-note">{{ cost.note }}</span>
+          </span>
+          <strong v-if="cost.amount > 0" class="negative">-{{ formatKRW(cost.amount) }}</strong>
+          <strong v-else class="cost-zero">0원</strong>
         </div>
       </div>
       <hr class="divider" />
@@ -166,29 +177,105 @@
     :report="data"
     :ai-summary="aiSummary"
     :ai-loading="aiLoading"
-    :funded-months="fundedMonths"
   />
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import PdfReport from './PdfReport.vue'
 import { preparePdfCapture } from '@/utils/pdfCapture'
 import { fitCanvasToA4 } from '@/utils/pdfLayout'
 import { generateActionPlan } from '@/utils/openaiSummary'
 import { fetchFavoriteProducts } from '@/api/financeApi'
+import { getFavoriteProperties } from '@/api/favoriteApi'
 import { useRecommendationStore } from '@/stores/recommendation'
-import { termGroupOf } from '@/utils/finance/portfolioAllocation'
+import { useSurveyStore } from '@/stores/survey'
+import { authStore } from '@/stores/authStore'
+import { periodOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
-// TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
-import { dummySummary as data } from '@/mock/dummySummary'
+import { purchaseSummary } from '@/utils/house/purchaseCost'
+import { toPyeong } from '@/utils/area'
+import '@/styles/survey-tokens.css'
 
 const rec = useRecommendationStore()
-const TERM_LABELS = { UNDER_1Y: '단기', Y1_TO_3: '중기', OVER_3Y: '장기' }
+const survey = useSurveyStore()
 const RISK_LABELS = { VERY_LOW: '매우 낮은 위험', LOW: '낮은 위험', MEDIUM: '보통 위험', HIGH: '높은 위험' }
 
-const pr = data.propertyResult
-const fp = data.financePlan
+// 선택한 관심매물. 서버가 selected='Y'로 표시해 준다.
+const selectedHome = ref(null)
+
+// 매물 정리 결과 — 설문(현재 집 매도)과 선택 매물(새 집 매수)에서 만든다.
+const propertyResult = computed(() => {
+  const home = selectedHome.value
+  const buy = purchaseSummary(home)
+  // 양도소득세는 0원이어도 숨기지 않는다. 안 보이면 계산이 빠진 건지 비과세인지 알 수 없다.
+  const tax = survey.taxResult ?? { amount: 0, exempt: false }
+  let taxNote = ''
+  if (tax.exempt) taxNote = '1세대 1주택 비과세'
+  else if (tax.amount === 0 && (survey.expectedSalePrice ?? 0) > 0) taxNote = '양도차익 없음'
+
+  const costs = [
+    // 매도 쪽 — 서버가 net_proceeds_amount를 낼 때 이미 뺀 항목들이다.
+    { label: '양도소득세', amount: tax.amount, note: taxNote },
+    { label: '현재 집 중개수수료', amount: survey.brokerage?.amount ?? 0, note: '' },
+    { label: '주택담보대출 상환', amount: survey.mortgageRepayment ?? 0, note: '' },
+    // 매수 쪽
+    { label: '새 집 취득세', amount: buy.purchaseCost.totalTax, note: '' },
+    { label: '새 집 중개수수료', amount: buy.brokerage.brokerageFee + buy.brokerage.vat, note: '' },
+  ].filter((c) => c.amount > 0 || c.note)
+
+  return {
+    // 설문은 금액만 받고 현재 집의 이름·평수는 저장하지 않는다. 지어내지 않고 비워 둔다.
+    currentHome: { name: '', pyeong: null, estimatedSalePrice: survey.expectedSalePrice ?? 0 },
+    newHome: {
+      name: home?.houseName ?? '',
+      pyeong: toPyeong(home?.houseSize),
+      fitScore: home?.totalScore ?? null,
+      purchasePrice: buy.buyPrice,
+      location: home?.houseLocation ?? '',
+      // 관심매물 비교표(/favorite-home)와 같은 3개 항목·같은 등급 기준으로 보여준다.
+      grades: home
+        ? [
+            { label: '주거 안전', score: home.safetyScore },
+            { label: '생활 편의', score: home.convenienceScore },
+            { label: '자산 안정', score: home.assetScore },
+          ]
+        : [],
+      memo: '',
+    },
+    costs,
+    // 새 집까지 사고 남는 돈. 관심매물 화면이 금융 추천으로 넘기는 값과 같은 계산이다.
+    netFund: buy.remainingAfterPurchase,
+  }
+})
+
+// 자금 운용 계획 — 금융 추천 조건 입력에서 받은 값.
+const financePlan = ref({
+  netFund: 0,
+  immediateExpenses: [],
+  investable: 0,
+  monthlyNeed: 0,
+  items: [],
+})
+
+const data = computed(() => ({
+  userName: authStore.state.user?.name ?? '',
+  propertyResult: propertyResult.value,
+  financePlan: financePlan.value,
+  completedSteps: COMPLETED_STEPS,
+}))
+const pr = propertyResult
+const fp = financePlan
+
+const COMPLETED_STEPS = [
+  { key: 'survey', label: '설문 조사' },
+  { key: 'recommend-property', label: '추천 매물 확인' },
+  { key: 'favorite', label: '관심 매물 비교' },
+  { key: 'recommend', label: '금융상품 추천' },
+  { key: 'finance-manage', label: '금융상품 관리' },
+  { key: 'result', label: '최종 선택' },
+]
+
 const showPropertyDetail = ref(false)
 const showExpenseDetail = ref(false)
 const isPdfLoading = ref(false)
@@ -198,27 +285,73 @@ const aiLoading = ref(false)
 
 // 포트폴리오 배분: DB에 저장된 관심상품 배분(금액/비율)을 조회해서 구성
 const portfolioItems = ref([])
-const portfolioMonthlyNeed = ref(fp.monthlyNeed)
+const portfolioMonthlyNeed = ref(0)
 // 이자 반영 기준 지속 기간 — horizon과 같은 buildTimeline으로 계산해 숫자가 어긋나지 않게 한다
 const fundedMonths = ref('')
+const loadError = ref('')
+
+// 관심매물 목록에서 사용자가 고른 집. 없으면 매물 정리 결과를 채울 수 없다.
+async function loadSelectedHome() {
+  const homes = await getFavoriteProperties()
+  selectedHome.value = homes.find((h) => h.selected === 'Y') ?? homes[0] ?? null
+}
+
+// 금융 추천 조건 입력에서 받은 금액들. 즉시지출은 항목별 내역 없이 총액만 받는다.
+function buildFinancePlan() {
+  financePlan.value = {
+    netFund: propertyResult.value.netFund,
+    immediateExpenses: rec.immediateExpense > 0
+      ? [{ label: '즉시 지출', amount: rec.immediateExpense }]
+      : [],
+    investable: rec.investAmount,
+    monthlyNeed: rec.monthlyNeed,
+    items: [],
+  }
+  portfolioMonthlyNeed.value = rec.monthlyNeed
+}
 
 onMounted(async () => {
+  // 새로고침으로 들어오면 설문 스토어가 비어 있다. 매도 금액은 서버에서 복원한다.
+  if (!survey.calculation && !survey.expectedSalePrice) {
+    try {
+      await survey.restoreLatest()
+    } catch {
+      // 복원 실패는 매도 관련 금액만 비게 만든다. 나머지는 그대로 보여준다.
+    }
+  }
+  // 추천 조건도 메모리에만 있다. 비어 있으면 서버에 저장된 마지막 조건을 되살린다.
+  try {
+    await rec.restoreLatest()
+  } catch {
+    // 조건을 못 살리면 투자 관련 금액만 0으로 남는다. 매물 정리 결과는 그대로 보여준다.
+  }
+  try {
+    await loadSelectedHome()
+  } catch (e) {
+    loadError.value = '관심 매물을 불러오지 못했습니다.'
+  }
+  buildFinancePlan()
+
   try {
     const favorites = await fetchFavoriteProducts()
-    const totalFund = rec.investAmount || fp.investable
-    if (rec.monthlyNeed) portfolioMonthlyNeed.value = rec.monthlyNeed
+    const totalFund = rec.investAmount
+    if (totalFund <= 0) return
 
     const allocated = favorites
       .filter((f) => f.amount != null)
       .map((f) => {
-        // horizon과 동일하게 우대금리 기준 (stock은 maxAnnualRate가 없어 수익률로 떨어진다)
-        const rate = Number(f.maxAnnualRate ?? f.annualRate)
+        // horizon과 동일하게 서버가 정한 대표금리·세후금리를 그대로 쓴다
+        const rate = Number(f.rate)
+        const afterTax = f.afterTaxRate == null ? null : Number(f.afterTaxRate)
         return {
           name: f.productName,
-          tag: `${TERM_LABELS[termGroupOf(f.termMonths || 0)]} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
-          description: `${f.termMonths}개월 · 연 ${rate.toFixed(1)}%`,
+          tag: `${periodOf(f.termMonths).short} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
+          description:
+            `${f.termMonths}개월 · 연 ${rate.toFixed(1)}%` +
+            (afterTax == null ? '' : ` (세후 ${afterTax.toFixed(2)}%)`),
           maturityMonths: f.termMonths || 0,
           rate: rate / 100,
+          afterTaxRate: afterTax == null ? null : afterTax / 100,
           fixed: !!f.fixed,
           invest: Number(f.amount),
           percent: Math.round(Number(f.percent)),
@@ -244,12 +377,16 @@ onMounted(async () => {
       portfolioItems.value.map((it) => ({
         maturity: it.maturityMonths,
         rate: it.rate,
+        afterTaxRate: it.afterTaxRate,
         fixed: it.fixed,
         invest: it.invest,
       })),
       portfolioMonthlyNeed.value,
     )
     fundedMonths.value = dur(funded)
+
+    // PDF도 화면과 같은 실제 배분 결과를 그리도록 연결
+    if (portfolioItems.value.length) financePlan.value.items = portfolioItems.value
   } catch (e) {
     console.warn('포트폴리오 배분 조회 실패', e)
   }
@@ -263,27 +400,9 @@ function formatKRW(value) {
   return `${man.toLocaleString()}만원`
 }
 
-const GROUP_COLOR = { UNDER_1Y: 'short', Y1_TO_3: 'mid', OVER_3Y: 'long' }
 function dotColor(item) {
   if (!item || item.maturityMonths === 0) return 'park'
-  return GROUP_COLOR[termGroupOf(item.maturityMonths)] || 'long'
-}
-
-// 타임라인 바 각 세그먼트의 상대 너비 계산
-function tlWidth(item, i) {
-  const items = fp.items
-  const from = item.maturityMonths || 0
-  const next = items[i + 1]
-  const to = next ? (next.maturityMonths || 0) : from + 30
-  return Math.max(to - from, 4)
-}
-
-function periodLabel(item, i) {
-  const items = fp.items
-  const from = item.maturityMonths
-  const next = items[i + 1]
-  if (!next) return `${from}개월차~`
-  return `${from}~${next.maturityMonths}개월차`
+  return periodOf(item.maturityMonths).css
 }
 
 async function downloadPdf() {
@@ -296,14 +415,41 @@ async function downloadPdf() {
   aiSummary.value = null
   let restoreCaptureStyle = () => {}
   try {
-    // 1단계: OpenAI로 행동 지침 JSON 생성
-    aiSummary.value = await generateActionPlan({
-      investable: fp.investable,
+    // pr·fp는 ref다. 템플릿과 달리 스크립트에서는 .value로 꺼내야 한다.
+    const property = propertyResult.value
+    const plan = financePlan.value
+
+    // 1단계: 요약 문장을 먼저 만들고, OpenAI에는 그 문장에 대한 전문가 조언만 요청
+    const items = portfolioItems.value.length ? portfolioItems.value : plan.items
+    if (!items.length) {
+      throw new Error('배분된 금융상품이 없어 보고서를 만들 수 없습니다.')
+    }
+    const birthYear = authStore.state.user?.birthYear
+    const userAge = birthYear
+      ? Math.floor((new Date().getFullYear() - birthYear) / 10) * 10
+      : 60
+    const itemNames = items.map((i) => i.name).join(', ')
+    const itemAmounts = items.map((i) => formatKRW(i.invest)).join(', ')
+    // 설문은 현재 집 이름을 저장하지 않는다. 비어 있으면 문장이 "살고 계신 을(를)"이 된다.
+    const currentHomeText = property.currentHome.name || '현재 집'
+    const newHomeText = property.newHome.name || '새 집'
+    const dataTemplateText =
+      `현재 살고 계신 ${currentHomeText}을(를) 팔고 관련 세금 및 주택담보 대출을 갚고 나면 ` +
+      `${formatKRW(property.currentHome.estimatedSalePrice)}이 남고, ${newHomeText}으(로) 이사를 가신다면 ` +
+      `${formatKRW(property.netFund)}이 남습니다. 남는 돈을 ${itemNames}에 각각 ${itemAmounts}씩 투자하신다면, ` +
+      `매달 추가로 ${formatKRW(portfolioMonthlyNeed.value)}씩을 ${fundedMonths.value} 동안 사용 가능합니다.`
+
+    const generated = await generateActionPlan({
+      investable: plan.investable,
       monthlyNeed: portfolioMonthlyNeed.value,
       fundedMonths: fundedMonths.value,
-      items: fp.items,
-      propertyResult: pr,
+      items,
+      propertyResult: property,
+      userAge,
+      profileCode: rec.riskLevel,
+      dataTemplateText,
     })
+    aiSummary.value = { ...generated, dataTemplateText }
     aiLoading.value = false
 
     // 2단계: Vue가 aiSummary를 PdfReport에 반영할 때까지 대기
@@ -336,7 +482,8 @@ async function downloadPdf() {
     pdf.save('다운사이징_보고서.pdf')
   } catch (error) {
     console.error('PDF generation failed:', error)
-    window.alert('PDF 생성에 실패했습니다. 다시 시도해 주세요.')
+    // 원인을 감추면 "다시 시도"만 반복하게 된다. 실패 사유를 그대로 보여준다.
+    window.alert(`PDF 생성에 실패했습니다.\n\n${error?.message ?? error}`)
   } finally {
     aiLoading.value = false
     restoreCaptureStyle()
@@ -351,7 +498,7 @@ async function downloadPdf() {
   margin: 0 auto;
   padding: 48px 20px 60px;
   font-family: "Pretendard", "Noto Sans KR", -apple-system, sans-serif;
-  color: #1f2937;
+  color: var(--text-dark);
 }
 
 .done-icon {
@@ -359,7 +506,7 @@ async function downloadPdf() {
   height: 56px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  background: #f5c518;
+  background: var(--kb-yellow);
   color: #fff;
   display: flex;
   align-items: center;
@@ -378,19 +525,19 @@ async function downloadPdf() {
 .done-sub {
   text-align: center;
   font-size: 15px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 4px;
 }
 
 .done-hint {
   text-align: center;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-faint);
   margin: 0 0 32px;
 }
 
 /* ── 결과 카드 공통 ── */
-.result-card {
+.summary-card {
   background: #fff;
   border-radius: 16px;
   padding: 28px 24px;
@@ -407,7 +554,7 @@ async function downloadPdf() {
 .card-subheading {
   font-size: 14px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 12px;
 }
 
@@ -421,7 +568,7 @@ async function downloadPdf() {
 
 .row-label {
   font-size: 15px;
-  color: #6b7280;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -436,21 +583,52 @@ async function downloadPdf() {
 
 .row-sub {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
+}
+
+/* 0원인 항목의 사유(비과세 등). 숨기면 계산이 빠진 것처럼 보인다 */
+.cost-note {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eef2f7;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.cost-zero {
+  font-size: 17px;
+  color: var(--text-faint);
+}
+
+/* 아직 채워지지 않은 값 — 숫자 자리에 안내 문구가 들어간다 */
+.row-empty {
+  font-size: 13px !important;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.load-error {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fdeceb;
+  color: #a3352c;
+  font-size: 13.5px;
 }
 
 .sub-label {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .negative {
-  color: #ef4444;
+  color: var(--jh-danger);
 }
 
 .highlight-value {
   font-size: 20px;
-  color: #f59e0b;
+  color: var(--kb-yellow-deep);
 }
 
 .divider {
@@ -472,8 +650,8 @@ async function downloadPdf() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fefce8;
-  border: 1px solid #fde68a;
+  background: var(--kb-yellow-soft);
+  border: 1px solid var(--card-selected-border);
   border-radius: 12px;
   padding: 14px 18px;
   margin-top: 14px;
@@ -489,7 +667,7 @@ async function downloadPdf() {
   padding: 8px;
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -497,7 +675,7 @@ async function downloadPdf() {
 }
 
 .detail-toggle:hover {
-  color: #1f2937;
+  color: var(--text-dark);
 }
 
 .detail-section {
@@ -520,8 +698,8 @@ async function downloadPdf() {
   align-items: center;
   margin-bottom: 10px;
 }
-.pf-meta-label { font-size: 13px; font-weight: 700; color: #6b7280; }
-.pf-meta-monthly { font-size: 12px; color: #9ca3af; }
+.pf-meta-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.pf-meta-monthly { font-size: 12px; color: var(--text-faint); }
 .pf-meta-monthly b { color: #374151; font-weight: 700; }
 
 /* 배분 비율 바 */
@@ -555,15 +733,15 @@ async function downloadPdf() {
   flex-shrink: 0;
 }
 .pf-item-info { min-width: 0; }
-.pf-item-name { font-size: 13.5px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pf-item-tag { font-size: 11px; color: #9ca3af; }
+.pf-item-name { font-size: 13.5px; font-weight: 700; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-item-tag { font-size: 11px; color: var(--text-faint); }
 
 .pf-item-right { flex-shrink: 0; text-align: right; min-width: 130px; }
-.pf-item-bar-wrap { background: #e5e7eb; border-radius: 4px; height: 5px; margin-bottom: 5px; overflow: hidden; }
+.pf-item-bar-wrap { background: var(--card-border); border-radius: 4px; height: 5px; margin-bottom: 5px; overflow: hidden; }
 .pf-item-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 .pf-item-nums { display: flex; justify-content: flex-end; align-items: baseline; gap: 6px; }
-.pf-item-amount { font-size: 14px; font-weight: 700; color: #1f2937; }
-.pf-item-pct { font-size: 11.5px; font-weight: 700; color: #f59e0b; }
+.pf-item-amount { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+.pf-item-pct { font-size: 11.5px; font-weight: 700; color: var(--kb-yellow-deep); }
 
 /* 타임라인 바 */
 .pf-timeline {
@@ -572,7 +750,7 @@ async function downloadPdf() {
   padding: 12px 14px;
   border: 1px solid #eeebe4;
 }
-.pf-tl-title { font-size: 11px; font-weight: 700; color: #9ca3af; margin-bottom: 8px; letter-spacing: 0.03em; text-transform: uppercase; }
+.pf-tl-title { font-size: 11px; font-weight: 700; color: var(--text-faint); margin-bottom: 8px; letter-spacing: 0.03em; text-transform: uppercase; }
 .pf-tl-bar {
   display: flex;
   height: 32px;
@@ -610,10 +788,11 @@ async function downloadPdf() {
 .pf-tl-tick span { white-space: nowrap; }
 
 /* 색상 토큰 */
-.seg-park, .dot-park { background: #0d9488; }
-.seg-short, .dot-short { background: #2563eb; }
-.seg-mid, .dot-mid { background: #4f46e5; }
-.seg-long, .dot-long { background: #1e1b4b; }
+.seg-park, .dot-park { background: var(--period-park); }
+.seg-short, .dot-short { background: var(--period-short); }
+.seg-mid, .dot-mid { background: var(--period-mid); }
+.seg-mid2, .dot-mid2 { background: var(--period-mid2); }
+.seg-long, .dot-long { background: var(--period-long); }
 
 /* ── 세로 타임라인 (기존, 미사용 가능) ── */
 .timeline {
@@ -643,15 +822,16 @@ async function downloadPdf() {
   box-shadow: 0 0 0 2px #d1d5db;
 }
 
-.tl-dot.park { background: #0d9488; box-shadow: 0 0 0 2px #0d9488; }
-.tl-dot.short { background: #2563eb; box-shadow: 0 0 0 2px #2563eb; }
-.tl-dot.mid { background: #4f46e5; box-shadow: 0 0 0 2px #4f46e5; }
-.tl-dot.long { background: #1e1b4b; box-shadow: 0 0 0 2px #1e1b4b; }
+.tl-dot.park { background: var(--period-park); box-shadow: 0 0 0 2px var(--period-park); }
+.tl-dot.short { background: var(--period-short); box-shadow: 0 0 0 2px var(--period-short); }
+.tl-dot.mid { background: var(--period-mid); box-shadow: 0 0 0 2px var(--period-mid); }
+.tl-dot.mid2 { background: var(--period-mid2); box-shadow: 0 0 0 2px var(--period-mid2); }
+.tl-dot.long { background: var(--period-long); box-shadow: 0 0 0 2px var(--period-long); }
 
 .tl-line {
   width: 2px;
   flex: 1;
-  background: #e5e7eb;
+  background: var(--card-border);
   min-height: 20px;
 }
 
@@ -676,7 +856,7 @@ async function downloadPdf() {
 
 .tl-period {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -693,9 +873,9 @@ async function downloadPdf() {
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: #8c5a1b;
-  background: #fbead0;
-  border: 1px solid #ffcc00;
+  color: var(--kb-yellow-deep);
+  background: var(--kb-yellow-soft);
+  border: 1px solid var(--kb-yellow);
   border-radius: 10px;
   padding: 1px 8px;
   width: fit-content;
@@ -707,18 +887,18 @@ async function downloadPdf() {
 
 .product-desc {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .product-percent {
   font-size: 13px;
-  color: #f59e0b;
+  color: var(--kb-yellow-deep);
   font-weight: 700;
 }
 
 /* ── 최종 결론 ── */
 .conclusion-box {
-  background: #1f2937;
+  background: var(--text-dark);
   color: #fff;
   border-radius: 14px;
   padding: 22px 24px;
@@ -736,7 +916,7 @@ async function downloadPdf() {
   display: block;
   font-size: 28px;
   font-weight: 800;
-  color: #f5c518;
+  color: var(--kb-yellow);
   margin: 6px 0 2px;
 }
 
@@ -750,11 +930,11 @@ async function downloadPdf() {
   margin: 20px 0 32px;
   font-size: 12.5px;
   line-height: 1.6;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .disclaimer-text strong {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 /* ── 완료 단계 ── */
@@ -774,7 +954,7 @@ async function downloadPdf() {
 
 .steps-sub {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-faint);
   margin: 0 0 16px;
 }
 
@@ -789,21 +969,21 @@ async function downloadPdf() {
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   background: #fff;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-dark);
   cursor: pointer;
 }
 
 .step-chip:hover {
-  background: #fefce8;
+  background: var(--kb-yellow-soft);
 }
 
 .step-check {
-  color: #f5c518;
+  color: var(--kb-yellow);
   font-weight: 800;
 }
 
@@ -827,13 +1007,13 @@ async function downloadPdf() {
   gap: 4px;
   padding: 20px 12px;
   background: #f9f8f5;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   border-radius: 14px;
   cursor: pointer;
 }
 
 .action-card:hover {
-  background: #fefce8;
+  background: var(--kb-yellow-soft);
 }
 
 .action-icon {
@@ -846,7 +1026,7 @@ async function downloadPdf() {
 
 .action-sub {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
 }
 
 .pdf-btn {
@@ -854,7 +1034,7 @@ async function downloadPdf() {
   padding: 18px;
   border: none;
   border-radius: 14px;
-  background: #f5c518;
+  background: var(--kb-yellow);
   color: #3a3326;
   font-size: 17px;
   font-weight: 800;
@@ -865,7 +1045,7 @@ async function downloadPdf() {
 .pdf-hint {
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-faint);
   margin-top: 10px;
 }
 

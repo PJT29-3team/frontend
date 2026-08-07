@@ -2,7 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { favoriteStore } from '@/stores/favoriteStore'
+import { useRecommendationStore } from '@/stores/recommendation'
 import { formatPyeong } from '@/utils/area'
+import { purchaseSummary } from '@/utils/house/purchaseCost'
 import { Heart, LoaderCircle, X } from '@lucide/vue'
 import {
   getFavoriteProperties,
@@ -44,78 +46,6 @@ function formatWon(value, prefix = '') {
 // API는 전용면적 ㎡를 내려준다. ㎡에 "평"만 붙이면 84.82㎡가 "84.8평"이 된다.
 function formatSize(value) {
   return formatPyeong(value)
-}
-
-function getNormalHousingAcquisitionRate(buyPrice) {
-  if (buyPrice <= 600_000_000) return 0.01
-  if (buyPrice <= 900_000_000) return (buyPrice * 2 / 300_000_000 - 3) / 100
-  return 0.03
-}
-
-function calculateRuralTax(buyPrice, isSmallArea) {
-  return isSmallArea ? 0 : Math.round(buyPrice * 0.002)
-}
-
-function calculateEducationTax(buyPrice, acquisitionRate) {
-  let educationRate
-  if (buyPrice <= 600_000_000) {
-    educationRate = 0.001
-  } else if (buyPrice <= 900_000_000) {
-    educationRate = acquisitionRate * 0.1
-  } else {
-    educationRate = 0.003
-  }
-  return Math.round(buyPrice * educationRate)
-}
-
-function calculatePurchaseCost(buyPrice, exclusiveAreaSqm) {
-  const isSmallArea = exclusiveAreaSqm == null ? true : exclusiveAreaSqm <= 85
-  const acquisitionRate = getNormalHousingAcquisitionRate(buyPrice)
-  const ruralTax = calculateRuralTax(buyPrice, isSmallArea)
-  const educationTax = calculateEducationTax(buyPrice, acquisitionRate)
-  const acquisitionTax = Math.round(buyPrice * acquisitionRate)
-  const totalTax = acquisitionTax + ruralTax + educationTax
-  return { acquisitionTax, ruralTax, educationTax, totalTax }
-}
-
-function calculateBrokerageFee(price) {
-  let rate, limit
-  if (price < 50_000_000) {
-    rate = 0.006
-    limit = 250_000
-  } else if (price < 200_000_000) {
-    rate = 0.005
-    limit = 800_000
-  } else if (price < 900_000_000) {
-    rate = 0.004
-    limit = null
-  } else if (price < 1_200_000_000) {
-    rate = 0.005
-    limit = null
-  } else if (price < 1_500_000_000) {
-    rate = 0.006
-    limit = null
-  } else {
-    rate = 0.007
-    limit = null
-  }
-  const rawFee = price * rate
-  const brokerageFee = Math.round(limit == null ? rawFee : Math.min(rawFee, limit))
-  const vat = Math.round(brokerageFee * 0.1)
-  return { rate, limit, rawFee, brokerageFee, vat }
-}
-
-function purchaseSummary(home) {
-  const buyPrice = Number(home?.housePrice || 0)
-  const purchaseCost = calculatePurchaseCost(buyPrice)
-  const brokerage = calculateBrokerageFee(buyPrice)
-  const totalPurchaseAmount = buyPrice + purchaseCost.totalTax + brokerage.brokerageFee + brokerage.vat
-  const netProceedsAmount = Number(home?.netProceedsAmount || 0)
-  const remainingAfterPurchase = Math.max(netProceedsAmount - totalPurchaseAmount, 0)
-  return {
-    totalPurchaseAmount,
-    remainingAfterPurchase,
-  }
 }
 
 function totalPurchasePrice(home) {
@@ -180,6 +110,14 @@ async function confirmRemoval() {
   }
 }
 
+function goToRecommendation() {
+  if (selectedHome.value) {
+    const surplus = remainingAfterPurchase(selectedHome.value)
+    useRecommendationStore().setFundingAmount(surplus)
+  }
+  router.push('/recommendation')
+}
+
 onMounted(loadFavorites)
 </script>
 
@@ -225,7 +163,7 @@ onMounted(loadFavorites)
 
     <footer class="favorite-footer">
       <button type="button" class="back-button" @click="router.push('/process/recommended')">← 추천 매물 다시 보기</button>
-      <div v-if="selectedHome" class="footer-next"><span>{{ selectedHome.houseName }}을 선택함</span><button type="button">이대로 금융상품 알아보기&nbsp; →</button></div>
+      <div v-if="selectedHome" class="footer-next"><span>{{ selectedHome.houseName }}을 선택함</span><button type="button" @click="goToRecommendation">이대로 금융상품 알아보기&nbsp; →</button></div>
     </footer>
     <p class="disclaimer">본 점수는 입력한 조건과 공공데이터를 활용한 매물 간 비교지표입니다. 주택의 가격 적정성, 관리관계, 실제 시설 상태 또는 거래 안전성을 보증하지 않습니다.</p>
 

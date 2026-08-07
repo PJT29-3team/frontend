@@ -35,9 +35,9 @@ const steps = [
   { key: 'survey', label: '설문 조사', icon: '✓', to: '/survey?mode=resume' },
   { key: 'recommend', label: '추천 매물', icon: '⌕', to: '/recommend' },
   { key: 'favorite', label: '관심 매물', icon: '♡', to: '/favorite-home' },
-  { key: 'finance-recommend', label: '금융상품 추천', icon: '🗄' },
-  { key: 'finance-manage', label: '금융상품 관리', icon: '♡' },
-  { key: 'result', label: '결과 보기', icon: '📄' },
+  { key: 'finance-recommend', label: '금융상품 추천', icon: '🗄', to: '/recommendation' },
+  { key: 'finance-manage', label: '금융상품 관리', icon: '♡', to: '/finance/horizon' },
+  { key: 'result', label: '결과 보기', icon: '📄', to: '/summary' },
 ]
 
 function stepStatus(key) {
@@ -54,10 +54,16 @@ function statusText(status) {
   return '대기'
 }
 
+// 되돌아갈 수 있는 범위는 "해금된 단계"와 "지금 서 있는 단계" 중 더 뒤엣것까지다.
+// unlockedStep은 설문 완료 여부까지만 알기 때문에, 그것만 보면 금융 단계에 서 있어도
+// 앞 단계로 못 돌아간다.
 function canNavigate(key) {
-  const currentIndex = steps.findIndex(s => s.key === (props.unlockedStep || props.currentStep))
+  const maxIndex = Math.max(
+    steps.findIndex(s => s.key === props.unlockedStep),
+    steps.findIndex(s => s.key === props.currentStep),
+  )
   const stepIndex = steps.findIndex(s => s.key === key)
-  return Boolean(steps[stepIndex]?.to) && stepIndex <= currentIndex
+  return Boolean(steps[stepIndex]?.to) && stepIndex <= maxIndex
 }
 </script>
 
