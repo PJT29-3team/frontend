@@ -2,7 +2,7 @@
   <header class="header">
     <div class="logo-area">
       <img :src="logo" class="logo" />
-      <span class="title-name">홀家분</span>
+      <span class="title-name">홀가(家)분</span>
     </div>
 
     <div class="right-area">

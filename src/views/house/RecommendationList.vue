@@ -1,38 +1,119 @@
 <template>
   <div class="recommendation-list">
     <div class="page-content">
-      <section class="content">
-        <!-- 왼쪽 패널, 매물 목록 5곳 -->
-        <div class="left-panel">
+      <div class="view-header">
+        <div>
           <h2 class="main-title">{{ survey.displayName }}님이 선택한 페르소나 기준으로 집 {{ displayedHomes.length }}곳을 찾았어요.</h2>
           <p class="sub-title">저장된 설문조사와 희망 지역을 기준으로 추천했어요.</p>
-          <p v-if="loading" class="sub-title">추천 매물을 불러오는 중입니다.</p>
-          <p v-else-if="errorMessage" class="sub-title error-message">{{ errorMessage }}</p>
+        </div>
 
-          <p v-else-if="loadError" class="state-message">{{ loadError }}</p>
-          <p v-else-if="displayedHomes.length === 0" class="state-message">
-            조건에 맞는 매물을 찾지 못했어요.
-          </p>
+        <!-- 보여줄 매물이 없으면 토글은 눌러도 갈 곳이 없다 -->
+        <div v-if="hasHomes" class="view-toggle" role="tablist" aria-label="매물 보기 방식">
+          <button
+            class="toggle-btn"
+            :class="{ active: currentView === 'list' }"
+            type="button"
+            role="tab"
+            :aria-selected="currentView === 'list'"
+            @click="switchView('list')"
+          >
+            <span class="toggle-icon" aria-hidden="true">📋</span> 목록
+          </button>
+          <button
+            class="toggle-btn"
+            :class="{ active: currentView === 'map' }"
+            type="button"
+            role="tab"
+            :aria-selected="currentView === 'map'"
+            @click="switchView('map')"
+          >
+            <span class="toggle-icon" aria-hidden="true">🗺️</span> 지도
+          </button>
+        </div>
+      </div>
 
+      <p v-if="loading" class="state-message">추천 매물을 불러오는 중입니다.</p>
+      <p v-else-if="errorMessage" class="state-message error-message">{{ errorMessage }}</p>
+      <div v-else-if="!hasHomes" class="empty-state">
+        <p class="empty-title">조건에 맞는 집을 찾지 못했어요.</p>
+        <p class="empty-desc">
+          예산이나 희망 평수, 지역 범위를 조금 넓히면 후보가 생길 수 있어요.<br />
+          아래에서 조건을 바꿔보세요.
+        </p>
+        <button class="empty-btn" type="button" @click="changeConditions">조건 바꾸러 가기 →</button>
+      </div>
+
+      <!-- 목록 뷰: 카드 + 상시 비용 패널 -->
+      <section
+        v-else-if="currentView === 'list'"
+        ref="viewSection"
+        class="content"
+        :style="{ height: viewHeight }"
+      >
+        <div class="left-panel">
           <HomeCard
             v-for="home in displayedHomes"
             :key="home.id"
             :home="home"
-            :is-selected="home.id === selectedId"
-            @select="selectHome"
+            :is-selected="home.id === selectedPropertyId"
+            @select="selectProperty"
           />
         </div>
 
         <div class="right-column">
           <PurchaseCostPanel v-if="selectedHome" :selected-home="selectedHome" />
+        </div>
+      </section>
 
-          <div class="map-area">
-            <HomeMapView :homes="displayedHomes" :selected-id="selectedId" @select="selectHome"/>
+      <!-- 지도 뷰: 전체 너비 + 핀 클릭 시 미니 카드 오버레이 -->
+      <section v-else ref="viewSection" class="map-view" :style="{ height: viewHeight }">
+        <HomeMapView ref="mapRef" :homes="displayedHomes" :selected-id="pinnedId" @select="pinHome" />
+
+        <button class="back-to-list" type="button" @click="switchView('list')">← 목록으로</button>
+
+        <!-- 핀을 눈으로 찾지 않아도 번호로 바로 확대해 볼 수 있게 -->
+        <div class="rank-jump">
+          <p class="rank-jump-title">매물 위치</p>
+          <button
+            v-for="home in displayedHomes"
+            :key="home.id"
+            class="rank-jump-btn"
+            :class="{ active: home.id === pinnedId }"
+            type="button"
+            :title="home.name"
+            @click="focusHome(home.id)"
+          >
+            {{ home.rank }}
+          </button>
+        </div>
+
+        <div v-if="pinnedHome" class="pin-card">
+          <div class="pin-score" :class="pinnedHome.score >= 70 ? 'tier-high' : 'tier-mid'">
+            <strong>{{ pinnedHome.score }}</strong>
+            <span>점</span>
+          </div>
+          <div class="pin-info">
+            <p class="pin-label">나와 맞는 정도</p>
+            <p class="pin-name">{{ pinnedHome.name }}</p>
+            <p class="pin-meta">{{ formatPyeong(pinnedHome.size) }} · {{ pinnedHome.price }}</p>
+          </div>
+          <div class="pin-actions">
+            <button class="pin-open" type="button" @click="openInList(pinnedHome.id)">목록에서 보기</button>
+            <button
+              class="pin-fav"
+              :class="{ active: favStore.isFavorite(pinnedHome.id) }"
+              type="button"
+              :aria-label="favStore.isFavorite(pinnedHome.id) ? '관심 목록에서 빼기' : '관심 목록에 담기'"
+              @click="togglePinFavorite(pinnedHome.id)"
+            >
+              {{ favStore.isFavorite(pinnedHome.id) ? '♥' : '♡' }}
+            </button>
           </div>
         </div>
       </section>
 
       <!-- 구분선 -->
+      <div ref="bottomBlock">
       <div class="divider"></div>
 
       <div class="bottom-actions">
@@ -48,6 +129,7 @@
         본 점수는 입력한 조건과 공공데이터를 활용한 매물 간 비교지표입니다. 주택의 가격 적정성, 권리관계, 실제 시설 상태 또는 거래 안전성을 보증하지 않습니다.
         계약 전 현장 확인과 등기·건축물 관련 서류 확인이 필요합니다.
       </p>
+      </div>
     </div>
   </div>
 </template>
@@ -56,11 +138,12 @@
 import HomeCard from '@/components/house/HomeCard.vue';
 import HomeMapView from '@/components/house/HomeMapView.vue';
 import PurchaseCostPanel from '@/components/house/PurchaseCostPanel.vue';
-import { computed, onMounted,reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { favoriteStore } from '@/stores/favoriteStore.js';
 import { useSurveyStore } from '@/stores/survey';
 import propertyRecommendationApi from '@/api/propertyRecommendation';
+import { formatPyeong } from '@/utils/area';
 
 const favStore = favoriteStore();
 const router = useRouter();
@@ -69,13 +152,31 @@ const homes = ref([]);
 const loading = ref(true);
 const errorMessage = ref('');
 
-const selectedId = ref(null);
-
-const selectedHome = computed(() => {
-  return homes.value.find(h => h.id === selectedId.value) || homes.value[0] || null;
-});
+const currentView = ref('list');
+const mapRef = ref(null);
+// 목록·지도 중 지금 떠 있는 쪽. v-if 로 한 번에 하나만 그려지므로 ref 를 공유한다.
+const viewSection = ref(null);
+const bottomBlock = ref(null);
+// 두 뷰 모두 페이지 스크롤 없이 화면 안에 들어와야 한다.
+// 헤더·단계표시줄 높이가 라우트마다 달라서 상수로 못 박지 않고 실제 위치를 잰다.
+const viewHeight = ref('');
+// 이보다 좁아지면 내용이 뭉개져서 차라리 페이지가 스크롤되는 편이 낫다.
+const MIN_VIEW_HEIGHT = { list: 320, map: 360 };
+// 비용 패널이 계산 중인 매물. 목록/지도 어느 쪽에서 골라도 이 값 하나로 모인다.
+const selectedPropertyId = ref(null);
+// 지도에서 핀을 눌러 미니 카드로 띄운 매물. 선택과는 별개다.
+const pinnedId = ref(null);
 
 const displayedHomes = computed(() => homes.value.slice(0, 5));
+const hasHomes = computed(() => displayedHomes.value.length > 0);
+
+const selectedHome = computed(
+  () => displayedHomes.value.find((home) => home.id === selectedPropertyId.value) || null
+);
+
+const pinnedHome = computed(
+  () => displayedHomes.value.find((home) => home.id === pinnedId.value) || null
+);
 
 async function loadRecommendations() {
   loading.value = true;
@@ -86,7 +187,8 @@ async function loadRecommendations() {
       ...home,
       priceNum: Number(home.priceNum) / 10000,
     }));
-    selectedId.value = homes.value[0]?.id ?? null;
+    // 목록은 점수 내림차순이라 첫 항목이 추천 1위다.
+    selectedPropertyId.value = homes.value[0]?.id ?? null;
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '추천 매물을 불러오지 못했습니다.';
   } finally {
@@ -94,8 +196,58 @@ async function loadRecommendations() {
   }
 }
 
-function selectHome(homeId) {
-  selectedId.value = homeId;
+function selectProperty(homeId) {
+  selectedPropertyId.value = homeId;
+}
+
+// 뷰를 전환하면 지도 미니 카드는 닫는다.
+function switchView(view) {
+  currentView.value = view;
+  pinnedId.value = null;
+  // 스크롤이 내려간 채로 전환하면 높이 계산이 어긋나고 지도도 잘려 보인다.
+  window.scrollTo({ top: 0 });
+  fitViewHeight();
+}
+
+// 남는 세로 공간을 재서 본문 영역에 그대로 준다.
+// 목록은 카드 영역이 그 안에서 스크롤되고, 지도는 지도 자체가 줄어든다.
+async function fitViewHeight() {
+  await nextTick();
+  if (!viewSection.value) return;
+
+  // 페이지가 스크롤된 상태에서 재도 어긋나지 않게 문서 기준으로 환산한다.
+  const top = viewSection.value.getBoundingClientRect().top + window.scrollY;
+  const bottomHeight = bottomBlock.value?.getBoundingClientRect().height ?? 0;
+  const available = window.innerHeight - top - bottomHeight - 24;
+  const floor = MIN_VIEW_HEIGHT[currentView.value] ?? 320;
+
+  viewHeight.value = `${Math.max(floor, Math.round(available))}px`;
+  await nextTick();
+  if (currentView.value === 'map') mapRef.value?.relayout();
+}
+
+// 핀을 누르면 목록으로 튕기지 않고 미니 카드만 갈아 끼운다.
+function pinHome(homeId) {
+  pinnedId.value = homeId;
+}
+
+// 번호 버튼: 그 매물로 지도를 확대하고 미니 카드도 같이 띄운다.
+function focusHome(homeId) {
+  pinnedId.value = homeId;
+  mapRef.value?.focusHome(homeId);
+}
+
+function openInList(homeId) {
+  selectProperty(homeId);
+  switchView('list');
+}
+
+async function togglePinFavorite(homeId) {
+  try {
+    await favStore.toggleFavorite(homeId);
+  } catch (error) {
+    alert(error?.response?.data?.message || error?.message || '관심 매물을 처리하지 못했습니다.');
+  }
 }
 
 async function restartSurvey() {
@@ -116,6 +268,13 @@ onMounted(async () => {
   }
   await favStore.loadFavorites(true);
   await loadRecommendations();
+  // 목록이 기본 뷰라 불러온 직후부터 높이를 맞춰둬야 한다.
+  await fitViewHeight();
+  window.addEventListener('resize', fitViewHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', fitViewHeight);
 });
 </script>
 
@@ -127,18 +286,45 @@ onMounted(async () => {
   padding: 0 40px;
 }
 
+/* 높이는 fitViewHeight() 가 인라인으로 넣는다. 여기 값은 계산 전 한 프레임용 폴백. */
 .content {
   display: flex;
   gap: 32px;
   padding: 32px 0 0;
   align-items: stretch;
+  height: calc(100vh - 220px);
+  min-height: 320px;
 }
 
+/* 카드가 넘치면 페이지가 아니라 이 영역만 스크롤된다.
+   min-height:0 이 없으면 flex 자식이 안 줄어들어 스크롤이 페이지로 새어나간다. */
 .left-panel {
   flex: 2;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  /* 스크롤바가 카드 그림자를 덮지 않게 */
+  padding-right: 8px;
+  overscroll-behavior: contain;
+}
+
+.left-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.left-panel::-webkit-scrollbar-thumb {
+  background: #ddd8cc;
+  border-radius: 999px;
+}
+
+.left-panel::-webkit-scrollbar-thumb:hover {
+  background: #c9c1ad;
+}
+
+.left-panel::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 
@@ -161,6 +347,45 @@ onMounted(async () => {
   color: #888;
   padding: 24px 0;
   text-align: center;
+}
+
+/* 매물이 하나도 없을 때. 막다른 길로 두지 않고 다음 행동을 준다. */
+.empty-state {
+  margin: 20px 0 0;
+  padding: 56px 24px;
+  border-radius: 14px;
+  border: 1px solid #ebe7dd;
+  background: #faf8f3;
+  text-align: center;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2b2822;
+  margin: 0 0 10px;
+}
+
+.empty-desc {
+  font-size: 14px;
+  color: #8a8477;
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+
+.empty-btn {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: none;
+  background: #f5c518;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a3a00;
+  cursor: pointer;
+}
+
+.empty-btn:hover {
+  background: #e8b800;
 }
 
 /* 구분선 */
@@ -217,21 +442,324 @@ onMounted(async () => {
   line-height: 1.6;
 }
 
-/* 오른쪽 패널 */
+/* 오른쪽 패널: 비용 계산 전용. 왼쪽 카드 5장 높이에 맞춰 늘어난다. */
 .right-column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-width: 0;
+  /* 비용 항목이 많은 매물에서도 페이지가 아니라 이 칸만 스크롤되게 */
+  min-height: 0;
+  overflow-y: auto;
 }
 
-/* 지도 부분 */
-.map-area {
-  flex: 1;                 /* 남는 세로 공간을 다 채움 → 왼쪽 목록이랑 높이 맞춰짐 */
-  min-height: 300px;
+.right-column :deep(.right-panel) {
+  flex: 1;
+}
+
+/* 카드만 늘어나고 속은 비면 어색하다.
+   남는 세로 공간을 항목 사이에 고르게 나눠 내용이 카드를 채우게 한다. */
+.right-column :deep(.summary-card) {
+  flex: 1;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+/* 시니어 대상이라 글자를 키운다. 여백이 넓어 보이던 것도 대부분 글자가 작아서였다. */
+.right-column :deep(.summary-title) {
+  font-size: 15px;
+}
+
+.right-column :deep(.summary-row) {
+  font-size: 15px;
+  padding: 7px 0;
+  gap: 12px;
+}
+
+.right-column :deep(.summary-row.small) {
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.right-column :deep(.summary-sub) {
+  padding: 12px 14px;
+}
+
+.right-column :deep(.summary-sub-title) {
+  font-size: 13px;
+}
+
+/* 이 화면에서 가장 중요한 숫자 */
+.right-column :deep(.result-box) {
+  font-size: 16px;
+  padding: 16px;
+}
+
+.right-column :deep(.result-box strong) {
+  font-size: 21px;
+}
+
+.right-column :deep(.goal-compare) {
+  font-size: 13px;
+}
+
+.right-column :deep(.summary-note) {
+  font-size: 12px;
+  margin-top: 0;
+}
+
+/* 목록/지도 토글 */
+.view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 32px;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f2efe7;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.toggle-btn {
+  min-width: 76px;
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a8477;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.toggle-btn:hover {
+  color: #545045;
+}
+
+.toggle-btn.active {
+  background: #545045;
+  color: #fff;
+}
+
+/* 지도 뷰 */
+.map-view {
+  position: relative;
+  height: calc(100vh - 220px);
+  min-height: 420px;
+  margin-top: 20px;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f0e8;
+}
+
+.back-to-list {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid #e3dfd4;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  font-weight: 700;
+  color: #545045;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(84, 80, 69, 0.15);
+}
+
+.back-to-list:hover {
+  background: #fff;
+  border-color: #c9c1ad;
+}
+
+.toggle-icon {
+  font-size: 12px;
+}
+
+/* 번호로 매물 위치 바로 찾아가기 */
+/* 시니어 사용자를 고려해 터치/클릭 목표를 크게 잡는다 */
+.rank-jump {
+  position: absolute;
+  top: 76px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  border-radius: 34px;
+  border: 1px solid #e3dfd4;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 10px rgba(84, 80, 69, 0.15);
+}
+
+.rank-jump-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a8477;
+  margin: 0 0 2px;
+}
+
+.rank-jump-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid #e3dfd4;
+  background: #fff;
+  font-size: 19px;
+  font-weight: 800;
+  color: #5f5949;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.rank-jump-btn:hover {
+  background: #faf8f3;
+  border-color: #c9c1ad;
+}
+
+.rank-jump-btn.active {
+  background: #545045;
+  border-color: #545045;
+  color: #fff;
+}
+
+/* 핀을 누르면 뜨는 미니 카드 */
+.pin-card {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: calc(100% - 32px);
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #ebe7dd;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(84, 80, 69, 0.22);
+  animation: pin-card-in 0.18s ease;
+}
+
+@keyframes pin-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.pin-score {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+  background: #eaf5ea;
+  color: #2f7d32;
+}
+
+.pin-score.tier-mid {
+  background: #fdf3dd;
+  color: #c98a00;
+}
+
+.pin-score strong {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.pin-score span {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pin-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pin-label {
+  font-size: 11px;
+  color: #9a9384;
+  margin: 0;
+}
+
+.pin-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2b2822;
+  margin: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin-meta {
+  font-size: 12px;
+  color: #948d7e;
+  margin: 0;
+}
+
+.pin-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pin-open {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: none;
+  background: #f5c518;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a3a00;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pin-open:hover {
+  background: #e8b800;
+}
+
+.pin-fav {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #e3dfd4;
+  background: #fff;
+  font-size: 15px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.pin-fav.active {
+  background: #fff4d6;
+  border-color: #f0c14b;
+  color: #f0a500;
 }
 </style>
