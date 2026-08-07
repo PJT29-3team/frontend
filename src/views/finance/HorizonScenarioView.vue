@@ -86,10 +86,30 @@ function investPct(favoriteId) {
   return fundPct(investOf(favoriteId));
 }
 
-function segPct(seg) {
+// 개월 수 → 전체 기간 대비 가로 비율(%)
+function pctOf(months) {
   if (!timeline.value || timeline.value.span === 0) return 0;
-  return Math.max(2, Math.round((seg.months / timeline.value.span) * 100));
+  return (months / timeline.value.span) * 100;
 }
+
+// 축 눈금: 0개월 + 각 구간이 끝나는 시점. 라벨이 겹치지 않게 너무 촘촘한 것은 솎아낸다.
+const MIN_TICK_GAP = 0.07; // 전체 기간 대비
+const ticks = computed(() => {
+  if (!timeline.value) return [];
+  const span = timeline.value.span;
+  const all = [0, ...timeline.value.segs.map((s) => s.to)];
+  const last = all[all.length - 1];
+  const out = [];
+  for (const t of all) {
+    const far = out.length === 0 || (t - out[out.length - 1]) / span >= MIN_TICK_GAP;
+    if (t === last || far) out.push(t);
+  }
+  // 끝 눈금과 그 앞이 붙어 있으면 앞엣것을 버린다
+  if (out.length >= 2 && (last - out[out.length - 2]) / span < MIN_TICK_GAP) {
+    out.splice(out.length - 2, 1);
+  }
+  return out;
+});
 
 // 카드1 태그용 — favoriteId → "5~19개월차"
 const periodByFavoriteId = computed(() => {
@@ -211,54 +231,70 @@ async function handleContinue() {
           <b>{{ dur(timeline.funded) }}</b> 사용 가능
           <span class="tl-sub-note">(이자 반영 기준)</span>
         </p>
-        <div class="legend">
-          <span class="l-park">파킹·CMA</span>
-          <span class="l-short">단기</span>
-          <span class="l-mid">중기</span>
-          <span class="l-mid2">중장기</span>
-          <span class="l-long">장기</span>
-        </div>
+        <!-- 상품별 담당 구간. 가로축은 시간(개월), 행 하나가 상품 하나 -->
+        <div class="gantt">
+          <div v-for="(seg, i) in timeline.segs" :key="i" class="gantt-row">
+            <div class="gantt-name">
+              <span class="gantt-name-main">{{ seg.name }}</span>
+              <span class="gantt-name-sub">{{ seg.from }}~{{ seg.to }}개월차</span>
+            </div>
+            <div class="gantt-track">
+              <div
+                class="gantt-bar"
+                :class="seg.type"
+                :style="{ left: pctOf(seg.from - 1) + '%', width: pctOf(seg.months) + '%' }"
+              ></div>
+            </div>
+          </div>
 
-        <div class="tl-bar">
-          <div
-            v-for="(seg, i) in timeline.segs"
-            :key="i"
-            class="seg"
-            :class="seg.type"
-            :style="{ width: segPct(seg) + '%' }"
-          >
-            {{ seg.months }}개월
+          <div class="gantt-axis">
+            <div class="gantt-axis-track">
+              <span
+                v-for="(t, i) in ticks"
+                :key="'t' + i"
+                class="gantt-tick"
+                :class="{ last: i === ticks.length - 1 }"
+                :style="{ left: pctOf(t) + '%' }"
+              >{{ t }}개월</span>
+            </div>
           </div>
         </div>
 
         <p class="tl-basis">
           각 상품은 자기가 맡은 기간의 생활비가 <b>만기에 딱 나오도록</b> 금액을 역산했어요.
+          아래 표는 위 막대를 한 줄씩 풀어 쓴 것입니다.
         </p>
 
+        <!-- 위 간트의 각 막대를 한 줄씩 풀어 쓴 표. 행 순서·색이 막대와 1:1로 대응한다 -->
         <table class="tl-table">
           <thead>
             <tr>
-              <th>상품 · 담당 구간</th>
+              <th>상품</th>
               <th>지금 넣을 돈</th>
-              <th>만기에 필요한 돈</th>
+              <th class="tl-arrow-col"></th>
+              <th>만기에 받는 돈</th>
+              <th>맡은 구간</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(seg, i) in timeline.segs" :key="i">
-              <td>
-                {{ seg.name }} · {{ seg.from }}~{{ seg.to }}개월차
+              <td class="tl-prod">
+                <span class="tl-dot" :class="seg.type"></span>
+                <span class="tl-prod-name">{{ seg.name }}</span>
                 <span v-if="seg.rate" class="tl-rate">연 {{ (seg.rate * 100).toFixed(2) }}%</span>
               </td>
-              <td class="tl-invest">{{ formatKRW(seg.invest) }}</td>
-              <td class="tl-need">
-                <span class="tl-arrow">→</span>
-                <template v-if="seg.last">
-                  <span class="tl-need-sub">남은 돈 전액</span>
-                </template>
-                <template v-else>
-                  <span class="tl-need-sub">{{ seg.months }}개월 ·</span>
-                  <b>{{ formatKRW(seg.months * monthlyNeed) }}</b>
-                </template>
+              <td class="tl-invest">
+                {{ formatKRW(seg.invest) }}
+                <span v-if="seg.last" class="tl-cell-sub">남은 돈 전액</span>
+              </td>
+              <td class="tl-arrow-col">
+                <span class="tl-arrow-mark">→</span>
+                <span class="tl-arrow-when">{{ seg.maturity === 0 ? '바로' : seg.maturity + '개월 뒤' }}</span>
+              </td>
+              <td class="tl-need"><b>{{ formatKRW(seg.amount) }}</b></td>
+              <td class="tl-span">
+                {{ seg.from }}~{{ seg.to }}개월차
+                <span class="tl-cell-sub">생활비 {{ seg.months }}개월치</span>
               </td>
             </tr>
           </tbody>
@@ -333,11 +369,11 @@ async function handleContinue() {
   justify-content: center;
 }
 
-.pick-step.step-park { background: #4f9a91; color: #fff; }
-.pick-step.step-short { background: #3b82f6; color: #fff; }
-.pick-step.step-mid { background: #7c3aed; color: #fff; }
-.pick-step.step-mid2 { background: #5b21b6; color: #fff; }
-.pick-step.step-long { background: #1e1b4b; color: #fff; }
+.pick-step.step-park { background: #4F9A91; color: #fff; }
+.pick-step.step-short { background: #3B82F6; color: #fff; }
+.pick-step.step-mid { background: #7C3AED; color: #fff; }
+.pick-step.step-mid2 { background: #D97706; color: #fff; }
+.pick-step.step-long { background: #1E1B4B; color: #fff; }
 
 .pick-body {
   flex: 1;
@@ -462,60 +498,115 @@ async function handleContinue() {
   margin: 2px 0 10px;
 }
 
-.tl-bar {
-  display: flex;
-  height: 40px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 6px 0 8px;
+.gantt {
+  margin: 10px 0 4px;
 }
 
-.seg {
-  display: flex;
+.gantt-row {
+  display: grid;
+  grid-template-columns: 168px 1fr;
   align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  min-width: 2px;
+  gap: 12px;
+  padding: 5px 0;
 }
 
-.seg.park { background: #4f9a91; }
-.seg.short { background: #3b82f6; }
-.seg.mid { background: #7c3aed; }
-.seg.mid2 { background: #5b21b6; }
-.seg.long { background: #1e1b4b; }
-
-.legend {
+.gantt-name {
   display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  font-size: 12.5px;
+  flex-direction: column;
+  min-width: 0;
+  text-align: right;
+}
+
+.gantt-name-main {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gantt-name-sub {
+  font-size: 11.5px;
   color: var(--text-muted);
-  margin-bottom: 4px;
 }
 
-.legend span::before {
+.gantt-track {
+  position: relative;
+  height: 14px;
+}
+
+/* 담당하지 않는 기간도 자리를 보이게 하는 바탕선 */
+.gantt-track::before {
   content: "";
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 5px;
-  vertical-align: -1px;
+  position: absolute;
+  inset: 6px 0;
+  background: #f0ede8;
+  border-radius: 99px;
 }
 
-.l-park::before { background: #4f9a91; }
-.l-short::before { background: #3b82f6; }
-.l-mid::before { background: #7c3aed; }
-.l-mid2::before { background: #5b21b6; }
-.l-long::before { background: #1e1b4b; }
+.gantt-bar {
+  position: absolute;
+  top: 0;
+  height: 14px;
+  min-width: 3px;
+  border-radius: 99px;
+}
+
+.gantt-bar.park, .tl-dot.park { background: #4F9A91; }
+.gantt-bar.short, .tl-dot.short { background: #3B82F6; }
+.gantt-bar.mid, .tl-dot.mid { background: #7C3AED; }
+.gantt-bar.mid2, .tl-dot.mid2 { background: #D97706; }
+.gantt-bar.long, .tl-dot.long { background: #1E1B4B; }
+
+/* 시간 축 — 상품명 칸(168px + gap 12px)만큼 비우고 트랙에만 그린다 */
+.gantt-axis {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.gantt-axis-track {
+  grid-column: 2;
+  position: relative;
+  height: 22px;
+  border-top: 1px solid var(--line, #e5e7eb);
+}
+
+.gantt-tick {
+  position: absolute;
+  top: 7px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* 눈금선 */
+.gantt-tick::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 0;
+  width: 1px;
+  height: 5px;
+  background: var(--line, #e5e7eb);
+}
+
+/* 마지막 눈금은 오른쪽 끝이라 라벨을 왼쪽으로 당긴다 */
+.gantt-tick.last {
+  transform: translateX(-100%);
+}
+
+.gantt-tick.last::before {
+  left: auto;
+  right: 0;
+}
 
 /* 테이블 */
 .tl-basis {
   font-size: 13px;
   color: var(--text-muted);
-  margin: 14px 0 2px;
+  margin: 40px 0 2px;
 }
 
 .tl-basis b { color: var(--text-dark); }
@@ -563,10 +654,44 @@ async function handleContinue() {
   font-weight: 400;
 }
 
-.tl-arrow {
+/* 두 금액 칸 사이에서 "몇 개월 뒤에 나오는 돈인지"를 한 덩어리로 보여준다 */
+.tl-table th.tl-arrow-col,
+.tl-table td.tl-arrow-col {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+  padding-left: 16px;
+  padding-right: 16px;
   color: var(--text-muted);
+}
+
+.tl-arrow-mark { font-size: 13px; }
+
+.tl-arrow-when {
+  font-size: 12.5px;
+  margin-left: 4px;
+}
+
+/* 상품 칸: 막대와 같은 색 점을 찍어 표의 행과 위 막대를 연결한다.
+   td에 flex를 주면 셀이 테이블 레이아웃에서 빠져 행 높이·밑줄이 어긋나므로 인라인으로 흘린다. */
+.tl-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 99px;
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+
+.tl-prod-name { font-weight: 700; }
+
+.tl-span { color: var(--text-dark); }
+
+.tl-cell-sub {
+  display: block;
   font-size: 12px;
-  margin-right: 2px;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 .tl-invest {
@@ -575,7 +700,8 @@ async function handleContinue() {
 }
 
 .tl-rate {
-  display: block;
+  display: inline;
+  margin-left: 7px;
   font-size: 12px;
   color: var(--text-muted);
 }

@@ -273,11 +273,11 @@ defineExpose({ pdfRoot })
 .pdf-conclusion-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 3px; }
 .pdf-conclusion-value { font-size: 24px; font-weight: 800; color: #f5c518; }
 .pdf-conclusion-tail { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-.pdf-seg-park, .pdf-dot-park { background: #0d9488; }
-.pdf-seg-short, .pdf-dot-short { background: #2563eb; }
-.pdf-seg-mid, .pdf-dot-mid { background: #4f46e5; }
-.pdf-seg-mid2, .pdf-dot-mid2 { background: #3730a3; }
-.pdf-seg-long, .pdf-dot-long { background: #1e1b4b; }
+.pdf-seg-park, .pdf-dot-park { background: #4F9A91; }
+.pdf-seg-short, .pdf-dot-short { background: #3B82F6; }
+.pdf-seg-mid, .pdf-dot-mid { background: #7C3AED; }
+.pdf-seg-mid2, .pdf-dot-mid2 { background: #D97706; }
+.pdf-seg-long, .pdf-dot-long { background: #1E1B4B; }
 
 /* ④ AI 행동 지침 섹션 */
 .pdf-ai-section { margin-top: 0; }

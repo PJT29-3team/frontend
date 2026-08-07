@@ -628,11 +628,11 @@ async function downloadPdf() {
 .pf-tl-tick span { white-space: nowrap; }
 
 /* 색상 토큰 */
-.seg-park, .dot-park { background: #0d9488; }
-.seg-short, .dot-short { background: #2563eb; }
-.seg-mid, .dot-mid { background: #4f46e5; }
-.seg-mid2, .dot-mid2 { background: #3730a3; }
-.seg-long, .dot-long { background: #1e1b4b; }
+.seg-park, .dot-park { background: #4F9A91; }
+.seg-short, .dot-short { background: #3B82F6; }
+.seg-mid, .dot-mid { background: #7C3AED; }
+.seg-mid2, .dot-mid2 { background: #D97706; }
+.seg-long, .dot-long { background: #1E1B4B; }
 
 /* ── 세로 타임라인 (기존, 미사용 가능) ── */
 .timeline {
@@ -662,10 +662,11 @@ async function downloadPdf() {
   box-shadow: 0 0 0 2px #d1d5db;
 }
 
-.tl-dot.park { background: #0d9488; box-shadow: 0 0 0 2px #0d9488; }
-.tl-dot.short { background: #2563eb; box-shadow: 0 0 0 2px #2563eb; }
-.tl-dot.mid { background: #4f46e5; box-shadow: 0 0 0 2px #4f46e5; }
-.tl-dot.long { background: #1e1b4b; box-shadow: 0 0 0 2px #1e1b4b; }
+.tl-dot.park { background: #4F9A91; box-shadow: 0 0 0 2px #4F9A91; }
+.tl-dot.short { background: #3B82F6; box-shadow: 0 0 0 2px #3B82F6; }
+.tl-dot.mid { background: #7C3AED; box-shadow: 0 0 0 2px #7C3AED; }
+.tl-dot.mid2 { background: #D97706; box-shadow: 0 0 0 2px #D97706; }
+.tl-dot.long { background: #1E1B4B; box-shadow: 0 0 0 2px #1E1B4B; }
 
 .tl-line {
   width: 2px;
