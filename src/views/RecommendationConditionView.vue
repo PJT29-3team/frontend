@@ -147,32 +147,28 @@ function submit() {
               <span class="calc-amount">{{ formatKRW(rec.fundingAmount) }}</span>
             </div>
 
-            <!-- 추가로 합칠 돈 + (Step 1 통일 전폭 인풋) -->
+            <!-- 추가로 합칠 돈 + (Step 1과 100% 동일한 순백 스타일) -->
             <div class="calc-group-block">
               <label class="calc-group-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</label>
-              <div class="full-input-wrap">
-                <input class="full-amount-input" type="number" min="0" step="10" v-model.number="additionalManwon" aria-label="추가로 합칠 돈(만원)" placeholder="0" />
-                <span class="full-amount-unit">만원</span>
+              <div class="toss-input-wrap">
+                <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="additionalManwon" aria-label="추가로 합칠 돈(만원)" placeholder="0" />
+                <span class="toss-amount-unit">만원</span>
               </div>
-              <div class="quick-row full-quick-row">
-                <div class="chips-left">
-                  <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addAdditional(q)">+{{ q }}만원</button>
-                </div>
+              <div class="quick-row hero-quick-row-right">
+                <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addAdditional(q)">+{{ q }}만원</button>
                 <button type="button" class="quick-chip reset-btn" @click="rec.setAdditionalDeposit(0)">다시 입력</button>
               </div>
             </div>
 
-            <!-- 당장 쓸 긴급 돈 - (Step 1 통일 전폭 인풋) -->
+            <!-- 당장 쓸 긴급 돈 - (Step 1과 100% 동일한 순백 스타일) -->
             <div class="calc-group-block">
               <label class="calc-group-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
-              <div class="full-input-wrap">
-                <input class="full-amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 긴급 돈(만원)" placeholder="0" />
-                <span class="full-amount-unit">만원</span>
+              <div class="toss-input-wrap">
+                <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 긴급 돈(만원)" placeholder="0" />
+                <span class="toss-amount-unit">만원</span>
               </div>
-              <div class="quick-row full-quick-row">
-                <div class="chips-left">
-                  <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addImmediate(q)">+{{ q }}만원</button>
-                </div>
+              <div class="quick-row hero-quick-row-right">
+                <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addImmediate(q)">+{{ q }}만원</button>
                 <button type="button" class="quick-chip reset-btn" @click="rec.setImmediateExpense(0)">다시 입력</button>
               </div>
             </div>
@@ -380,7 +376,7 @@ function submit() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #faf8f5;
+  background: #ffffff;
   border: 1.5px solid #c9c3bc;
   border-radius: 12px;
   padding: 10px 16px;
@@ -396,7 +392,7 @@ function submit() {
   font-weight: 800;
   color: var(--text-dark);
   border: none;
-  background: transparent;
+  background: #ffffff;
   outline: none;
   text-align: right;
 }
@@ -406,6 +402,15 @@ function submit() {
   color: #555;
   margin-left: 8px;
   white-space: nowrap;
+}
+
+/* 퀵 칩 우측 정렬 레이아웃 */
+.hero-quick-row-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .adjust-decision-box.borderless {
