@@ -102,7 +102,7 @@ function submit() {
             </p>
           </div>
 
-          <!-- 하단 슬림 인라인 금액 입력 영역 -->
+          <!-- 하단 슬림 인라인 금액 입력 영역 (순백 배경 + 퀵 칩 우측 정렬) -->
           <div class="toss-input-row-card">
             <div class="toss-input-flex">
               <span class="toss-input-prefix">매달</span>
@@ -111,11 +111,9 @@ function submit() {
                 <span class="toss-amount-unit">만원 씩 꺼내 쓰기</span>
               </div>
             </div>
-            <!-- 퀵 추가 버튼 + 재설정 버튼 -->
-            <div class="quick-row full-quick-row">
-              <div class="chips-left">
-                <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
-              </div>
+            <!-- 퀵 추가 버튼 + 재설정 버튼 (우측 정렬) -->
+            <div class="quick-row hero-quick-row-right">
+              <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
               <button type="button" class="quick-chip reset-btn" @click="rec.setMonthlyNeed(0)">재설정</button>
             </div>
           </div>
@@ -440,26 +438,53 @@ function submit() {
 .btn-decision.secondary { background: #ffffff; color: #555; border: 1.5px solid #d4cecb; }
 .btn-decision.secondary:hover { background: #fafafa; color: #222; }
 
-/* 3단 자금 조정 계산기 */
+/* 3단 자금 조정 계산기 (순백 배경 + 깨끗한 레이아웃) */
 .adjust-section {
-  padding: 20px;
-  background: #fff;
+  padding: 24px;
+  background: #ffffff;
   border: 1.5px solid #e5e1d8;
-  border-radius: 16px;
+  border-radius: 20px;
   margin-bottom: 28px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03);
   animation: fadeIn 0.3s ease-in;
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
-.subtraction-calc-box { display: flex; flex-direction: column; gap: 12px; background: #faf8f5; padding: 20px; border-radius: 14px; margin-top: 12px; }
-.calc-row.base .calc-amount { font-size: 20px; color: var(--kb-yellow-deep); }
-.calc-row.plus-row .calc-label { color: #2d7a44; font-weight: 700; }
-.calc-row.minus-row .calc-label { color: #c0442e; font-weight: 700; }
-.btn-to-risk { width: 100%; margin-top: 16px; padding: 12px; border-radius: 10px; background: #ece8df; border: none; font-weight: 700; font-size: 14px; color: #4a453c; cursor: pointer; }
+.subtraction-calc-box { display: flex; flex-direction: column; gap: 16px; background: #ffffff; padding: 0; margin-top: 14px; }
+.calc-row.base {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #faf8f5;
+  border: 1.5px solid #eae5db;
+  border-radius: 14px;
+}
+.calc-row.base .calc-label { font-size: 15px; font-weight: 700; color: #4e4a42; }
+.calc-row.base .calc-amount { font-size: 20px; font-weight: 800; color: #222; }
 
-.calc-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; padding-top: 14px; border-top: 2px solid var(--text-dark); }
-.calc-total-label { font-size: 15px; font-weight: 700; }
-.calc-total-value { font-size: 24px; font-weight: 800; color: var(--kb-yellow-deep); }
+.full-quick-row-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.calc-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding: 18px 20px;
+  background: #fffcf0;
+  border: 1.5px solid #ffe899;
+  border-radius: 14px;
+}
+.calc-total-label { font-size: 16px; font-weight: 800; color: #3a342a; }
+.calc-total-value { font-size: 24px; font-weight: 800; color: var(--text-dark); }
+.btn-to-risk { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; background: #f0ece1; border: none; font-weight: 800; font-size: 15px; color: #4a453c; cursor: pointer; transition: background 0.15s; }
+.btn-to-risk:hover { background: #e4dfd4; }
 
 .divider { border: none; border-top: 1px solid #cdd2d8; margin: 24px 0; }
 
