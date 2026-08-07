@@ -296,6 +296,8 @@ onBeforeUnmount(() => {
   align-items: flex-start;
 }
 
+/* 좌우 비율. 카드는 가로로 남는 공간이 있어도 쓰지 못하지만
+   비용 계산 칸은 금액이 줄바꿈 없이 들어가야 해서 넓을수록 낫다. */
 .left-panel {
   flex: 2;
   min-width: 0;
@@ -457,7 +459,7 @@ onBeforeUnmount(() => {
    페이지를 내려 카드를 훑는 동안에도 금액이 계속 보여야 비교가 되므로
    화면에 붙여 둔다. 카드 높이에 맞춰 늘리지 않고 내용만큼만 차지한다. */
 .right-column {
-  flex: 1;
+  flex: 1.5;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -767,74 +769,6 @@ onBeforeUnmount(() => {
   background: #fff4d6;
   border-color: #f0c14b;
   color: #f0a500;
-}
-
-/* 세로가 짧은 화면에서 비용 계산 칸도 스크롤 없이 들어가게 줄인다.
-   글자 크기는 그대로 두고 줄 간격·여백만 좁힌다.
-   위쪽 .right-column :deep(...) 규칙과 명시도가 같으므로
-   반드시 그 뒤에 와야 덮어쓴다. */
-@media (max-height: 860px) {
-  .right-column :deep(.summary-card) {
-    padding: 16px;
-  }
-
-  .right-column :deep(.summary-title) {
-    margin-bottom: 8px;
-  }
-
-  .right-column :deep(.summary-row) {
-    padding: 4px 0;
-  }
-
-  .right-column :deep(.summary-row.small) {
-    padding: 2px 0;
-  }
-
-  .right-column :deep(.summary-sub) {
-    margin: 6px 0;
-    padding: 8px 12px;
-  }
-
-  .right-column :deep(.summary-row.total) {
-    margin-top: 6px;
-    padding-top: 6px;
-  }
-
-  .right-column :deep(.result-box) {
-    padding: 11px 14px;
-    margin: 6px 0;
-  }
-
-  .right-column :deep(.goal-compare) {
-    margin-top: 6px;
-  }
-
-  .right-column :deep(.summary-note) {
-    margin-bottom: 0;
-  }
-}
-
-/* 창을 더 낮춰 쓰는 경우까지 커버한다. */
-@media (max-height: 730px) {
-  .right-column :deep(.summary-card) {
-    padding: 12px;
-  }
-
-  .right-column :deep(.summary-row) {
-    padding: 3px 0;
-  }
-
-  .right-column :deep(.summary-sub) {
-    padding: 6px 10px;
-  }
-
-  .right-column :deep(.result-box) {
-    padding: 9px 12px;
-  }
-
-  .right-column :deep(.summary-note) {
-    line-height: 1.35;
-  }
 }
 
 /* 지도 뷰의 번호 버튼 줄. 지도가 낮아지면 5번 버튼이 잘리므로 같이 줄인다.
