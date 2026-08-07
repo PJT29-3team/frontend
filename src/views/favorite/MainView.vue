@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { favoriteStore } from '@/stores/favoriteStore'
 import { useRecommendationStore } from '@/stores/recommendation'
 import { formatPyeong } from '@/utils/area'
+import { purchaseSummary } from '@/utils/house/purchaseCost'
 import { Heart, LoaderCircle, X } from '@lucide/vue'
 import {
   getFavoriteProperties,
@@ -45,78 +46,6 @@ function formatWon(value, prefix = '') {
 // API는 전용면적 ㎡를 내려준다. ㎡에 "평"만 붙이면 84.82㎡가 "84.8평"이 된다.
 function formatSize(value) {
   return formatPyeong(value)
-}
-
-function getNormalHousingAcquisitionRate(buyPrice) {
-  if (buyPrice <= 600_000_000) return 0.01
-  if (buyPrice <= 900_000_000) return (buyPrice * 2 / 300_000_000 - 3) / 100
-  return 0.03
-}
-
-function calculateRuralTax(buyPrice, isSmallArea) {
-  return isSmallArea ? 0 : Math.round(buyPrice * 0.002)
-}
-
-function calculateEducationTax(buyPrice, acquisitionRate) {
-  let educationRate
-  if (buyPrice <= 600_000_000) {
-    educationRate = 0.001
-  } else if (buyPrice <= 900_000_000) {
-    educationRate = acquisitionRate * 0.1
-  } else {
-    educationRate = 0.003
-  }
-  return Math.round(buyPrice * educationRate)
-}
-
-function calculatePurchaseCost(buyPrice, exclusiveAreaSqm) {
-  const isSmallArea = exclusiveAreaSqm == null ? true : exclusiveAreaSqm <= 85
-  const acquisitionRate = getNormalHousingAcquisitionRate(buyPrice)
-  const ruralTax = calculateRuralTax(buyPrice, isSmallArea)
-  const educationTax = calculateEducationTax(buyPrice, acquisitionRate)
-  const acquisitionTax = Math.round(buyPrice * acquisitionRate)
-  const totalTax = acquisitionTax + ruralTax + educationTax
-  return { acquisitionTax, ruralTax, educationTax, totalTax }
-}
-
-function calculateBrokerageFee(price) {
-  let rate, limit
-  if (price < 50_000_000) {
-    rate = 0.006
-    limit = 250_000
-  } else if (price < 200_000_000) {
-    rate = 0.005
-    limit = 800_000
-  } else if (price < 900_000_000) {
-    rate = 0.004
-    limit = null
-  } else if (price < 1_200_000_000) {
-    rate = 0.005
-    limit = null
-  } else if (price < 1_500_000_000) {
-    rate = 0.006
-    limit = null
-  } else {
-    rate = 0.007
-    limit = null
-  }
-  const rawFee = price * rate
-  const brokerageFee = Math.round(limit == null ? rawFee : Math.min(rawFee, limit))
-  const vat = Math.round(brokerageFee * 0.1)
-  return { rate, limit, rawFee, brokerageFee, vat }
-}
-
-function purchaseSummary(home) {
-  const buyPrice = Number(home?.housePrice || 0)
-  const purchaseCost = calculatePurchaseCost(buyPrice)
-  const brokerage = calculateBrokerageFee(buyPrice)
-  const totalPurchaseAmount = buyPrice + purchaseCost.totalTax + brokerage.brokerageFee + brokerage.vat
-  const netProceedsAmount = Number(home?.netProceedsAmount || 0)
-  const remainingAfterPurchase = Math.max(netProceedsAmount - totalPurchaseAmount, 0)
-  return {
-    totalPurchaseAmount,
-    remainingAfterPurchase,
-  }
 }
 
 function totalPurchasePrice(home) {

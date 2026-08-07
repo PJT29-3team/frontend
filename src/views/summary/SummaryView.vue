@@ -15,12 +15,17 @@
     <section class="result-card">
       <h2 class="card-heading">선택결과 한눈에 보기</h2>
 
+      <p v-if="loadError" class="load-error">{{ loadError }}</p>
+
       <h3 class="card-subheading">매물 정리 결과</h3>
       <div class="row-between">
         <span class="row-label">새 집</span>
         <div class="row-value-group">
-          <strong>{{ pr.newHome.name }} · {{ pr.newHome.pyeong }}평</strong>
-          <span class="row-sub">{{ pr.newHome.fitScore }}점</span>
+          <strong v-if="pr.newHome.name">
+            {{ pr.newHome.name }}<template v-if="pr.newHome.pyeong"> · {{ pr.newHome.pyeong }}평</template>
+          </strong>
+          <strong v-else class="row-empty">관심 매물에서 집을 고르면 표시됩니다</strong>
+          <span v-if="pr.newHome.fitScore != null" class="row-sub">{{ pr.newHome.fitScore }}점</span>
         </div>
       </div>
 
@@ -38,7 +43,9 @@
           <span class="row-label">현재 집 매도 예상가</span>
           <div class="row-value-group">
             <strong>{{ formatKRW(pr.currentHome.estimatedSalePrice) }}</strong>
-            <span class="row-sub">{{ pr.currentHome.name }} · {{ pr.currentHome.pyeong }}평</span>
+            <span v-if="pr.currentHome.name" class="row-sub">
+              {{ pr.currentHome.name }}<template v-if="pr.currentHome.pyeong"> · {{ pr.currentHome.pyeong }}평</template>
+            </span>
           </div>
         </div>
         <div class="row-between">
@@ -170,24 +177,80 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import PdfReport from './PdfReport.vue'
 import { preparePdfCapture } from '@/utils/pdfCapture'
 import { fitCanvasToA4 } from '@/utils/pdfLayout'
 import { generateActionPlan } from '@/utils/openaiSummary'
 import { fetchFavoriteProducts } from '@/api/financeApi'
+import { getFavoriteProperties } from '@/api/favoriteApi'
 import { useRecommendationStore } from '@/stores/recommendation'
+import { useSurveyStore } from '@/stores/survey'
 import { authStore } from '@/stores/authStore'
 import { periodOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
-// TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
-import { dummySummary as data } from '@/mock/dummySummary'
+import { purchaseSummary } from '@/utils/house/purchaseCost'
 
 const rec = useRecommendationStore()
+const survey = useSurveyStore()
 const RISK_LABELS = { VERY_LOW: '매우 낮은 위험', LOW: '낮은 위험', MEDIUM: '보통 위험', HIGH: '높은 위험' }
 
-const pr = data.propertyResult
-const fp = data.financePlan
+// 선택한 관심매물. 서버가 selected='Y'로 표시해 준다.
+const selectedHome = ref(null)
+
+// 매물 정리 결과 — 설문(현재 집 매도)과 선택 매물(새 집 매수)에서 만든다.
+const propertyResult = computed(() => {
+  const home = selectedHome.value
+  const buy = purchaseSummary(home)
+  const costs = [
+    { label: '양도소득세', amount: survey.capitalGainsTax?.amount ?? 0 },
+    { label: '현재 집 중개수수료', amount: survey.brokerage?.amount ?? 0 },
+    { label: '새 집 취득세', amount: buy.purchaseCost.totalTax },
+    { label: '새 집 중개수수료', amount: buy.brokerage.brokerageFee + buy.brokerage.vat },
+  ].filter((c) => c.amount > 0)
+
+  return {
+    // 설문은 금액만 받고 현재 집의 이름·평수는 저장하지 않는다. 지어내지 않고 비워 둔다.
+    currentHome: { name: '', pyeong: null, estimatedSalePrice: survey.expectedSalePrice ?? 0 },
+    newHome: {
+      name: home?.houseName ?? '',
+      pyeong: home?.houseSize == null ? null : Math.round(Number(home.houseSize) / 3.3058),
+      fitScore: home?.totalScore ?? null,
+      purchasePrice: buy.buyPrice,
+    },
+    costs,
+    // 새 집까지 사고 남는 돈. 관심매물 화면이 금융 추천으로 넘기는 값과 같은 계산이다.
+    netFund: buy.remainingAfterPurchase,
+  }
+})
+
+// 자금 운용 계획 — 금융 추천 조건 입력에서 받은 값.
+const financePlan = ref({
+  netFund: 0,
+  immediateExpenses: [],
+  investable: 0,
+  monthlyNeed: 0,
+  items: [],
+})
+
+const data = computed(() => ({
+  userName: authStore.state.user?.name ?? '',
+  propertyResult: propertyResult.value,
+  financePlan: financePlan.value,
+  completedSteps: COMPLETED_STEPS,
+}))
+const pr = propertyResult
+const fp = financePlan
+
+const COMPLETED_STEPS = [
+  { key: 'survey', label: '설문 조사' },
+  { key: 'recommend-property', label: '추천 매물 확인' },
+  { key: 'favorite', label: '관심 매물 비교' },
+  { key: 'recommend', label: '금융상품 추천' },
+  { key: 'finance-manage', label: '금융상품 관리' },
+  { key: 'result', label: '최종 선택' },
+]
+
 const showPropertyDetail = ref(false)
 const showExpenseDetail = ref(false)
 const isPdfLoading = ref(false)
@@ -197,15 +260,51 @@ const aiLoading = ref(false)
 
 // 포트폴리오 배분: DB에 저장된 관심상품 배분(금액/비율)을 조회해서 구성
 const portfolioItems = ref([])
-const portfolioMonthlyNeed = ref(fp.monthlyNeed)
+const portfolioMonthlyNeed = ref(0)
 // 이자 반영 기준 지속 기간 — horizon과 같은 buildTimeline으로 계산해 숫자가 어긋나지 않게 한다
 const fundedMonths = ref('')
+const loadError = ref('')
+
+// 관심매물 목록에서 사용자가 고른 집. 없으면 매물 정리 결과를 채울 수 없다.
+async function loadSelectedHome() {
+  const homes = await getFavoriteProperties()
+  selectedHome.value = homes.find((h) => h.selected === 'Y') ?? homes[0] ?? null
+}
+
+// 금융 추천 조건 입력에서 받은 금액들. 즉시지출은 항목별 내역 없이 총액만 받는다.
+function buildFinancePlan() {
+  financePlan.value = {
+    netFund: propertyResult.value.netFund,
+    immediateExpenses: rec.immediateExpense > 0
+      ? [{ label: '즉시 지출', amount: rec.immediateExpense }]
+      : [],
+    investable: rec.investAmount,
+    monthlyNeed: rec.monthlyNeed,
+    items: [],
+  }
+  portfolioMonthlyNeed.value = rec.monthlyNeed
+}
 
 onMounted(async () => {
+  // 새로고침으로 들어오면 설문 스토어가 비어 있다. 매도 금액은 서버에서 복원한다.
+  if (!survey.calculation && !survey.expectedSalePrice) {
+    try {
+      await survey.restoreLatest()
+    } catch {
+      // 복원 실패는 매도 관련 금액만 비게 만든다. 나머지는 그대로 보여준다.
+    }
+  }
+  try {
+    await loadSelectedHome()
+  } catch (e) {
+    loadError.value = '관심 매물을 불러오지 못했습니다.'
+  }
+  buildFinancePlan()
+
   try {
     const favorites = await fetchFavoriteProducts()
-    const totalFund = rec.investAmount || fp.investable
-    if (rec.monthlyNeed) portfolioMonthlyNeed.value = rec.monthlyNeed
+    const totalFund = rec.investAmount
+    if (totalFund <= 0) return
 
     const allocated = favorites
       .filter((f) => f.amount != null)
@@ -256,7 +355,7 @@ onMounted(async () => {
     fundedMonths.value = dur(funded)
 
     // PDF도 화면과 같은 실제 배분 결과를 그리도록 연결
-    if (portfolioItems.value.length) fp.items = portfolioItems.value
+    if (portfolioItems.value.length) financePlan.value.items = portfolioItems.value
   } catch (e) {
     console.warn('포트폴리오 배분 조회 실패', e)
   }
@@ -273,23 +372,6 @@ function formatKRW(value) {
 function dotColor(item) {
   if (!item || item.maturityMonths === 0) return 'park'
   return periodOf(item.maturityMonths).css
-}
-
-// 타임라인 바 각 세그먼트의 상대 너비 계산
-function tlWidth(item, i) {
-  const items = fp.items
-  const from = item.maturityMonths || 0
-  const next = items[i + 1]
-  const to = next ? (next.maturityMonths || 0) : from + 30
-  return Math.max(to - from, 4)
-}
-
-function periodLabel(item, i) {
-  const items = fp.items
-  const from = item.maturityMonths
-  const next = items[i + 1]
-  if (!next) return `${from}개월차~`
-  return `${from}~${next.maturityMonths}개월차`
 }
 
 async function downloadPdf() {
@@ -460,6 +542,22 @@ async function downloadPdf() {
 .row-sub {
   font-size: 12px;
   color: #9ca3af;
+}
+
+/* 아직 채워지지 않은 값 — 숫자 자리에 안내 문구가 들어간다 */
+.row-empty {
+  font-size: 13px !important;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.load-error {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fdeceb;
+  color: #a3352c;
+  font-size: 13.5px;
 }
 
 .sub-label {
