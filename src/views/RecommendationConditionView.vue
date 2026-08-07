@@ -1,261 +1,407 @@
 <script setup>
-import { ref, computed, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   useRecommendationStore,
   RISK_OPTIONS,
-  formatKRW,
-} from '@/stores/recommendation';
-import '@/styles/survey-tokens.css';
+} from '@/stores/recommendation'
+import { formatKRW } from '@/stores/survey'
 
-const router = useRouter();
-const rec = useRecommendationStore();
+const router = useRouter()
+const rec = useRecommendationStore()
 
-// 자금 조정 계산기 펼침/접힘 상태 (기본 접힘: false)
-const showAdjustForm = ref(false);
-const adjustSectionRef = ref(null);
-const riskSectionRef = ref(null);
+const welcomeHeroRef = ref(null)
+const isDockedHeaderVisible = ref(false)
+const didUserTouchStep2 = ref(false)
 
-// 입력은 만원 단위, 저장은 원 단위(×10000).
-const additionalManwon = computed({
-  get: () => Math.round((rec.additionalDeposit || 0) / 10000),
-  set: (v) => rec.setAdditionalDeposit((Number(v) || 0) * 10000),
-});
-const immediateManwon = computed({
-  get: () => Math.round((rec.immediateExpense || 0) / 10000),
-  set: (v) => rec.setImmediateExpense((Number(v) || 0) * 10000),
-});
+// 입력은 만원 단위, 저장은 원 단위(×10000)
 const monthlyManwon = computed({
   get: () => Math.round((rec.monthlyNeed || 0) / 10000),
   set: (v) => rec.setMonthlyNeed((Number(v) || 0) * 10000),
-});
+})
+
+const additionalManwon = computed({
+  get: () => Math.round((rec.additionalDeposit || 0) / 10000),
+  set: (v) => rec.setAdditionalDeposit((Number(v) || 0) * 10000),
+})
+
+const immediateManwon = computed({
+  get: () => Math.round((rec.immediateExpense || 0) / 10000),
+  set: (v) => rec.setImmediateExpense((Number(v) || 0) * 10000),
+})
+
+// 투자금 및 생활비 유효성 검증
+const validationError = computed(() => {
+  const invest = rec.investAmount || 0
+  const monthly = (monthlyManwon.value || 0) * 10000
+
+  if (invest <= 0) {
+    return '긴급 지출이 여유 자금을 초과했습니다. 실제 굴릴 총 투자금이 최소 1만원 이상이어야 금융 추천을 진행할 수 있습니다.'
+  }
+  if (monthly <= 0) {
+    return '매달 꺼내 쓸 생활비를 최소 1만원 이상 입력해 주세요.'
+  }
+  if (monthly > invest) {
+    return '매달 꺼내 쓸 생활비가 총 투자금보다 큽니다. 실제 굴릴 총 투자금 이내로 생활비를 설정해 주세요.'
+  }
+  return null
+})
+
+function addMonthly(manwon) {
+  rec.setMonthlyNeed((rec.monthlyNeed || 0) + manwon * 10000)
+}
+function resetMonthly() {
+  rec.setMonthlyNeed(0)
+}
 
 function addAdditional(manwon) {
-  rec.setAdditionalDeposit((rec.additionalDeposit || 0) + manwon * 10000);
+  rec.setAdditionalDeposit((rec.additionalDeposit || 0) + manwon * 10000)
 }
+function resetAdditional() {
+  rec.setAdditionalDeposit(0)
+}
+
 function addImmediate(manwon) {
-  rec.setImmediateExpense((rec.immediateExpense || 0) + manwon * 10000);
+  rec.setImmediateExpense((rec.immediateExpense || 0) + manwon * 10000)
 }
-function addMonthly(manwon) {
-  rec.setMonthlyNeed((rec.monthlyNeed || 0) + manwon * 10000);
-}
-
-function openAdjustForm() {
-  showAdjustForm.value = true;
-  nextTick(() => {
-    if (adjustSectionRef.value) {
-      adjustSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
+function resetImmediate() {
+  rec.setImmediateExpense(0)
 }
 
-function skipAdjust() {
-  rec.setAdditionalDeposit(0);
-  rec.setImmediateExpense(0);
-  scrollToRisk();
+const step3BackText = computed(() => {
+  return didUserTouchStep2.value ? '자금 조정 다시하기 ↑' : '생활비 설정으로 돌아가기 ↑'
+})
+
+function scrollToStep(stepNum, fromStep2) {
+  if (stepNum === 2) didUserTouchStep2.value = true
+  if (fromStep2 !== undefined && fromStep2) didUserTouchStep2.value = true
+
+  const targetCard = document.getElementById(`stepCard${stepNum}`)
+  if (!targetCard) return
+
+  const stickyHeaderHeight = 90
+  const targetY = targetCard.getBoundingClientRect().top + window.scrollY - stickyHeaderHeight
+
+  window.scrollTo({ top: targetY, behavior: 'smooth' })
 }
 
-function scrollToRisk() {
-  nextTick(() => {
-    if (riskSectionRef.value) {
-      riskSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
+function handleStep3Back() {
+  if (didUserTouchStep2.value) {
+    scrollToStep(2)
+  } else {
+    scrollToStep(1)
+  }
 }
 
 function submit() {
-  router.push('/recommendation/result');
+  if (validationError.value) {
+    alert(validationError.value)
+    return
+  }
+  router.push('/recommendation/result')
 }
+
+let observer = null
+
+onMounted(() => {
+  // 관심매물 페이지를 거치지 않은 경우 테스트 기본값(5000만원) 자동 세팅
+  if (!rec.fundingAmount || rec.fundingAmount <= 0) {
+    rec.setFundingAmount(0)
+  }
+
+  if (welcomeHeroRef.value) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          isDockedHeaderVisible.value = !entry.isIntersecting
+        })
+      },
+      { threshold: 0.1 }
+    )
+    observer.observe(welcomeHeroRef.value)
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
+})
 </script>
 
 <template>
   <div class="rec-page">
-    <div class="rec-shell">
-      <header class="rec-head">
-        <h1 class="rec-title">내게 맞는 4단계 금융상품 찾기</h1>
-        <p class="rec-sub">
-          이사 후 남은 자금을 4개 만기 기간(1~11개월, 12~23개월, 24~35개월, 36개월 이상)에 나누어 가장 안전하게 배치해 드립니다.
+    <!-- 1. 첫 진입 전면 웰컴 히어로 캔버스 (지표는 항상 ? 개월 고정) -->
+    <div ref="welcomeHeroRef" class="hero-welcome-canvas">
+      <div class="welcome-container">
+        <span class="welcome-tag">✨ 시니어 매각 자금 맞춤 연계 서비스</span>
+        <h1 class="welcome-title">내게 맞는 4단계 금융상품 찾기</h1>
+        <p class="welcome-sub">
+          선택하신 매물 거래 후 남은 여유자금을 <b>1~11개월 · 12~23개월 · 24~35개월 · 36개월 이상</b> 4개 만기 기간에 배치해 드립니다.
         </p>
-      </header>
+        <p class="welcome-note">
+          선택하신 위험도 위주로 추천하고 만기가 있는 상품만 보여드립니다.
+        </p>
 
-      <div class="survey-card">
-        <!-- 생활비 설정 (토스증권 스타일 단일 히어로 캔버스) -->
-        <section class="block step-block hero-step-canvas">
-          <div class="block-head-wrap">
-            <span class="step-badge">생활비 설정</span>
-            <h2 class="block-title">매달 꺼내 쓸 생활비 정하기</h2>
+        <!-- 첫 장 전면 웰컴 히어로의 지표는 항상 ? 개월 고정 -->
+        <div class="welcome-stats-bar">
+          <div class="w-stat">
+            <span class="w-stat-label">4단계 예치 시 생활비 충당 기간</span>
+            <strong class="w-stat-val question">? 개월</strong>
+            <span class="w-stat-subtext">(?년 ?개월)</span>
           </div>
-          <p class="block-desc">
-            국민연금 등 고정 수입 외에, 이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?
-          </p>
-
-          <!-- 토스증권 스타일 상단 버팀 수명 히어로 전광판 -->
-          <div class="toss-hero-dashboard">
-            <span class="toss-hero-sublabel">이 목돈으로 4단계 예치 시</span>
-            <div class="toss-hero-main-row">
-              <strong class="toss-hero-months">{{ rec.runwayAnalysis.appMonths }}개월</strong>
-              <span class="toss-hero-diff-tag">(+최소 {{ rec.runwayAnalysis.diffMonths }}개월 연장)</span>
-            </div>
-            <p class="toss-hero-desc">
-              총 <strong>약 {{ rec.runwayAnalysis.appYearsText }}</strong> 동안 생활비 걱정 없이 꺼내 쓰실 수 있습니다.
-              <span class="toss-cash-sub">(현금 단순 보유 시 {{ rec.runwayAnalysis.cashYearsText }})</span>
-            </p>
+          <div class="w-divider"></div>
+          <div class="w-stat">
+            <span class="w-stat-label">현금 단순 보유 충당 기간</span>
+            <strong class="w-stat-val">? 개월</strong>
+            <span class="w-stat-subtext">(?년 ?개월)</span>
           </div>
-
-          <!-- 하단 슬림 인라인 금액 입력 영역 (순백 배경 + 퀵 칩 우측 정렬) -->
-          <div class="toss-input-row-card">
-            <div class="toss-input-flex">
-              <span class="toss-input-prefix">매달</span>
-              <div class="toss-input-wrap">
-                <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" placeholder="0" />
-                <span class="toss-amount-unit">만원 씩 꺼내 쓰기</span>
-              </div>
-            </div>
-            <!-- 퀵 추가 버튼 + 재설정 버튼 (우측 정렬) -->
-            <div class="quick-row hero-quick-row-right">
-              <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
-              <button type="button" class="quick-chip reset-btn" @click="rec.setMonthlyNeed(0)">재설정</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- 자금 조정 질문 & 분기 버튼 2개 (이모티콘 100% 제거) -->
-        <div class="adjust-decision-box borderless">
-          <p class="adjust-question">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</p>
-          <div class="adjust-buttons">
-            <button type="button" class="btn-decision secondary" @click="openAdjustForm">
-              예, 조정할 자금 입력 (+/-)
-            </button>
-            <button type="button" class="btn-decision primary" @click="skipAdjust">
-              아니오, 남은 돈 그대로 전액 굴리기
-            </button>
+          <div class="w-divider"></div>
+          <div class="w-stat">
+            <span class="w-stat-label">실제 굴릴 투자금</span>
+            <strong class="w-stat-val">{{ formatKRW(rec.fundingAmount) }}</strong>
+            <span class="w-stat-subtext">(관심 매물 차액 연동)</span>
           </div>
         </div>
 
-        <!-- 자금 조정 (기본 접힘/Hidden) -->
-        <section v-if="showAdjustForm" ref="adjustSectionRef" class="block step-block adjust-section">
-          <div class="block-head-wrap">
-            <span class="step-badge">자금 조정</span>
-            <h2 class="block-title">자금 조정하기</h2>
-          </div>
-          <p class="block-desc">이사 후 남은 돈에서 추가로 더할 돈이나, 미리 뺄 긴급 지출이 있다면 입력해 주세요.</p>
-
-          <div class="subtraction-calc-box">
-            <!-- 기본: 이사 후 남은 돈 -->
-            <div class="calc-row base">
-              <span class="calc-label">이사 후 남은 돈</span>
-              <span class="calc-amount">{{ formatKRW(rec.fundingAmount) }}</span>
-            </div>
-
-            <!-- 추가로 합칠 돈 + (초록색 800 굵기 반영) -->
-            <div class="calc-group-block">
-              <label class="calc-group-label plus-label">+ 추가로 합칠 돈 (퇴직금·적금 만기 등)</label>
-              <div class="toss-input-wrap">
-                <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="additionalManwon" aria-label="추가로 합칠 돈(만원)" placeholder="0" />
-                <span class="toss-amount-unit">만원</span>
-              </div>
-              <div class="quick-row hero-quick-row-right">
-                <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addAdditional(q)">+{{ q }}만원</button>
-                <button type="button" class="quick-chip reset-btn" @click="rec.setAdditionalDeposit(0)">다시 입력</button>
-              </div>
-            </div>
-
-            <!-- 당장 쓸 긴급 돈 - (빨간색 800 굵기 반영) -->
-            <div class="calc-group-block">
-              <label class="calc-group-label minus-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
-              <div class="toss-input-wrap">
-                <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="immediateManwon" aria-label="당장 쓸 긴급 돈(만원)" placeholder="0" />
-                <span class="toss-amount-unit">만원</span>
-              </div>
-              <div class="quick-row hero-quick-row-right">
-                <button v-for="q in [100, 500, 1000]" :key="q" type="button" class="quick-chip" @click="addImmediate(q)">+{{ q }}만원</button>
-                <button type="button" class="quick-chip reset-btn" @click="rec.setImmediateExpense(0)">다시 입력</button>
-              </div>
-            </div>
-
-            <!-- 최종 투자금 -->
-            <div class="calc-total">
-              <span class="calc-total-label">실제 굴릴 총 투자금</span>
-              <strong class="calc-total-value">{{ formatKRW(rec.investAmount) }}</strong>
-            </div>
-          </div>
-
-          <button type="button" class="btn-to-risk" @click="scrollToRisk">
-            위험도 선택하기 단계로 이동 ↓
-          </button>
-        </section>
-
-        <hr class="divider" />
-
-        <!-- 위험도 선택 & 맞춤 상품 특징 -->
-        <section ref="riskSectionRef" class="block step-block">
-          <div class="block-head-wrap">
-            <span class="step-badge">위험도 선택</span>
-            <h2 class="block-title">위험도 선택하기</h2>
-          </div>
-          <p class="block-desc">
-            감수할 수 있는 위험 수준을 골라주세요. 선택한 위험도 위주로 4개 만기 상품을 추천해 드립니다.
+        <!-- '4단계 예치란?' 안내 박스 (한 줄 요약 1:1 반영) -->
+        <div class="easy-calc-explain-box">
+          <div class="explain-title">💡 '4단계 예치'란 무엇인가요?</div>
+          <p class="explain-intro-text">
+            '4단계'는 <b>1~11개월 · 12~23개월 · 24~35개월 · 36개월 이상</b> 4개의 만기 기간을 의미하며, 아래 ① ➔ ② ➔ ③ 순서대로 시뮬레이션이 진행됩니다.
           </p>
 
-          <div class="risk-cards">
-            <button
-              v-for="opt in RISK_OPTIONS"
-              :key="opt.code"
-              type="button"
-              class="risk-card"
-              :class="[{ on: rec.riskLevel === opt.code }, 'tone-' + opt.tone]"
-              @click="rec.setRisk(opt.code)"
-            >
-              <span class="risk-grade">{{ opt.grade }}등급</span>
-              <strong class="risk-label">{{ opt.label }}</strong>
-              <span class="risk-sub">{{ opt.subtitle }}</span>
-            </button>
-          </div>
-
-          <!-- 윤리적 상품 특징 정보 카드 -->
-          <div v-if="rec.selectedRisk" class="risk-info-board" :class="'tone-' + rec.selectedRisk.tone">
-            <div class="board-header">
-              <span class="board-grade">{{ rec.selectedRisk.grade }}등급</span>
-              <strong class="board-title">{{ rec.selectedRisk.label }} 추천 안내</strong>
+          <div class="explain-flow-container">
+            <div class="flow-step-card">
+              <span class="flow-num">① 생활비 설정</span>
+              <p class="flow-text">매달 꺼내 쓸 생활비를 정합니다.</p>
             </div>
-            <p class="board-desc">{{ rec.selectedRisk.helperBody }}</p>
-            <div class="board-features">
-              <span class="feat-tag">포함되는 주요 상품 성격:</span>
-              <strong v-if="rec.riskLevel === 'VERY_LOW'" class="feat-name">시중/저축은행 정기예금·적금 (원금 100% 보존)</strong>
-              <strong v-else-if="rec.riskLevel === 'LOW'" class="feat-name">단기채·국공채 ETF / 펀드 (원금손실 최소화)</strong>
-              <strong v-else class="feat-name">회사채·만기매칭형 ETF / 펀드 (수익과 위험의 균형)</strong>
+
+            <div class="flow-arrow">➔</div>
+
+            <div class="flow-step-card">
+              <span class="flow-num">② 4개 만기 분할</span>
+              <p class="flow-text">찾아 쓸 시기별 4개 만기에 나누어 둡니다.</p>
+            </div>
+
+            <div class="flow-arrow">➔</div>
+
+            <div class="flow-step-card">
+              <span class="flow-num">③ 연장 기간 계산</span>
+              <p class="flow-text">이자가 더해져 몇 개월 더 쓰는지 계산합니다.</p>
             </div>
           </div>
-        </section>
-
-        <!-- 4개 만기 기간 안내 팁 박스 -->
-        <div class="period-notice-tip">
-          <p class="tip-text">
-            추천 상품은 <strong>1~11개월 / 12~23개월 / 24~35개월 / 36개월 이상</strong> 4개 만기 구간으로 나누어 제공되며, 결과 페이지에서 <strong>각 구간별로 상품을 1개씩(총 4개) 모두 선택</strong>해 주셔야 합니다.
-          </p>
         </div>
 
-      </div>
-
-      <div class="submit-row">
-        <button class="primary-btn" @click="submit">4단계 만기 추천 상품 보기 →</button>
+        <!-- 히어로 진입 버튼 -->
+        <button type="button" class="hero-enter-btn" @click="scrollToStep(1)">
+          정보 입력 후 사용 가능 개월 수 확인하기 ↓
+        </button>
       </div>
     </div>
 
+    <!-- 2. 스크롤 시 상단에 고정되는 스티키 도킹 헤더 -->
+    <div class="sticky-docked-bar" :class="{ 'is-visible': isDockedHeaderVisible }">
+      <header class="r-head-docked">
+        <div class="r-head-left">
+          <h1 class="r-title-docked">내게 맞는 4단계 금융상품 찾기</h1>
+          <p class="r-sub-docked">선택하신 여유자금을 4개 만기 기간에 나누어 배치해 드립니다.</p>
+        </div>
+
+        <div class="r-stats">
+          <div class="stat">
+            <span class="stat-label">4단계 예치 시 충당 기간</span>
+            <strong class="stat-value invest">
+              {{ rec.runwayAnalysis.appMonths }}개월
+              <span class="stat-years-tag">({{ rec.runwayAnalysis.appYearsText }})</span>
+              <span class="stat-value-sub">+{{ rec.runwayAnalysis.diffMonths }}개월 연장</span>
+            </strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">현금 보유 충당 기간</span>
+            <strong class="stat-value">
+              {{ rec.runwayAnalysis.cashMonths }}개월
+              <span class="stat-years-tag">({{ rec.runwayAnalysis.cashYearsText }})</span>
+            </strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">실제 굴릴 투자금</span>
+            <strong class="stat-value">{{ formatKRW(rec.investAmount) }}</strong>
+          </div>
+        </div>
+      </header>
+    </div>
+
+    <!-- 3. 메인 1자 수직 쉘 -->
+    <div class="rec-shell">
+      <!-- 붉은색 검증 안내 박스 (오류 발생 시 상단 노출) -->
+      <div v-if="validationError" class="validation-error-board">
+        <span class="error-icon">⚠️</span>
+        <span class="error-msg">{{ validationError }}</span>
+      </div>
+
+      <!-- STEP 1 카드: 생활비 설정 (카테고리 배지 적용) -->
+      <div class="step-card" id="stepCard1">
+        <span class="step-badge-chip">생활비 설정</span>
+        <h2 class="step-question-title">매달 꺼내 쓸 생활비 정하기</h2>
+        <p class="step-question-desc">국민연금 등 고정 수입 외에, 이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?</p>
+
+        <div class="base-funding-chip">
+          <span class="base-funding-label">선택 매물 남은 여유 자금 (실연동)</span>
+          <strong class="base-funding-val">{{ formatKRW(rec.fundingAmount) }}</strong>
+        </div>
+
+        <div class="toss-input-wrap" :class="{ 'input-error': validationError && monthlyManwon <= 0 }">
+          <span class="toss-prefix">매달</span>
+          <input
+            type="number"
+            class="toss-amount-input"
+            v-model.number="monthlyManwon"
+            min="0"
+            step="10"
+            placeholder="0"
+          />
+          <span class="toss-amount-unit">만원 씩 꺼내 쓰기</span>
+        </div>
+
+        <div class="quick-chips">
+          <button type="button" class="chip" @click="addMonthly(10)">+10만원</button>
+          <button type="button" class="chip" @click="addMonthly(50)">+50만원</button>
+          <button type="button" class="chip" @click="addMonthly(100)">+100만원</button>
+          <button type="button" class="chip chip-reset" @click="resetMonthly">재설정</button>
+        </div>
+
+        <div class="adjust-question-wrap">
+          <div class="adjust-question-text">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</div>
+        </div>
+
+        <!-- Step 1: 하단 우측 정렬 2개 분기 버튼 (가로 배치 + 깔끔한 우측 밀착) -->
+        <div class="btn-row-step1">
+          <button type="button" class="step1-option-btn secondary" @click="scrollToStep(2, true)">
+            예, 자금 조정하기 (+/-) ↓
+          </button>
+          <button type="button" class="step1-option-btn primary" @click="scrollToStep(3, false)">
+            아니오, 그대로 위험도 선택 ↓
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2 카드: 자금 조정 (카테고리 배지 적용) -->
+      <div class="step-card" id="stepCard2">
+        <span class="step-badge-chip">자금 조정</span>
+        <h2 class="step-question-title">자금 조정하기</h2>
+        <p class="step-question-desc">선택 매물 남은 돈에서 더할 돈이나, 미리 뺄 지출이 있다면 입력해 주세요.</p>
+
+        <div class="adjust-field-group">
+          <label class="adjust-field-label plus-label">+ 추가로 합칠 돈 (퇴직금·만기 예금 등)</label>
+          <div class="toss-input-wrap">
+            <input
+              type="number"
+              class="toss-amount-input"
+              v-model.number="additionalManwon"
+              min="0"
+              step="100"
+              placeholder="0"
+            />
+            <span class="toss-amount-unit">만원</span>
+          </div>
+          <div class="quick-chips">
+            <button type="button" class="chip" @click="addAdditional(100)">+100만원</button>
+            <button type="button" class="chip" @click="addAdditional(500)">+500만원</button>
+            <button type="button" class="chip" @click="addAdditional(1000)">+1000만원</button>
+            <button type="button" class="chip chip-reset" @click="resetAdditional">재설정</button>
+          </div>
+        </div>
+
+        <div class="adjust-field-group">
+          <label class="adjust-field-label minus-label">− 당장 쓸 긴급 돈 (병원비·이사비 등)</label>
+          <div class="toss-input-wrap" :class="{ 'input-error': validationError && rec.investAmount <= 0 }">
+            <input
+              type="number"
+              class="toss-amount-input"
+              v-model.number="immediateManwon"
+              min="0"
+              step="100"
+              placeholder="0"
+            />
+            <span class="toss-amount-unit">만원</span>
+          </div>
+          <div class="quick-chips">
+            <button type="button" class="chip" @click="addImmediate(100)">+100만원</button>
+            <button type="button" class="chip" @click="addImmediate(500)">+500만원</button>
+            <button type="button" class="chip" @click="addImmediate(1000)">+1000만원</button>
+            <button type="button" class="chip chip-reset" @click="resetImmediate">재설정</button>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="secondary-btn" @click="scrollToStep(1, false)">
+            월 사용 금액 다시하기 ↑
+          </button>
+          <button type="button" class="primary-btn" @click="scrollToStep(3, true)">
+            위험도 선택 넘어가기 ↓
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3 카드: 위험도 선택 (카테고리 배지 적용) -->
+      <div class="step-card" id="stepCard3">
+        <span class="step-badge-chip">위험도 선택</span>
+        <h2 class="step-question-title">위험도 선택하기</h2>
+        <p class="step-question-desc">선택하신 위험도 위주로 4개 만기 기간에 배치해 드립니다.</p>
+
+        <div class="risk-cards">
+          <button
+            v-for="opt in RISK_OPTIONS"
+            :key="opt.code"
+            type="button"
+            class="risk-card"
+            :class="[{ on: rec.riskLevel === opt.code }, 'tone-' + opt.tone]"
+            @click="rec.setRisk(opt.code)"
+          >
+            <span class="risk-grade">{{ opt.grade }}등급</span>
+            <strong class="risk-label">{{ opt.label }}</strong>
+            <span class="risk-sub">{{ opt.subtitle }}</span>
+          </button>
+        </div>
+
+        <div v-if="rec.selectedRisk" class="risk-info-board" :class="'tone-' + rec.selectedRisk.tone">
+          <div class="board-header">
+            <strong class="board-title">{{ rec.selectedRisk.grade }}등급 {{ rec.selectedRisk.label }} 추천 안내</strong>
+          </div>
+          <p class="board-desc">{{ rec.selectedRisk.helperBody }}</p>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="secondary-btn" @click="handleStep3Back">
+            {{ step3BackText }}
+          </button>
+          <button
+            type="button"
+            class="primary-btn submit-btn"
+            :class="{ disabled: validationError }"
+            @click="submit"
+          >
+            4단계 만기 추천 상품 보기 →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 푸터 -->
     <footer class="rec-footer">
       <div class="footer-inner">
         <div class="footer-col">
           <h4>투자 및 예금 관련 안내</h4>
           <ul>
-            <li>본 서비스에서 제공하는 정보는 참고용 시뮬레이션이며, 특정 금융상품의 가입을 강제 권유하지 않습니다.</li>
-            <li>금융상품 가입 전 상품설명서 및 약관을 반드시 확인하시기 바랍니다.</li>
+            <li>본 서비스에서 제공하는 정보는 참고용 시뮬레이션입니다.</li>
+            <li>금융상품 가입 전 반드시 상품설명서를 확인하시기 바랍니다.</li>
           </ul>
         </div>
         <div class="footer-col">
-          <h4>원금손실 가능성 / 예금자보호 안내</h4>
+          <h4>원금손실 가능성 안내</h4>
           <ul>
-            <li>예금자보호 대상이 아닌 금융상품(채권 ETF 등)은 원금 손실이 발생할 수 있습니다.</li>
-            <li>예금자보호 대상 상품은 「예금자보호법」에 따라 1인당 최고 5천만원까지 보호됩니다.</li>
+            <li>예금자보호 대상이 아닌 금융상품은 원금 손실이 발생할 수 있습니다.</li>
           </ul>
         </div>
       </div>
@@ -264,299 +410,394 @@ function submit() {
 </template>
 
 <style scoped>
-.rec-page { font-family: "Pretendard", "Noto Sans KR", -apple-system, sans-serif; color: var(--text-dark); }
-.rec-shell { max-width: 760px; margin: 0 auto; padding: 28px 20px 48px; font-size: 16px; line-height: 1.55; }
-.rec-head { margin-bottom: 22px; }
-.rec-title { font-weight: 800; font-size: 26px; margin: 0 0 8px; }
-.rec-sub { color: var(--text-muted); font-size: 14px; margin: 0; max-width: 600px; }
+.rec-page {
+  font-family: "Pretendard", -apple-system, sans-serif;
+  background: var(--bg-page, #f9f8f5);
+  color: var(--text-dark, #2f2d29);
+  line-height: 1.55;
+}
 
-/* 단계별 인포그래픽 배지 및 헤더 */
-.step-block { margin-bottom: 24px; }
-.block-head-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.step-badge {
+/* 유효성 오류 알림 보드 */
+.validation-error-board {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fdeeeb;
+  border: 1.5px solid #c0442e;
+  color: #722718;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  animation: fadeIn 0.2s ease-in;
+}
+.error-icon { font-size: 18px; }
+
+/* 1. 첫 진입 전면 웰컴 히어로 캔버스 */
+.hero-welcome-canvas {
+  background: #fff;
+  border-bottom: 1.5px solid #e9e6df;
+  padding: 34px 0 26px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+.welcome-container {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+.welcome-tag {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
-  background: var(--text-dark);
-  color: #ffffff;
-  font-size: 12px;
+  gap: 6px;
+  background: #fffcf0;
+  color: #8a6a20;
+  border: 1.2px solid #ffe899;
+  font-size: 12.5px;
   font-weight: 800;
-  border-radius: 6px;
-}
-.block-title { font-weight: 800; font-size: 20px; margin: 0; }
-.block-desc { color: var(--text-muted); font-size: 14px; margin: 0 0 16px; }
-
-/* 계산기 행 스타일 */
-.calc-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.amount-input-row { display: flex; align-items: center; gap: 10px; }
-.amount-input { width: 160px; font-size: 20px; padding: 10px 12px; text-align: right; border: 1.5px solid var(--card-border); border-radius: 10px; font-weight: 800; color: var(--text-dark); }
-.amount-unit { font-size: 15px; font-weight: 600; color: var(--text-muted); }
-.calc-amount { font-size: 19px; font-weight: 800; color: var(--text-dark); white-space: nowrap; }
-
-.quick-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.quick-chip { padding: 8px 16px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--text-muted); cursor: pointer; }
-.quick-chip.reset { color: #999; }
-
-/* 토스증권 스타일 단일 히어로 캔버스 */
-.hero-step-canvas {
-  margin-bottom: 24px;
-}
-.toss-hero-dashboard {
-  padding: 24px 28px;
-  background: #fdfbf7;
-  border-radius: 20px;
-  border: 1.5px solid #eae5db;
-  text-align: center;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.02);
-}
-.toss-hero-sublabel {
-  font-size: 14px;
-  color: #666;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 8px;
-}
-.toss-hero-main-row {
-  display: flex;
-  justify-content: center;
-  align-items: baseline;
-  gap: 12px;
+  padding: 4px 11px;
+  border-radius: 8px;
   margin-bottom: 10px;
 }
-.toss-hero-months {
-  font-size: 36px;
-  font-weight: 800;
-  color: var(--text-dark);
-  line-height: 1;
+.welcome-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #2f2d29;
+  margin: 0 0 8px;
+  letter-spacing: -0.5px;
 }
-.toss-hero-diff-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: #eef8f1;
-  color: #1e6434;
-  border: 1px solid #c3e6cb;
-  font-size: 15px;
-  font-weight: 800;
-  border-radius: 8px;
-}
-.toss-hero-desc {
-  font-size: 15.5px;
-  color: #333;
-  margin: 0;
-  line-height: 1.5;
-}
-.toss-cash-sub {
+.welcome-sub {
   font-size: 13.5px;
-  color: #777;
-  margin-left: 6px;
-}
-
-/* 하단 슬림 금액 입력 박스 */
-.toss-input-row-card {
-  padding: 18px 22px;
-  background: #ffffff;
-  border: 1.5px solid var(--card-border);
-  border-radius: 16px;
-}
-.calc-group-block {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.calc-group-label {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-dark);
-}
-.calc-group-label.plus-label {
-  color: #2d7a44;
-}
-.calc-group-label.minus-label {
-  color: #c0442e;
-}
-.toss-input-flex {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.toss-input-prefix {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-dark);
+  color: var(--text-muted, #777267);
+  margin: 0 auto 6px;
+  max-width: 780px;
+  line-height: 1.55;
   white-space: nowrap;
 }
-.toss-input-wrap {
-  flex: 1;
+.welcome-sub b {
+  color: var(--text-dark, #2f2d29);
+  font-weight: 800;
+}
+.welcome-note {
+  font-size: 12px;
+  color: #888;
+  margin: 0 0 20px;
+}
+
+.welcome-stats-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  background: #faf8f5;
+  border: 1.5px solid #eae5db;
+  border-radius: 16px;
+  padding: 15px 28px;
+  margin: 0 auto 20px;
+  max-width: 920px;
+}
+.w-stat { text-align: center; }
+.w-stat-label { font-size: 12px; color: var(--text-muted, #777267); font-weight: 700; display: block; margin-bottom: 3px; }
+.w-stat-val { font-size: 22px; font-weight: 900; color: #2f2d29; }
+.w-stat-val.question { color: var(--kb-yellow-deep, #d4a000); }
+.w-stat-subtext { font-size: 11.5px; color: #777; font-weight: 700; display: block; margin-top: 2px; }
+.w-divider { width: 1px; height: 32px; background: #e0dad0; }
+
+/* '4단계 예치란?' 안내 박스 스타일 */
+.easy-calc-explain-box {
+  background: #fffcf0;
+  border: 1.5px solid #ffe899;
+  border-radius: 15px;
+  padding: 16px 22px;
+  max-width: 920px;
+  margin: 0 auto 22px;
+  text-align: left;
+}
+.explain-title { font-size: 14px; font-weight: 900; color: #8a6a20; margin: 0 0 6px; }
+.explain-intro-text { font-size: 12.5px; color: #555; margin: 0 0 14px; line-height: 1.5; }
+.explain-intro-text b { color: #2f2d29; font-weight: 800; }
+
+.explain-flow-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+.flow-step-card {
+  flex: 1;
   background: #ffffff;
-  border: 1.5px solid #c9c3bc;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid #f0e6c8;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.flow-num { font-size: 12px; font-weight: 800; color: var(--kb-yellow-deep, #d4a000); display: block; margin-bottom: 3px; white-space: nowrap; }
+.flow-text { font-size: 12px; color: #444; margin: 0; line-height: 1.4; font-weight: 600; white-space: nowrap; }
+.flow-text b { color: var(--text-dark, #2f2d29); font-weight: 800; }
+.flow-arrow { font-size: 15px; font-weight: 900; color: #d4a000; flex-shrink: 0; }
+
+.hero-enter-btn {
+  padding: 14px 40px;
+  border-radius: 13px;
+  background: var(--kb-yellow, #fabb08);
+  color: #342e22;
+  font-size: 15.5px;
+  font-weight: 900;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(250,187,8,0.3);
+  transition: all 0.15s;
+}
+.hero-enter-btn:hover { background: #f0b000; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(250,187,8,0.4); }
+
+/* 2. 스크롤 시 상단 고정 도킹 헤더 */
+.sticky-docked-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e9e6df;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  padding: 12px 0;
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.sticky-docked-bar.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.r-head-docked {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.r-head-left { flex: 1; }
+.r-title-docked { font-weight: 800; font-size: 19px; margin: 0 0 2px; color: #2f2d29; }
+.r-sub-docked { font-size: 12px; color: var(--text-muted, #777267); margin: 0; }
+
+.r-stats {
+  display: flex;
+  gap: 24px;
+  border-left: 3.5px solid var(--kb-yellow, #fabb08);
+  padding: 2px 0 2px 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.stat-label { display: block; font-size: 11.5px; color: var(--text-muted, #777267); margin-bottom: 2px; font-weight: 600; }
+.stat-value { font-size: 19px; font-weight: 900; color: #2f2d29; }
+.stat-value.invest { color: var(--kb-yellow-deep, #d4a000); }
+.stat-value-sub { font-size: 11.5px; font-weight: 800; color: #1e6434; background: #eef8f1; padding: 2px 6px; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+.stat-years-tag { font-size: 12px; font-weight: 700; color: #555; margin-left: 3px; }
+
+/* 3. 메인 1자 수직 쉘 */
+.rec-shell {
+  max-width: 920px;
+  margin: 32px auto 64px;
+  padding: 0 20px;
+}
+
+.step-card {
+  background: #fff;
+  border: 1.5px solid var(--card-border, #e2ded6);
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.03);
+  scroll-margin-top: 90px;
+}
+
+.step-badge-chip {
+  background: var(--text-dark, #2f2d29);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.step-question-title { font-size: 20px; font-weight: 800; margin: 0 0 6px; }
+.step-question-desc { font-size: 13.5px; color: var(--text-muted, #777267); margin: 0 0 20px; }
+
+.base-funding-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #faf8f5;
+  border: 1.5px solid #eae5db;
+  padding: 14px 18px;
   border-radius: 12px;
-  padding: 10px 16px;
+  margin-bottom: 18px;
+}
+.base-funding-label { font-weight: 700; font-size: 14px; color: #444; }
+.base-funding-val { font-size: 18px; font-weight: 800; }
+
+.toss-input-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid #c9c3bc;
+  border-radius: 14px;
+  padding: 12px 18px;
+  background: #fff;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .toss-input-wrap:focus-within {
-  border-color: #d4a000;
-  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
+  border-color: var(--kb-yellow-deep, #d4a000);
+  box-shadow: 0 0 0 3px rgba(250, 187, 8, 0.25);
 }
-.toss-amount-input {
-  flex: 1;
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text-dark);
-  border: none;
-  background: #ffffff;
-  outline: none;
-  text-align: right;
+.toss-input-wrap.input-error {
+  border-color: #c0442e;
+  box-shadow: 0 0 0 3px rgba(192, 68, 46, 0.2);
 }
-.toss-amount-unit {
-  font-size: 16px;
-  font-weight: 700;
-  color: #555;
-  margin-left: 8px;
-  white-space: nowrap;
-}
+.toss-prefix { font-weight: 700; font-size: 16.5px; color: #333; }
+.toss-amount-input { flex: 1; font-size: 24px; font-weight: 800; color: var(--text-dark, #2f2d29); border: none; outline: none; text-align: right; background: transparent; }
+.toss-amount-unit { font-size: 15px; font-weight: 700; color: #555; margin-left: 8px; }
 
-/* 퀵 칩 우측 정렬 레이아웃 */
-.hero-quick-row-right {
+.quick-chips { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.chip { padding: 7px 14px; border-radius: 8px; border: 1.4px solid var(--card-border, #e2ded6); background: #fff; font-weight: 700; font-size: 13px; color: var(--text-muted, #777267); cursor: pointer; }
+.chip:hover { background: #f5f3ee; color: #333; }
+.chip-reset { color: #888; border-color: #d9d4cc; background: #f5f3ee; }
+.chip-reset:hover { background: #ece9e3; color: #444; }
+
+.adjust-question-wrap { margin-top: 24px; }
+.adjust-question-text { font-size: 15px; font-weight: 800; color: #2c2a26; margin-bottom: 6px; }
+
+.adjust-field-group { margin-bottom: 16px; }
+.adjust-field-label { font-size: 14.5px; font-weight: 800; display: block; margin-bottom: 6px; }
+.adjust-field-label.plus-label { color: #2d7a44; }
+.adjust-field-label.minus-label { color: #c0442e; }
+
+/* 🔥 Step 1: 하단 우측 정렬 2개 분기 버튼 (Side-by-Side 우측 밀착 + 동일 형태) */
+.btn-row-step1 {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
 }
 
-.adjust-decision-box.borderless {
-  border: 1.5px dashed #e2dcce;
-  background: #faf8f5;
-  box-shadow: none;
-}
-
-/* 자금 조정 안내 박스 & 분기 버튼 */
-.adjust-decision-box {
-  margin: 28px 0;
-  padding: 22px 24px;
-  background: #f5f3ee;
-  border-radius: 16px;
-  text-align: center;
-}
-.adjust-question { font-size: 15.5px; font-weight: 800; color: #2c2a26; margin: 0 0 16px; }
-.adjust-buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-.btn-decision {
-  padding: 13px 22px;
+.step1-option-btn {
+  height: 52px;
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 12px;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.15s, background 0.15s;
-  border: none;
+  box-sizing: border-box;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
-.btn-decision.primary { background: var(--kb-yellow); color: #3d3519; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-.btn-decision.primary:hover { background: #ffbe00; transform: translateY(-1px); }
-.btn-decision.secondary { background: #ffffff; color: #555; border: 1.5px solid #d4cecb; }
-.btn-decision.secondary:hover { background: #fafafa; color: #222; }
-
-/* 3단 자금 조정 계산기 (순백 배경 + 깨끗한 레이아웃) */
-.adjust-section {
-  padding: 24px;
+.step1-option-btn.secondary {
   background: #ffffff;
-  border: 1.5px solid #e5e1d8;
-  border-radius: 20px;
-  margin-bottom: 28px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.03);
-  animation: fadeIn 0.3s ease-in;
+  border: 1.5px solid #d9d4cc;
+  color: #555;
 }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.step1-option-btn.secondary:hover {
+  background: #f7f5f0;
+  color: #222;
+}
+.step1-option-btn.primary {
+  background: var(--kb-yellow, #fabb08);
+  border: none;
+  color: #342e22;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+.step1-option-btn.primary:hover {
+  background: #f0b000;
+  transform: translateY(-1px);
+}
 
-.subtraction-calc-box { display: flex; flex-direction: column; gap: 16px; background: #ffffff; padding: 0; margin-top: 14px; }
-.calc-row.base {
+.btn-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: #faf8f5;
-  border: 1.5px solid #eae5db;
-  border-radius: 14px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
 }
-.calc-row.base .calc-label { font-size: 15px; font-weight: 700; color: #4e4a42; }
-.calc-row.base .calc-amount { font-size: 20px; font-weight: 800; color: #222; }
 
-.full-quick-row-right {
-  display: flex;
-  justify-content: flex-end;
+.primary-btn {
+  height: 52px;
+  padding: 0 32px;
+  border-radius: 12px;
+  background: var(--kb-yellow, #fabb08);
+  color: #342e22;
+  font-size: 15.5px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  transition: background 0.15s, transform 0.15s;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+  justify-content: center;
 }
+.primary-btn:hover { background: #f0b000; transform: translateY(-1px); }
+.primary-btn.disabled { opacity: 0.6; cursor: not-allowed; }
 
-.calc-total {
-  display: flex;
-  justify-content: space-between;
+.secondary-btn {
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px solid #d9d4cc;
+  color: #555;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: inline-flex;
   align-items: center;
-  margin-top: 14px;
-  padding: 18px 20px;
-  background: #fffcf0;
-  border: 1.5px solid #ffe899;
-  border-radius: 14px;
+  justify-content: center;
 }
-.calc-total-label { font-size: 16px; font-weight: 800; color: #3a342a; }
-.calc-total-value { font-size: 24px; font-weight: 800; color: var(--text-dark); }
-.btn-to-risk { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; background: #f0ece1; border: none; font-weight: 800; font-size: 15px; color: #4a453c; cursor: pointer; transition: background 0.15s; }
-.btn-to-risk:hover { background: #e4dfd4; }
+.secondary-btn:hover { background: #f7f5f0; }
 
-.divider { border: none; border-top: 1px solid #cdd2d8; margin: 24px 0; }
-
-/* 위험도 선택 칩 & 안내 보드 */
-.risk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-.risk-card { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 14px; border: 1.5px solid var(--card-border); border-radius: 14px; background: #fff; cursor: pointer; text-align: left; transition: border-color .15s, background .15s; }
-.risk-card .risk-grade { font-size: 11.5px; font-weight: 700; color: var(--text-muted); }
-.risk-card .risk-label { font-size: 15.5px; font-weight: 800; }
-.risk-card .risk-sub { font-size: 12px; color: var(--text-muted); }
+.risk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.risk-card { padding: 16px; border: 1.5px solid var(--card-border, #e2ded6); border-radius: 16px; background: #fff; cursor: pointer; text-align: left; transition: all 0.15s; }
+.risk-grade { font-size: 11.5px; font-weight: 700; color: var(--text-muted, #777267); display: block; }
+.risk-label { font-size: 15.5px; font-weight: 800; margin-top: 2px; display: block; }
+.risk-sub { font-size: 12px; color: var(--text-muted, #777267); display: block; margin-top: 2px; }
 .risk-card.on.tone-safe { border-color: #2d7a44; background: #eef8f1; }
 .risk-card.on.tone-caution { border-color: #b5760a; background: #fff6e6; }
 .risk-card.on.tone-warn { border-color: #c0442e; background: #fdeeeb; }
 
-.risk-info-board { margin-top: 16px; border-radius: 14px; padding: 18px 20px; border-left: 5px solid; }
-.risk-info-board.tone-safe { background: #eef8f1; border-color: #2d7a44; color: #1e4d2b; }
-.risk-info-board.tone-caution { background: #fff6e6; border-color: #b5760a; color: #694406; }
-.risk-info-board.tone-warn { background: #fdeeeb; border-color: #c0442e; color: #722718; }
-.board-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.board-grade { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(0,0,0,0.06); }
-.board-title { font-size: 15px; font-weight: 800; }
-.board-desc { font-size: 13.5px; margin: 0 0 10px; line-height: 1.5; }
-.board-features { display: flex; align-items: center; gap: 8px; font-size: 13.5px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; flex-wrap: wrap; }
-.feat-tag { font-weight: 700; opacity: 0.8; }
-.feat-name { font-weight: 800; }
+.risk-info-board { margin-top: 16px; border-radius: 14px; padding: 16px 18px; border-left: 5px solid #2d7a44; background: #eef8f1; color: #1e4d2b; }
+.board-header { font-size: 14.5px; font-weight: 800; margin-bottom: 4px; }
+.board-desc { font-size: 13px; margin: 0; line-height: 1.5; }
 
-.period-notice-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-top: 28px;
-  padding: 16px 20px;
-  background: #fffcf0;
-  border: 1.5px solid #ffe899;
-  border-radius: 12px;
-}
-.period-notice-tip .tip-icon { font-size: 18px; flex-shrink: 0; }
-.period-notice-tip .tip-text { margin: 0; font-size: 13.5px; color: #4b4435; line-height: 1.55; }
+.submit-btn { padding: 0 36px; }
 
-.submit-row { display: flex; justify-content: flex-end; margin-top: 26px; }
-.submit-row .primary-btn { width: auto; min-width: 260px; margin: 0; padding: 16px 36px; font-size: 16px; font-weight: 800; }
-
-.rec-footer { background: #46413a; color: #cdc7bc; margin-top: 40px; }
+.rec-footer { background: #46413a; color: #cdc7bc; margin-top: 48px; }
 .footer-inner { max-width: 1140px; margin: 0 auto; padding: 30px 32px 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
 .footer-col h4 { color: #fff; font-size: 14px; font-weight: 700; margin: 0 0 8px; }
-.footer-col ul { margin: 0; padding-left: 16px; }
-.footer-col li { font-size: 12.5px; line-height: 1.7; color: #b7b1a6; }
+.footer-col ul { margin: 0; padding-left: 16px; font-size: 12.5px; line-height: 1.7; color: #b7b1a6; }
 
 @media (max-width: 600px) {
+  .welcome-stats-bar { flex-direction: column; gap: 16px; }
+  .w-divider { width: 100%; height: 1px; }
+  .explain-flow-container { flex-direction: column; gap: 10px; }
+  .flow-arrow { transform: rotate(90deg); }
   .risk-cards { grid-template-columns: 1fr; }
-  .footer-inner { grid-template-columns: 1fr; gap: 18px; }
-  .submit-row .primary-btn { width: 100%; }
+  .footer-inner { grid-template-columns: 1fr; gap: 20px; }
+  .btn-row-step1 { flex-direction: column; width: 100%; }
+  .step1-option-btn { width: 100%; }
 }
 </style>
