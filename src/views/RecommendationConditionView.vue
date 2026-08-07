@@ -79,21 +79,37 @@ function submit() {
       </header>
 
       <div class="survey-card">
-        <!-- 생활비 설정 -->
-        <section class="block step-block">
+        <!-- 생활비 설정 (토스증권 스타일 단일 히어로 캔버스) -->
+        <section class="block step-block hero-step-canvas">
           <div class="block-head-wrap">
             <span class="step-badge">생활비 설정</span>
             <h2 class="block-title">매달 꺼내 쓸 생활비 정하기</h2>
           </div>
           <p class="block-desc">
-            국민연금 등 고정 수입 외에, <strong>이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?</strong>
+            국민연금 등 고정 수입 외에, 이 목돈에서 매달 얼마씩 꺼내 쓰실 예정인가요?
           </p>
 
-          <!-- 전폭(Full Width) 대형 금액 입력 박스 -->
-          <div class="full-input-card">
-            <div class="full-input-wrap">
-              <input class="full-amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" placeholder="0" />
-              <span class="full-amount-unit">만원 / 월</span>
+          <!-- 토스증권 스타일 상단 버팀 수명 히어로 전광판 -->
+          <div class="toss-hero-dashboard">
+            <span class="toss-hero-sublabel">이 목돈으로 4단계 예치 시</span>
+            <div class="toss-hero-main-row">
+              <strong class="toss-hero-months">{{ rec.runwayAnalysis.appMonths }}개월</strong>
+              <span class="toss-hero-diff-tag">(+최소 {{ rec.runwayAnalysis.diffMonths }}개월 연장)</span>
+            </div>
+            <p class="toss-hero-desc">
+              총 <strong>약 {{ rec.runwayAnalysis.appYearsText }}</strong> 동안 생활비 걱정 없이 꺼내 쓰실 수 있습니다.
+              <span class="toss-cash-sub">(현금 단순 보유 시 {{ rec.runwayAnalysis.cashYearsText }})</span>
+            </p>
+          </div>
+
+          <!-- 하단 슬림 인라인 금액 입력 영역 -->
+          <div class="toss-input-row-card">
+            <div class="toss-input-flex">
+              <span class="toss-input-prefix">매달</span>
+              <div class="toss-input-wrap">
+                <input class="toss-amount-input" type="number" min="0" step="10" v-model.number="monthlyManwon" aria-label="매달 꺼내 쓸 생활비(만원)" placeholder="0" />
+                <span class="toss-amount-unit">만원 씩 꺼내 쓰기</span>
+              </div>
             </div>
             <!-- 퀵 추가 버튼 + 재설정 버튼 -->
             <div class="quick-row full-quick-row">
@@ -103,31 +119,17 @@ function submit() {
               <button type="button" class="quick-chip reset-btn" @click="rec.setMonthlyNeed(0)">재설정</button>
             </div>
           </div>
-
-          <!-- 주식 평가손익 스타일 버팀 수명 요약 카드 -->
-          <div class="runway-stock-card">
-            <div class="stock-main-row">
-              <span class="stock-label">기간별 나눠 담으면</span>
-              <div class="stock-months-wrap">
-                <strong class="stock-months">{{ rec.runwayAnalysis.appMonths }}개월</strong>
-                <span class="stock-diff-pill">(+최소 {{ rec.runwayAnalysis.diffMonths }}개월 연장)</span>
-              </div>
-            </div>
-            <div class="stock-sub-row">
-              <span class="stock-sub-text">총 약 {{ rec.runwayAnalysis.appYearsText }} (현금 단순 보유 시 {{ rec.runwayAnalysis.cashYearsText }})</span>
-            </div>
-          </div>
         </section>
 
-        <!-- 자금 조정 질문 & 분기 버튼 2개 -->
-        <div class="adjust-decision-box">
+        <!-- 자금 조정 질문 & 분기 버튼 2개 (이모티콘 100% 제거) -->
+        <div class="adjust-decision-box borderless">
           <p class="adjust-question">당장 빠질 긴급 자금이나, 추가로 더 넣을 돈이 있으신가요?</p>
           <div class="adjust-buttons">
             <button type="button" class="btn-decision secondary" @click="openAdjustForm">
               예, 조정할 자금 입력 (+/-)
             </button>
             <button type="button" class="btn-decision primary" @click="skipAdjust">
-              ⚡ 아니오, 남은 돈 그대로 전액 굴리기
+              아니오, 남은 돈 그대로 전액 굴리기
             </button>
           </div>
         </div>
@@ -301,139 +303,117 @@ function submit() {
 .quick-chip { padding: 8px 16px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--text-muted); cursor: pointer; }
 .quick-chip.reset { color: #999; }
 
-/* 전폭(Full Width) 대형 금액 입력 박스 */
-.full-input-card {
-  padding: 20px 24px;
-  background: #faf8f5;
-  border: 1.5px solid var(--card-border);
-  border-radius: 16px;
-  margin-bottom: 20px;
+/* 토스증권 스타일 단일 히어로 캔버스 */
+.hero-step-canvas {
+  margin-bottom: 24px;
 }
-.full-input-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: #ffffff;
-  border: 1.5px solid #c9c3bc;
-  border-radius: 12px;
-  padding: 10px 18px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.full-input-wrap:focus-within {
-  border-color: #d4a000;
-  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
-}
-.calc-group-block {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.calc-group-label {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--text-dark);
-}
-.full-amount-input {
-  flex: 1;
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text-dark);
-  border: none;
-  background: transparent;
-  outline: none;
-}
-.full-amount-unit {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text-dark);
-  white-space: nowrap;
-}
-
-.full-quick-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 14px;
-}
-.chips-left {
-  display: flex;
-  gap: 10px;
-}
-.quick-chip {
-  min-height: 44px;
-  padding: 10px 18px;
-  border-radius: 10px;
-  border: 1.4px solid var(--card-border);
-  background: #fff;
-  font-weight: 700;
-  font-size: 14.5px;
-  color: var(--text-dark);
-  cursor: pointer;
-}
-.quick-chip.reset-btn {
-  background: #ece8e1;
-  border-color: #dcd6cb;
-  color: #555;
-  font-weight: 700;
-}
-.quick-chip.reset-btn:hover {
-  background: #e0dad0;
-  color: #111;
-}
-
-/* 주식 평가손익 스타일 버팀 수명 요약 카드 */
-.runway-stock-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 20px 24px;
-  background: #faf8f5;
+.toss-hero-dashboard {
+  padding: 24px 28px;
+  background: #fdfbf7;
+  border-radius: 20px;
   border: 1.5px solid #eae5db;
-  border-radius: 16px;
+  text-align: center;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.02);
 }
-.stock-main-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.stock-label {
-  font-size: 14.5px;
+.toss-hero-sublabel {
+  font-size: 14px;
   color: #666;
   font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
 }
-.stock-months-wrap {
+.toss-hero-main-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  justify-content: center;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
 }
-.stock-months {
-  font-size: 24px;
+.toss-hero-months {
+  font-size: 36px;
   font-weight: 800;
   color: var(--text-dark);
+  line-height: 1;
 }
-.stock-diff-pill {
+.toss-hero-diff-tag {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
   background: #eef8f1;
   color: #1e6434;
   border: 1px solid #c3e6cb;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 800;
   border-radius: 8px;
 }
-.stock-sub-row {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px dashed #e4dfd4;
+.toss-hero-desc {
+  font-size: 15.5px;
+  color: #333;
+  margin: 0;
+  line-height: 1.5;
 }
-.stock-sub-text {
-  font-size: 14.5px;
-  color: #666;
-  font-weight: 600;
+.toss-cash-sub {
+  font-size: 13.5px;
+  color: #777;
+  margin-left: 6px;
+}
+
+/* 하단 슬림 금액 입력 박스 */
+.toss-input-row-card {
+  padding: 18px 22px;
+  background: #ffffff;
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+}
+.toss-input-flex {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toss-input-prefix {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.toss-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #faf8f5;
+  border: 1.5px solid #c9c3bc;
+  border-radius: 12px;
+  padding: 10px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.toss-input-wrap:focus-within {
+  border-color: #d4a000;
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
+}
+.toss-amount-input {
+  flex: 1;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-dark);
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: right;
+}
+.toss-amount-unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: #555;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.adjust-decision-box.borderless {
+  border: 1.5px dashed #e2dcce;
+  background: #faf8f5;
+  box-shadow: none;
 }
 
 /* 자금 조정 안내 박스 & 분기 버튼 */
