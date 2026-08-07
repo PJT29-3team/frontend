@@ -65,6 +65,14 @@ function updateActive() {
 onMounted(async () => {
   window.addEventListener('scroll', updateActive, { passive: true });
   window.addEventListener('resize', updateActive, { passive: true });
+
+  // 새로고침이면 스토어가 비어 있다. 조건을 먼저 되살려야 0원으로 조회하지 않는다.
+  try {
+    await rec.restoreLatest();
+  } catch {
+    // 못 살리면 아래 조회가 0원 기준으로 나가고 화면에도 0원이 그대로 보인다.
+  }
+
   try {
     const res = await recommendationApi.submit({
       surveyId: null,
