@@ -19,18 +19,17 @@
     <div class="info">
       <div class="headline">
         <span class="rank-note">추천 {{ home.rank }}위</span>
-      </div>
-
-      <p class="name">
         <span class="name-text">{{ home.name }}</span>
         <span class="pyeong">· {{ formatPyeong(home.size) }}</span>
+      </div>
+
+      <!-- 동네(지역을 여러 곳 고른 사용자용)와 금액을 한 줄에 둔다.
+           세로가 짧은 화면에서 카드 5개를 스크롤 없이 담기 위해서다. -->
+      <p class="meta">
+        <span class="neighborhood">{{ neighborhood }}</span>
+        <span class="dot">·</span>
+        <span class="price">{{ home.price }}</span>
       </p>
-
-      <!-- 지역을 여러 곳 고른 사용자가 어느 동네인지 알 수 있어야 한다 -->
-      <p class="neighborhood">{{ neighborhood }}</p>
-
-      <!-- 금액은 판단 재료일 뿐, 더 이상 카드의 주인공이 아니다 -->
-      <p class="price">{{ home.price }}</p>
 
       <!-- 산출 근거: 목록 API가 세부 점수를 주면 그때 자동으로 보인다 -->
       <ul v-if="scoreBasis.length" class="basis">
@@ -153,12 +152,14 @@ async function onToggleFavorite() {
 
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
+  gap: 14px;
+  /* 세로가 짧은 화면에서 카드 5개가 스크롤 없이 들어가도록 여백을 줄인다. */
+  padding: clamp(6px, 0.9vh, 18px) 18px;
   border-radius: 14px;
+  position: relative;
   border: 1px solid #ebe7dd;
   background: #fff;
-  margin-bottom: 12px;
+  margin-bottom: clamp(3px, 0.5vh, 12px);
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -187,8 +188,8 @@ async function onToggleFavorite() {
 
 /* 점수 배지: 진행률이 아니라 '값'이라 채워지는 형태를 쓰지 않는다 */
 .score-badge {
-  width: 72px;
-  height: 72px;
+  width: clamp(44px, 5.6vh, 72px);
+  height: clamp(44px, 5.6vh, 72px);
   flex-shrink: 0;
   border-radius: 16px;
   background: var(--tier-soft);
@@ -200,7 +201,7 @@ async function onToggleFavorite() {
 }
 
 .score-value {
-  font-size: 30px;
+  font-size: clamp(20px, 2.6vh, 30px);
   font-weight: 800;
   line-height: 1;
   color: var(--tier);
@@ -221,9 +222,9 @@ async function onToggleFavorite() {
 
 .headline {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .rank-note {
@@ -231,18 +232,11 @@ async function onToggleFavorite() {
   color: #9a9384;
 }
 
-.name {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+.name-text {
+  line-height: 1.3;
   font-size: 15px;
   font-weight: 700;
   color: #2b2822;
-  margin: 8px 0 2px;
-  min-width: 0;
-}
-
-.name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -255,20 +249,33 @@ async function onToggleFavorite() {
   color: #948d7e;
 }
 
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  line-height: 1.3;
+  margin: 2px 0 0;
+  min-width: 0;
+}
+
 .neighborhood {
   font-size: 12.5px;
   color: #948d7e;
-  margin: 0 0 3px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dot {
+  color: #c8c2b0;
+  flex-shrink: 0;
 }
 
 .price {
   font-size: 15px;
   font-weight: 700;
   color: #5f5949;
-  margin: 0;
+  flex-shrink: 0;
 }
 
 /* 산출 근거는 어디까지나 부연 설명이다 */
@@ -299,11 +306,12 @@ async function onToggleFavorite() {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin: 10px 0 0;
+  margin: clamp(1px, 0.3vh, 10px) 0 0;
   padding: 0;
   border: none;
   background: transparent;
-  font-size: 13px;
+  line-height: 1.3;
+  font-size: 12.5px;
   font-weight: 700;
   color: #4d8bbd;
   cursor: pointer;
@@ -327,13 +335,15 @@ async function onToggleFavorite() {
 
 .actions {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .selected-mark {
+  position: absolute;
+  top: 6px;
+  right: 12px;
   font-size: 11px;
   font-weight: 700;
   color: #7a5c00;
@@ -343,12 +353,12 @@ async function onToggleFavorite() {
 }
 
 .favorite-btn {
-  width: 122px;
+  width: 112px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 0;
+  padding: clamp(6px, 1vh, 8px) 0;
   border-radius: 20px;
   font-size: 13px;
   white-space: nowrap;
@@ -381,8 +391,8 @@ async function onToggleFavorite() {
 
 /* 실제 매물을 보러 나가는 버튼. 관심 담기와 같은 폭으로 맞춘다 */
 .listing-btn {
-  width: 122px;
-  padding: 8px 0;
+  width: 112px;
+  padding: clamp(6px, 1vh, 8px) 0;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;

@@ -218,7 +218,11 @@ async function fitViewHeight() {
   // 페이지가 스크롤된 상태에서 재도 어긋나지 않게 문서 기준으로 환산한다.
   const top = viewSection.value.getBoundingClientRect().top + window.scrollY;
   const bottomHeight = bottomBlock.value?.getBoundingClientRect().height ?? 0;
-  const available = window.innerHeight - top - bottomHeight - 24;
+  // 하단 고지문은 bottomBlock 밖에 있어 측정에 안 잡힌다. 그만큼을 빼야
+  // 페이지 스크롤이 생기지 않는다.
+  const footer = document.querySelector('.disclaimer');
+  const footerHeight = footer ? footer.getBoundingClientRect().height + 12 : 0;
+  const available = window.innerHeight - top - bottomHeight - footerHeight - 8;
   const floor = MIN_VIEW_HEIGHT[currentView.value] ?? 320;
 
   viewHeight.value = `${Math.max(floor, Math.round(available))}px`;
@@ -290,7 +294,8 @@ onBeforeUnmount(() => {
 .content {
   display: flex;
   gap: 32px;
-  padding: 32px 0 0;
+  /* 세로가 짧은 화면에서 카드 영역을 넓히려고 상단 여백을 줄인다. */
+  padding: clamp(8px, 1.4vh, 32px) 0 0;
   align-items: stretch;
   height: calc(100vh - 220px);
   min-height: 320px;
@@ -399,7 +404,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: stretch;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: clamp(10px, 1.6vh, 20px);
 }
 
 .retry-btn,

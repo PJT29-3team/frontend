@@ -152,7 +152,7 @@ function canNavigate(key) {
 
 /* 노트북처럼 세로가 짧은 화면에서는 상태 문구를 접어 본문 공간을 남긴다.
    현재 단계는 원의 색과 반짝임으로 이미 구분된다. */
-@media (max-height: 820px) {
+@media (max-height: 940px) {
   .step-status {
     display: none;
   }
