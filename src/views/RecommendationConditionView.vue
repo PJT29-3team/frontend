@@ -100,25 +100,23 @@ function submit() {
             <button v-for="q in [10, 50, 100]" :key="q" type="button" class="quick-chip" @click="addMonthly(q)">+{{ q }}만원</button>
           </div>
 
-          <!-- 🏛️ 우리 웹 최저 벤치마크 버팀 계산 라이브 카드 -->
+          <!-- 🏛️ 단순화된 버팀 개월 수 비교 카드 -->
           <div class="runway-benchmark-card">
-            <div class="bm-header">
-              <span class="bm-icon">📊</span>
-              <strong>자금 버팀 개월 수 비교 연산</strong>
-            </div>
-            <div class="bm-content">
-              <div class="bm-row">
-                <span class="bm-label">💰 단순 현금 보유 시:</span>
-                <strong class="bm-val">약 {{ rec.runwayAnalysis.cashYearsText }} ({{ rec.runwayAnalysis.cashMonths }}개월)</strong>
+            <div class="bm-hero-box">
+              <div class="bm-hero-row">
+                <span class="bm-hero-label">💰 단순 현금 보유 시:</span>
+                <strong class="bm-hero-val cash">약 {{ rec.runwayAnalysis.cashYearsText }} <span class="sub-m">({{ rec.runwayAnalysis.cashMonths }}개월)</span></strong>
               </div>
-              <div class="bm-row">
-                <span class="bm-label">🏦 원금보장 예금 굴림 시:</span>
-                <strong class="bm-val highlight">약 {{ rec.runwayAnalysis.appYearsText }} ({{ rec.runwayAnalysis.appMonths }}개월)</strong>
+              <div class="bm-hero-row main">
+                <span class="bm-hero-label">🏦 원금보장 예금 굴림 시:</span>
+                <div class="bm-hero-val-wrap">
+                  <strong class="bm-hero-val app">약 {{ rec.runwayAnalysis.appYearsText }}</strong>
+                  <span class="bm-diff-badge">(+{{ rec.runwayAnalysis.diffText }} 더!)</span>
+                </div>
               </div>
             </div>
-            <hr class="bm-line" />
-            <p class="bm-notice">
-              🛡️ 원금 100% 보장 예금만 굴려도 <strong class="bm-diff">[최소 +{{ rec.runwayAnalysis.diffText }} 더!]</strong> 오래 꺼내 쓰실 수 있습니다.
+            <p class="bm-notice-simple">
+              🛡️ 원금 100% 보장 예금만 굴려도 <strong class="highlight">+{{ rec.runwayAnalysis.diffText }} 더</strong> 오래 꺼내 쓰실 수 있습니다.
             </p>
           </div>
         </section>
@@ -303,25 +301,41 @@ function submit() {
 .quick-chip { padding: 8px 16px; border-radius: 10px; border: 1.4px solid var(--card-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--text-muted); cursor: pointer; }
 .quick-chip.reset { color: #999; }
 
-/* 🏛️ 버팀 개월 수 비교 라이브 카드 */
+/* 🏛️ 버팀 개월 수 비교 단순화 카드 */
 .runway-benchmark-card {
   margin-top: 20px;
   padding: 20px 22px;
-  background: #fcfbfa;
-  border: 1.5px solid #e9e5dd;
-  border-radius: 14px;
+  background: #fdfbf7;
+  border: 1.5px solid #ece6da;
+  border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
-.bm-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 15px; color: #2c2a26; }
-.bm-header .bm-icon { font-size: 18px; }
-.bm-content { display: flex; flex-direction: column; gap: 8px; }
-.bm-row { display: flex; justify-content: space-between; align-items: center; font-size: 14.5px; }
-.bm-label { color: #5a554c; font-weight: 600; }
-.bm-val { font-size: 16px; font-weight: 700; color: #333; }
-.bm-val.highlight { color: #2d7a44; font-size: 17px; }
-.bm-line { border: none; border-top: 1px dashed #ded9cf; margin: 14px 0 12px; }
-.bm-notice { margin: 0; font-size: 14px; color: #3a342a; line-height: 1.5; }
-.bm-notice .bm-diff { color: #2d7a44; font-size: 15.5px; }
+.bm-hero-box { display: flex; flex-direction: column; gap: 10px; }
+.bm-hero-row { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.bm-hero-row.main { margin-top: 2px; }
+.bm-hero-label { color: #4e4a42; font-weight: 700; font-size: 15px; }
+.bm-hero-val { font-size: 16px; font-weight: 700; color: #555; }
+.bm-hero-val.cash .sub-m { font-size: 13.5px; color: #888; font-weight: 500; }
+.bm-hero-val-wrap { display: flex; align-items: center; gap: 8px; }
+.bm-hero-val.app { font-size: 18px; font-weight: 800; color: #1e6434; }
+.bm-diff-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #2d7a44;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(45, 122, 68, 0.25);
+  animation: pulseBadge 2s infinite ease-in-out;
+}
+@keyframes pulseBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.bm-notice-simple { margin: 14px 0 0; font-size: 13.5px; color: #5a5448; border-top: 1px dashed #e2dcce; padding-top: 10px; text-align: center; }
+.bm-notice-simple .highlight { color: #2d7a44; font-size: 15px; }
 
 /* 자금 조정 안내 박스 & 분기 버튼 */
 .adjust-decision-box {
