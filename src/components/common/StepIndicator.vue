@@ -161,6 +161,24 @@ function canNavigate(key) {
   }
 }
 
+/* 13인치 노트북(뷰포트 730~790px)에서는 단계 표시줄을 한 번 더 접는다.
+   여기서 확보한 높이가 추천 카드 5장을 스크롤 없이 담는 데 그대로 쓰인다. */
+@media (max-height: 860px) {
+  .step-indicator {
+    padding: clamp(10px, 1.6vh, 42px) 56px clamp(8px, 1.3vh, 36px);
+  }
+  .step-circle {
+    width: clamp(36px, 4.8vh, 60px);
+    height: clamp(36px, 4.8vh, 60px);
+    font-size: 19px;
+    border-width: 2.5px;
+    margin-bottom: clamp(3px, 0.6vh, 10px);
+  }
+  .step-line {
+    margin-top: clamp(16px, 2.4vh, 29px);
+  }
+}
+
 /* 움직임에 민감한 사용자는 애니메이션을 끈다. */
 @media (prefers-reduced-motion: reduce) {
   .step.active .step-circle {

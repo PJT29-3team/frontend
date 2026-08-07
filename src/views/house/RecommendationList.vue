@@ -161,7 +161,7 @@ const bottomBlock = ref(null);
 // 헤더·단계표시줄 높이가 라우트마다 달라서 상수로 못 박지 않고 실제 위치를 잰다.
 const viewHeight = ref('');
 // 이보다 좁아지면 내용이 뭉개져서 차라리 페이지가 스크롤되는 편이 낫다.
-const MIN_VIEW_HEIGHT = { list: 320, map: 360 };
+const MIN_VIEW_HEIGHT = { list: 320, map: 320 };
 // 비용 패널이 계산 중인 매물. 목록/지도 어느 쪽에서 골라도 이 값 하나로 모인다.
 const selectedPropertyId = ref(null);
 // 지도에서 핀을 눌러 미니 카드로 띄운 매물. 선택과는 별개다.
@@ -341,7 +341,8 @@ onBeforeUnmount(() => {
 
 .sub-title {
   color: #888;
-  margin: 0 0 20px;
+  /* 세로가 짧은 화면에서 카드 5장을 스크롤 없이 담으려고 여백을 줄인다. */
+  margin: 0 0 clamp(6px, 1.2vh, 20px);
 }
 
 .error-message {
@@ -396,7 +397,7 @@ onBeforeUnmount(() => {
 /* 구분선 */
 .divider {
   border-top: 1px solid #eee;
-  margin-top: 24px;
+  margin-top: clamp(8px, 1.4vh, 24px);
 }
 
 /* 하단 액션 영역 */
@@ -443,8 +444,42 @@ onBeforeUnmount(() => {
 .disclaimer {
   font-size: 11px;
   color: #aaa;
-  margin: 16px 0 24px;
+  margin: clamp(6px, 1vh, 16px) 0 clamp(8px, 1.4vh, 24px);
   line-height: 1.6;
+}
+
+/* 13인치 노트북(뷰포트 730~790px)에서 카드 5장이 스크롤 없이 들어가도록
+   제목·토글·하단 버튼을 한 단계씩 줄인다. 카드 영역은 그만큼 넓어진다. */
+@media (max-height: 860px) {
+  .main-title {
+    font-size: 19px;
+  }
+
+  .content {
+    padding-top: clamp(6px, 1vh, 32px);
+  }
+
+  .view-toggle {
+    padding: 3px;
+  }
+
+  .toggle-btn {
+    padding: 6px 16px;
+    font-size: 12.5px;
+  }
+
+  .retry-btn,
+  .condition-btn,
+  .compare-btn {
+    padding: 6px 14px;
+    font-size: 12.5px;
+  }
+
+  .disclaimer {
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+
 }
 
 /* 오른쪽 패널: 비용 계산 전용. 왼쪽 카드 5장 높이에 맞춰 늘어난다. */
@@ -522,7 +557,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 32px;
+  padding-top: clamp(10px, 1.8vh, 32px);
 }
 
 .view-toggle {
@@ -560,8 +595,10 @@ onBeforeUnmount(() => {
 .map-view {
   position: relative;
   height: calc(100vh - 220px);
-  min-height: 420px;
-  margin-top: 20px;
+  /* fitViewHeight() 가 계산한 높이를 이 값이 되받아치면 페이지가 스크롤된다.
+     하한은 MIN_VIEW_HEIGHT.map 과 같은 320px 로 맞춘다. */
+  min-height: 320px;
+  margin-top: clamp(8px, 1.4vh, 20px);
   border-radius: 12px;
   overflow: hidden;
   background: #f3f0e8;
@@ -766,5 +803,89 @@ onBeforeUnmount(() => {
   background: #fff4d6;
   border-color: #f0c14b;
   color: #f0a500;
+}
+
+/* 세로가 짧은 화면에서 비용 계산 칸도 스크롤 없이 들어가게 줄인다.
+   글자 크기는 그대로 두고 줄 간격·여백만 좁힌다.
+   위쪽 .right-column :deep(...) 규칙과 명시도가 같으므로
+   반드시 그 뒤에 와야 덮어쓴다. */
+@media (max-height: 860px) {
+  .right-column :deep(.summary-card) {
+    padding: 16px;
+  }
+
+  .right-column :deep(.summary-title) {
+    margin-bottom: 8px;
+  }
+
+  .right-column :deep(.summary-row) {
+    padding: 4px 0;
+  }
+
+  .right-column :deep(.summary-row.small) {
+    padding: 2px 0;
+  }
+
+  .right-column :deep(.summary-sub) {
+    margin: 6px 0;
+    padding: 8px 12px;
+  }
+
+  .right-column :deep(.summary-row.total) {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  .right-column :deep(.result-box) {
+    padding: 11px 14px;
+    margin: 6px 0;
+  }
+
+  .right-column :deep(.goal-compare) {
+    margin-top: 6px;
+  }
+
+  .right-column :deep(.summary-note) {
+    margin-bottom: 0;
+  }
+}
+
+/* 창을 더 낮춰 쓰는 경우까지 커버한다. */
+@media (max-height: 730px) {
+  .right-column :deep(.summary-card) {
+    padding: 12px;
+  }
+
+  .right-column :deep(.summary-row) {
+    padding: 3px 0;
+  }
+
+  .right-column :deep(.summary-sub) {
+    padding: 6px 10px;
+  }
+
+  .right-column :deep(.result-box) {
+    padding: 9px 12px;
+  }
+
+  .right-column :deep(.summary-note) {
+    line-height: 1.35;
+  }
+}
+
+/* 지도 뷰의 번호 버튼 줄. 지도가 낮아지면 5번 버튼이 잘리므로 같이 줄인다.
+   위 .rank-jump 규칙과 명시도가 같아 파일 뒤쪽에 있어야 덮어쓴다. */
+@media (max-height: 860px) {
+  .rank-jump {
+    top: 60px;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .rank-jump-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
 }
 </style>

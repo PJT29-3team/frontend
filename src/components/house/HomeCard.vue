@@ -407,4 +407,123 @@ async function onToggleFavorite() {
 .listing-btn:hover {
   background: #f6f4ee;
 }
+
+/* 13인치 노트북(뷰포트 730~790px). 카드 한 장에서 6~8px 씩만 줄여도
+   5장이면 40px 가까이 남아 목록이 스크롤 없이 들어간다. */
+@media (max-height: 860px) {
+  .home-card {
+    padding: 5px 18px;
+    margin-bottom: 2px;
+    gap: 16px;
+  }
+
+  /* 점수 배지와 버튼은 이전 크기를 지킨다. 카드 높이는 세 열 중 가장 높은
+     것으로 정해지므로, 정보 열을 두 줄로 눌러 놓으면 배지를 키워도
+     카드가 더 높아지지 않는다. */
+  .score-badge {
+    width: 62px;
+    height: 62px;
+    border-radius: 16px;
+  }
+
+  .score-value {
+    font-size: 26px;
+  }
+
+  .name-text {
+    font-size: 14.5px;
+  }
+
+  .meta {
+    margin-top: 1px;
+  }
+
+  .price {
+    font-size: 14.5px;
+  }
+
+  .detail-link {
+    margin-top: 1px;
+    font-size: 12px;
+  }
+
+  /* 이전 배치대로 버튼을 세로로 쌓는다.
+     버튼이 세로로 서면 오른쪽 위 절대 배치한 '비용 계산 중' 표식과 겹치므로
+     표식도 이전처럼 버튼 위 흐름 안으로 되돌린다. */
+  .actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .selected-mark {
+    position: static;
+    padding: 2px 10px;
+  }
+
+  .favorite-btn,
+  .listing-btn {
+    width: 122px;
+    padding: 5px 0;
+  }
+}
+
+/* 창을 더 낮춰 쓰는 경우(주소창 + 북마크바 + 독). 마지막 남은 여백까지 턴다. */
+@media (max-height: 780px) {
+  .home-card {
+    padding: 4px 18px;
+    margin-bottom: 1px;
+  }
+
+  .detail-link {
+    margin-top: 0;
+  }
+
+  .score-badge {
+    width: 56px;
+    height: 56px;
+  }
+
+  .score-value {
+    font-size: 24px;
+  }
+
+  /* 버튼 높이는 글자 크기가 아니라 줄 간격이 대부분이다.
+     line-height 만 조여도 카드 한 장에서 8px 가까이 나온다. */
+  .favorite-btn,
+  .listing-btn {
+    padding: 4px 0;
+    line-height: 1.1;
+  }
+
+  .heart-icon {
+    font-size: 13px;
+  }
+
+  .actions {
+    gap: 3px;
+  }
+}
+
+/* 여기까지 오면 글자 크기는 그대로 두고 줄 간격만 좁힌다.
+   시니어 사용자에게 글자를 더 줄이는 것보다 낫다. */
+@media (max-height: 730px) {
+  .headline,
+  .meta,
+  .detail-link {
+    line-height: 1.15;
+  }
+
+  .favorite-btn,
+  .listing-btn {
+    padding: 3px 0;
+  }
+
+  .home-card {
+    margin-bottom: 1px;
+  }
+
+  .detail-link {
+    font-size: 11.5px;
+  }
+}
 </style>
