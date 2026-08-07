@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
 import { formatKRW } from '@/stores/survey';
+import { PERIOD_OPTIONS } from '@/utils/finance/portfolioAllocation';
+
+export { PERIOD_OPTIONS };
 
 // 금액 단위 규칙: store·API·DB는 전부 원(KRW). "만원"은 입력 UI에서만 쓰고 ×10000으로 원 변환(ConditionView).
 
@@ -43,12 +46,7 @@ export const RISK_OPTIONS = [
 ];
 
 // investment_period_code 4개 구간 ↔ 화면 라벨.
-export const PERIOD_OPTIONS = [
-  { code: 'UNDER_12M', label: '1~11개월', desc: '1년 미만 단기자금' },
-  { code: 'Y1_TO_2', label: '12~23개월', desc: '1년 이상 2년 미만' },
-  { code: 'Y2_TO_3', label: '24~35개월', desc: '2년 이상 3년 미만' },
-  { code: 'OVER_36M', label: '36개월 이상', desc: '3년 이상 장기자금' },
-];
+
 
 
 export const useRecommendationStore = defineStore('recommendation', {

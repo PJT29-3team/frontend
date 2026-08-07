@@ -90,7 +90,7 @@
         <div
           v-for="(item, i) in fp.items"
           :key="'ab'+i"
-          :class="['pdf-alloc-seg', 'pdf-seg-' + dotColor(i)]"
+          :class="['pdf-alloc-seg', 'pdf-seg-' + dotColor(item)]"
           :style="{ flex: item.percent }"
         ></div>
       </div>
@@ -99,7 +99,7 @@
       <div class="pdf-products">
         <div v-for="(item, i) in fp.items" :key="'pr'+i" class="pdf-product-row">
           <div class="pdf-product-left">
-            <span :class="['pdf-product-dot', 'pdf-dot-' + dotColor(i)]"></span>
+            <span :class="['pdf-product-dot', 'pdf-dot-' + dotColor(item)]"></span>
             <div>
               <div class="pdf-product-name">{{ item.name }}</div>
               <span :class="['pdf-product-badge', badgeClass(item.tag)]">{{ riskLabel(item.tag) }}</span>
@@ -119,7 +119,7 @@
           <div
             v-for="(item, i) in fp.items"
             :key="'tl'+i"
-            :class="['pdf-tl-seg', 'pdf-seg-' + dotColor(i)]"
+            :class="['pdf-tl-seg', 'pdf-seg-' + dotColor(item)]"
             :style="{ flex: tlWidth(item, i) }"
           >
             <span class="pdf-tl-seg-text">{{ item.name.length > 8 ? item.name.slice(0, 8) + '…' : item.name }}</span>
@@ -141,6 +141,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { periodOf } from '@/utils/finance/portfolioAllocation'
 
 const props = defineProps({
   report: {
@@ -177,8 +178,10 @@ function formatKRW(value) {
   return `${man.toLocaleString()}만원`
 }
 
-const DOT_COLORS = ['park', 'short', 'mid', 'long']
-function dotColor(i) { return DOT_COLORS[i] || 'long' }
+function dotColor(item) {
+  if (!item || item.maturityMonths === 0) return 'park'
+  return periodOf(item.maturityMonths).css
+}
 
 function tlWidth(item, i) {
   const items = fp.items
@@ -273,6 +276,7 @@ defineExpose({ pdfRoot })
 .pdf-seg-park, .pdf-dot-park { background: #0d9488; }
 .pdf-seg-short, .pdf-dot-short { background: #2563eb; }
 .pdf-seg-mid, .pdf-dot-mid { background: #4f46e5; }
+.pdf-seg-mid2, .pdf-dot-mid2 { background: #3730a3; }
 .pdf-seg-long, .pdf-dot-long { background: #1e1b4b; }
 
 /* ④ AI 행동 지침 섹션 */

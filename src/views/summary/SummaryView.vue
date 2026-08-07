@@ -178,13 +178,12 @@ import { generateActionPlan } from '@/utils/openaiSummary'
 import { fetchFavoriteProducts } from '@/api/financeApi'
 import { useRecommendationStore } from '@/stores/recommendation'
 import { authStore } from '@/stores/authStore'
-import { termGroupOf } from '@/utils/finance/portfolioAllocation'
+import { periodOf } from '@/utils/finance/portfolioAllocation'
 import { buildTimeline, dur } from '@/utils/finance/horizonTimeline'
 // TODO: 목업 import — 매물 정리 결과 등 나머지 카드는 실제 API 연동 후 삭제
 import { dummySummary as data } from '@/mock/dummySummary'
 
 const rec = useRecommendationStore()
-const TERM_LABELS = { UNDER_1Y: '단기', Y1_TO_3: '중기', OVER_3Y: '장기' }
 const RISK_LABELS = { VERY_LOW: '매우 낮은 위험', LOW: '낮은 위험', MEDIUM: '보통 위험', HIGH: '높은 위험' }
 
 const pr = data.propertyResult
@@ -215,7 +214,7 @@ onMounted(async () => {
         const rate = Number(f.maxAnnualRate ?? f.annualRate)
         return {
           name: f.productName,
-          tag: `${TERM_LABELS[termGroupOf(f.termMonths || 0)]} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
+          tag: `${periodOf(f.termMonths).short} · ${RISK_LABELS[f.productRiskGrade] || f.productRiskGrade || ''}`,
           description: `${f.termMonths}개월 · 연 ${rate.toFixed(1)}%`,
           maturityMonths: f.termMonths || 0,
           rate: rate / 100,
@@ -266,10 +265,9 @@ function formatKRW(value) {
   return `${man.toLocaleString()}만원`
 }
 
-const GROUP_COLOR = { UNDER_1Y: 'short', Y1_TO_3: 'mid', OVER_3Y: 'long' }
 function dotColor(item) {
   if (!item || item.maturityMonths === 0) return 'park'
-  return GROUP_COLOR[termGroupOf(item.maturityMonths)] || 'long'
+  return periodOf(item.maturityMonths).css
 }
 
 // 타임라인 바 각 세그먼트의 상대 너비 계산
@@ -633,6 +631,7 @@ async function downloadPdf() {
 .seg-park, .dot-park { background: #0d9488; }
 .seg-short, .dot-short { background: #2563eb; }
 .seg-mid, .dot-mid { background: #4f46e5; }
+.seg-mid2, .dot-mid2 { background: #3730a3; }
 .seg-long, .dot-long { background: #1e1b4b; }
 
 /* ── 세로 타임라인 (기존, 미사용 가능) ── */

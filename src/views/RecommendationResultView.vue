@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS, formatKRW } from '@/stores/recommendation';
 import recommendationApi from '@/api/recommendation';
+import { PERIOD_OPTIONS } from '@/utils/finance/portfolioAllocation';
 import '@/styles/survey-tokens.css';
 
 const router = useRouter();
@@ -69,7 +70,7 @@ onMounted(async () => {
       monthlyNeed: rec.monthlyNeed,
       safetyLevel: rec.riskLevel,
     });
-    const PERIOD_ORDER = ['UNDER_12M', 'Y1_TO_2', 'Y2_TO_3', 'OVER_36M'];
+    const PERIOD_ORDER = PERIOD_OPTIONS.map((o) => o.code);
     const rawPeriods = res.periods ?? [];
     rawPeriods.sort((a, b) => {
       const idxA = PERIOD_ORDER.indexOf(a.code);

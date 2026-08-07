@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { fetchFavoriteProducts, saveAllocations } from "@/api/financeApi";
 import { allocate, buildTimeline, dur } from "@/utils/finance/horizonTimeline";
-import { termGroupOf } from "@/utils/finance/portfolioAllocation";
+import { periodOf } from "@/utils/finance/portfolioAllocation";
 import { formatKRW } from "@/stores/survey";
 import { useRecommendationStore } from "@/stores/recommendation";
 import "@/styles/survey-tokens.css";
@@ -11,8 +11,7 @@ import "@/styles/survey-tokens.css";
 const router = useRouter();
 const rec = useRecommendationStore();
 
-const TERM_LABELS = { UNDER_1Y: "단기", Y1_TO_3: "중기", OVER_3Y: "장기" };
-const TERM_STEP_CLASS = { UNDER_1Y: "step-short", Y1_TO_3: "step-mid", OVER_3Y: "step-long" };
+
 const RISK_LABELS = { VERY_LOW: "매우 낮은 위험", LOW: "낮은 위험", MEDIUM: "보통 위험", HIGH: "높은 위험" };
 
 const products = ref([]);
@@ -38,7 +37,7 @@ onMounted(async () => {
         fixed: !!item.fixed,
         meta: `${item.institutionName} · 연 ${rate.toFixed(1)}%`,
         tag:
-          TERM_LABELS[termGroupOf(item.termMonths || 0)] +
+          periodOf(item.termMonths).short +
           " · " +
           (RISK_LABELS[item.productRiskGrade] || item.productRiskGrade || ""),
         };
@@ -182,7 +181,7 @@ async function handleContinue() {
             </div>
           </div>
           <div v-for="(p, i) in products" :key="p.favoriteId" class="pick">
-            <div class="pick-step" :class="TERM_STEP_CLASS[termGroupOf(p.maturity)]">{{ i + 1 }}</div>
+            <div class="pick-step" :class="'step-' + periodOf(p.maturity).css">{{ i + 1 }}</div>
             <div class="pick-body">
               <div class="pick-head">
                 <span class="pick-tag">{{ p.tag }}</span>
@@ -216,6 +215,7 @@ async function handleContinue() {
           <span class="l-park">파킹·CMA</span>
           <span class="l-short">단기</span>
           <span class="l-mid">중기</span>
+          <span class="l-mid2">중장기</span>
           <span class="l-long">장기</span>
         </div>
 
@@ -336,6 +336,7 @@ async function handleContinue() {
 .pick-step.step-park { background: #4f9a91; color: #fff; }
 .pick-step.step-short { background: #3b82f6; color: #fff; }
 .pick-step.step-mid { background: #7c3aed; color: #fff; }
+.pick-step.step-mid2 { background: #5b21b6; color: #fff; }
 .pick-step.step-long { background: #1e1b4b; color: #fff; }
 
 .pick-body {
@@ -482,6 +483,7 @@ async function handleContinue() {
 .seg.park { background: #4f9a91; }
 .seg.short { background: #3b82f6; }
 .seg.mid { background: #7c3aed; }
+.seg.mid2 { background: #5b21b6; }
 .seg.long { background: #1e1b4b; }
 
 .legend {
@@ -506,6 +508,7 @@ async function handleContinue() {
 .l-park::before { background: #4f9a91; }
 .l-short::before { background: #3b82f6; }
 .l-mid::before { background: #7c3aed; }
+.l-mid2::before { background: #5b21b6; }
 .l-long::before { background: #1e1b4b; }
 
 /* 테이블 */

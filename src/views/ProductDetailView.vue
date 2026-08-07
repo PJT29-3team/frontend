@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useRecommendationStore, RISK_OPTIONS } from '@/stores/recommendation';
 import recommendationApi from '@/api/recommendation';
+import { periodOf } from '@/utils/finance/portfolioAllocation';
 import '@/styles/survey-tokens.css';
 
 const router = useRouter();
@@ -23,19 +24,12 @@ function checkIsFavorited() {
   return Object.values(rec.favorites).some((v) => v && v.productType === productType);
 }
 
-function termCodeOf(months) {
-  const m = months || 0;
-  if (m <= 11) return 'UNDER_12M';
-  if (m <= 23) return 'Y1_TO_2';
-  if (m <= 35) return 'Y2_TO_3';
-  return 'OVER_36M';
-}
 
 function toggleHeart(loc) {
   const dwellTimeSec = Math.max(0, Math.floor((Date.now() - enterTime) / 1000));
   
   if (detail.value) {
-    const periodCode = termCodeOf(detail.value.termMonths || 0);
+    const periodCode = periodOf(detail.value.termMonths).code;
     rec.toggleFavorite(periodCode, detail.value);
   }
 

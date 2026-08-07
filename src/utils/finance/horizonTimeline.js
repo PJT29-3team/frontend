@@ -1,6 +1,4 @@
-import { termGroupOf } from "./portfolioAllocation";
-
-const TERM_CSS = { UNDER_1Y: "short", Y1_TO_3: "mid", OVER_3Y: "long" };
+import { periodOf } from "./portfolioAllocation";
 
 /**
  * 만기 시 원리금 배수(단리). 변동금리·파킹 버킷은 1(원금 그대로).
@@ -91,7 +89,7 @@ export function buildTimeline(products, monthlyNeed) {
       // invest·rate·maturity·favoriteId·last를 그대로 실어 화면이 산정 근거를 조인 없이 읽게 한다
       segs.push({
         ...p,
-        type: p.cssType || TERM_CSS[termGroupOf(p.maturity)] || "long",
+        type: p.cssType || periodOf(p.maturity).css,
         from: cursor + 1,
         to: cursor + months,
         months,
