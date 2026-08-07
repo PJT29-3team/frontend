@@ -330,8 +330,9 @@ onBeforeUnmount(() => {
   align-items: flex-start;
 }
 
-/* 좌우 비율. 카드는 가로로 남는 공간이 있어도 쓰지 못하지만
-   비용 계산 칸은 금액이 줄바꿈 없이 들어가야 해서 넓을수록 낫다. */
+/* 좌우 비율 2:1. 한때 1.5 까지 넓혔다가 되돌렸다 —
+   금액은 552px 든 429px 든 어차피 한 줄에 들어가고, 넓히면 칸이 둔해 보인다.
+   세로로 늘리는 쪽이 낫다(fitPanelHeight). */
 .left-panel {
   flex: 2;
   min-width: 0;
@@ -493,7 +494,7 @@ onBeforeUnmount(() => {
    페이지를 내려 카드를 훑는 동안에도 금액이 계속 보여야 비교가 되므로
    화면에 붙여 둔다. 카드 높이에 맞춰 늘리지 않고 내용만큼만 차지한다. */
 .right-column {
-  flex: 1.5;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
